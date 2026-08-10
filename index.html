@@ -168,9 +168,6 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
   <h1 id="lt">KMC 车辆调度</h1>
   <p class="lsu" id="lsub">Vehicle Dispatch System</p>
 
-  <div class="fld"><label>邀请码 / Invite Code</label>
-    <input type="text" id="lc" placeholder="Enter invite code" autocomplete="off"></div>
-
   <div class="fld"><label>部门 / Department</label>
     <select id="ld">
       <option value="">请选择 / Select</option>
@@ -191,7 +188,6 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
     <input type="text" id="ln" placeholder="Your name"></div>
 
   <button class="bt bt-p bt-b" onclick="doLogin()">进入系统 / ENTER</button>
-  <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:10px">Invite code: KMC2024</p>
 
   <div style="text-align:center;margin-top:12px"><div class="ls" id="ls-login"></div></div>
 </div>
@@ -943,30 +939,21 @@ renderLT();
 
 // ==================== LOGIN ====================
 function doLogin(){
-  const code=document.getElementById('lc').value.trim();
   const dept=document.getElementById('ld').value;
   const name=document.getElementById('ln').value.trim();
-  if(!code)return toast('Enter invite code / password');
-  if(!dept)return toast('Select department');
-  if(!name)return toast('Enter your name');
+  if(!dept)return toast('Select department / 请选择部门');
+  if(!name)return toast('Enter your name / 请输入姓名');
 
-  // Check if user has personal password set
+  // Auto-register or login existing user
   const us=DB.users.get();
   const existingUser=us.find(u=>u.name===name&&u.department===dept);
-  if(existingUser&&existingUser.password){
-    // User has personal password - verify it
-    if(code!==existingUser.password)return toast('Invalid personal password / 个人密码错误');
-  }else{
-    // No personal password - use system invite code
-    if(code!==DB.invite.get())return toast('Invalid invite code / 邀请码错误');
-  }
-
-  S.user={name,department:dept,role:(dept===T('dept')&&name===T('admin'))?'admin':'user'};
+  if(!existingUser){
+    us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:'user',password:''});
+  }else{existingUser.lastLogin=new Date().toISOString();}
+  DB.users.set(us);
+  S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
   DB.user.set(S.user);
-  if(!existingUser)
-    us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:S.user.role,password:''});
-  else{existingUser.lastLogin=new Date().toISOString();}
-  DB.users.set(us);showApp();setTimeout(()=>syncAll(),500);
+  showApp();setTimeout(()=>syncAll(),500);
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
