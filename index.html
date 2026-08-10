@@ -1139,54 +1139,35 @@ function updatePurposeStatus(){
 
 // Smart translate: copy content from active field to the other language field
 function doTranslate(field){
-  // For destination field, determine source based on visibility not S state
-  let src, dst;
-  if(field==='dest'){
-    const cn=document.getElementById('rq-dest'),en=document.getElementById('rq-destEn');
-    if(!cn||!en)return toast('字段未找到 / Field not found');
-    if(cn.style.display!=='none'){src='rq-dest';dst='rq-destEn';}
-    else{src='rq-destEn';dst='rq-dest';}
-  }else if(field==='purpose'){
-    src=S.pLang==='cn'?'rq-purpose':'rq-purposeEn';dst=S.pLang==='cn'?'rq-purposeEn':'rq-purpose';
-  }else{
-    src=S.nLang==='cn'?'rq-notes':'rq-notesEn';dst=S.nLang==='cn'?'rq-notesEn':'rq-notes';
-  }
-  const srcEl=document.getElementById(src),dstEl=document.getElementById(dst);
-  if(!srcEl||!dstEl||!srcEl.value.trim())return toast('请先在当前语言框中输入内容');
-  const srcText=srcEl.value.trim();
-  const sourceLang=field==='dest'?(S.dLang==='cn'?'zh-CN':'en-US'):(field==='purpose'?(S.pLang==='cn'?'zh-CN':'en-US'):(S.nLang==='cn'?'zh-CN':'en-US'));
-  const targetLang=S.pLang==='cn'||S.nLang==='cn'?'en-US':'zh-CN';
-  const btn=dstEl.parentElement.querySelector('[data-tr-btn="'+field+'"]');
+  let cnId,enId;
+  if(field==='dest'){cnId='rq-dest';enId='rq-destEn';}
+  else if(field==='purpose'){cnId='rq-purpose';enId='rq-purposeEn';}
+  else{cnId='rq-notes';enId='rq-notesEn';}
+  const cnEl=document.getElementById(cnId),enEl=document.getElementById(enId);
+  if(!cnEl||!enEl)return toast('字段错误 / Field error');
+  let srcId,dstId;
+  if(cnEl.value.trim()){srcId=cnId;dstId=enId;}
+  else if(enEl.value.trim()){srcId=enId;dstId=cnId;}
+  else return toast('请先在当前语言框中输入内容 / Please enter content first');
+  const srcText=document.getElementById(srcId).value.trim();
+  const srcLang=srcId===cnId?'zh-CN':'en-US';
+  const tgtLang=srcLang==='zh-CN'?'en-US':'zh-CN';
+  const dstEl=document.getElementById(dstId);
+  const btn=dstEl.parentElement?dstEl.parentElement.querySelector('[data-tr-btn="'+field+'"]'):null;
   if(btn){btn.disabled=true;btn.textContent='⏳ 翻译中...';}
   toast('🔄 正在调用在线翻译...');
-  // Use MyMemory free API (no key required, supports CN<->EN)
-  fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl='+targetLang.replace('-','_')+'&dt=t&q='+encodeURIComponent(srcText)+'&langpair='+sourceLang+'|'+targetLang)
+  fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl='+tgtLang.replace('-','_')+'&dt=t&q='+encodeURIComponent(srcText))
     .then(r=>r.json())
     .then(data=>{
       let translated='';
-      // Google Translate API response: [[["translated text","source text",...]], null, "srcLang", ...]
-      if(data&&data[0]&&data[0][0]&&data[0][0][0]){
-        translated=data[0].map(x=>x[0]).join('');
-      }
-      if(translated&&translated.toLowerCase()!==srcText.toLowerCase()){
-        dstEl.value=translated;
-        toast('✅ 翻译完成 / Translation complete');
-        if(field==='purpose')updatePurposeStatus();
-      }else{
-        // Fallback: copy
-        dstEl.value=srcText;
-        toast('⚠ 在线翻译未返回，已复制原文请手动翻译');
-      }
+      if(data&&data[0]&&data[0][0]&&data[0][0][0]){translated=data[0].map(x=>x[0]).join('');}
+      if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');}
+      else{dstEl.value=srcText;toast('⚠ 翻译失败，已复制原文');}
     })
-    .catch(e=>{
-      // Network failed fallback: copy
-      dstEl.value=srcText;
-      toast('⚠ 网络失败，已复制原文（请手动翻译）');
-    })
-    .finally(()=>{
-      if(btn){btn.disabled=false;btn.textContent='🔄 '+bi('翻译到','Translate to')+' '+(sourceLang==='zh-CN'?'EN':'CN');}
-    });
+    .catch(e=>{dstEl.value=srcText;toast('⚠ 网络失败，已复制原文');})
+    .finally(()=>{if(btn){btn.disabled=false;btn.textContent='🔄 翻译到 '+(srcLang==='zh-CN'?'EN':'CN');}});
 }
+
 
 // Phrase dictionary helper
 function addPhrase(field,lang,phrase){
