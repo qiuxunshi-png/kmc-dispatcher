@@ -226,7 +226,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
     <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
-    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
+    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');document.documentElement.setAttribute('data-lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');document.documentElement.setAttribute('data-lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
   <div class="main" id="main-mob"></div>
@@ -264,7 +264,7 @@ const LS=k=>{
     localStorage.setItem('kmc2_ver','v12');}})();
 
 let L='zh';
-const loadL=()=>{const v=localStorage.getItem('kmc2_lang');if(v==='en'||v==='zh')L=v;};loadL();
+const loadL=()=>{const v=localStorage.getItem('kmc2_lang');if(v==='en'||v==='zh'){L=v;document.documentElement.setAttribute('data-lang',v);}else{document.documentElement.setAttribute('data-lang','zh');}};loadL();
 
 const T=key=>{
   const m={
@@ -347,7 +347,7 @@ function renderLT(){
   const t=m('zh','中')+m('en','EN');
   ['ls-login','ls-mt','ls-pc'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=t;});
 }
-function switchL(l){L=l;localStorage.setItem('kmc2_lang',l);renderLT();
+function switchL(l){L=l;localStorage.setItem('kmc2_lang',l);document.documentElement.setAttribute('data-lang',l);renderLT();
   if(S.user){renderNav();renderPage();}}
 
 // ==================== INIT ====================
