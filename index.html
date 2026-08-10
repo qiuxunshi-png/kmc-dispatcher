@@ -1361,8 +1361,11 @@ let sigCtx=null,sigDrawing=false,sigLX=0,sigLY=0,sigDone=false;
 function initSig(){
   const c=document.getElementById('sig-cvs');if(!c)return;
   const w=c.offsetWidth,h=c.offsetHeight;
-  c.width=w*2;c.height=h*2;
-  sigCtx=c.getContext('2d');sigCtx.scale(2,2);
+  // Use devicePixelRatio for retina, but keep coordinate system 1:1
+  const dpr=window.devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;
+  c.style.width=w+'px';c.style.height=h+'px';
+  sigCtx=c.getContext('2d');sigCtx.scale(dpr,dpr);
   sigCtx.strokeStyle='#0f172a';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
   if(S.sigData){const img=new Image();img.onload=()=>{sigCtx.drawImage(img,0,0,w,h);sigDone=true;};img.src=S.sigData;}
   // Mouse (PC)
