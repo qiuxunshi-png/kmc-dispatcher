@@ -416,99 +416,6 @@ async function sbCreateTables(){
   // Use RPC for raw SQL via service - but anon can't create tables
   // Tables need to be pre-created in Supabase dashboard
   // We just verify they exist
-  const tables=['kmc_vehicles','kmc_drivers','kmc_users','kmc_requests','kmc_dispatches','kmc_settings'];
-  for(const t of tables){
-    const {error}=await sb.from(t).select('id').limit(1);
-    if(error){console.log('Table missing:',t,error.message);}
-  }
-  return true;
-}
-
-// Sync helper
-
-async function pushDailySummary(){
-  const today_=today();
-  const reqs=DB.requests.get().filter(r=>r.date===today_);
-  const ds=DB.dispatches.get().filter(d=>d.date===today_);
-  if(!reqs.length&&!ds.length)return toast('今日无需求 / No requests today');
-  
-  // Format summary
-  let msg='【KMC 车辆调度日报】\n'+today_+' ('+fmtL(today_)+')\n';
-  msg+='════════════════════\n\n';
-  
-  if(reqs.length){
-    msg+='📋 待处理需求 ('+reqs.length+'条)：\n';
-    reqs.slice(0,10).forEach((r,i)=>{
-      msg+=(i+1)+'. ['+r.department+'] '+r.purpose+'\n';
-      msg+='   ⏰ '+r.timeSlot+' | 👤 '+r.submitter+'\n';
-      if(r.destination)msg+='   📍 '+r.destination+'\n';
-    });
-    if(reqs.length>10)msg+='   ... 共'+reqs.length+'条，请登录系统查看完整清单\n';
-    msg+='\n';
-  }
-  if(ds.length){
-    msg+='🚗 已派车辆 ('+ds.length+'辆)：\n';
-    ds.forEach((d,i)=>{
-      msg+=(i+1)+'. '+d.vehicle+' | '+d.driver+' | '+d.departureTime+'\n';
-    });
-    msg+='\n';
-  }
-  msg+='🔗 系统入口: https://375c28bdbb4544e1a2a1a66ec159a3f3.sh3.agentos-app.net\n';
-  msg+='⏰ 截止时间: '+getCutoff()+'\n';
-  
-  // Push to WeChat
-  const wxUrl=DB.wxhook.get();
-  if(wxUrl){
-    toast('🔄 正在推送至微信...');
-    try{
-      const r=await fetch(wxUrl,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({msgtype:'text',text:{content:msg}})});
-      if(r.ok){toast('✅ 微信推送成功');}
-      else{toast('⚠ 微信推送失败: HTTP '+r.status);}
-    }catch(e){toast('⚠ 微信推送失败 (网络)');}
-  }
-  
-  // WhatsApp
-  const waNum=DB.waphone.get();
-  if(waNum){
-    const waMsg=encodeURIComponent(msg.replace(/\n/g,'%0a').replace(/\*/g,''));
-    const waUrl='https://wa.me/'+waNum.replace(/[^0-9]/g,'')+'?text='+waMsg;
-    window.open(waUrl,'_blank');
-    toast('📱 WhatsApp 已打开');
-  }
-  
-  if(!wxUrl&&!waNum)return toast('请先在设置中配置推送渠道');
-  
-  DB.lastpush.set(today_);
-}
-
-
-
-let syncStatus='idle';// idle | syncing | ok | error
-function updateSyncIcon(){
-  const els=[document.getElementById('sync-icon'),document.getElementById('sync-icon-mob')];
-  els.forEach(el=>{
-    if(!el)return;
-    const colors={
-      idle:{bg:'rgba(91,138,245,0.15)',bd:'rgba(91,138,245,0.3)',shadow:'0 0 12px rgba(91,138,245,0.2)',text:'☁️'},
-    offline:{bg:'rgba(120,120,120,0.15)',bd:'rgba(120,120,120,0.3)',shadow:'0 0 8px rgba(120,120,120,0.1)',text:'☁️'},
-      syncing:{bg:'rgba(91,138,245,0.25)',bd:'#5b8af5',shadow:'0 0 16px rgba(91,138,245,0.4)',text:'🔄'},
-      ok:{bg:'rgba(52,199,123,0.2)',bd:'rgba(52,199,123,0.4)',shadow:'0 0 12px rgba(52,199,123,0.3)',text:'☁️'},
-      error:{bg:'rgba(245,85,93,0.2)',bd:'rgba(245,85,93,0.4)',shadow:'0 0 12px rgba(245,85,93,0.3)',text:'⚠️'}
-    };
-    const c=colors[syncStatus]||colors.idle;
-    el.style.background=c.bg;
-    el.style.borderColor=c.bd;
-    el.style.boxShadow=c.shadow;
-    el.textContent=c.text;
-    if(syncStatus==='syncing'){
-      el.style.animation='spin 1s linear infinite';
-      el.textContent='🔄';
-    }else{
-      el.style.animation='none';
-    }
-  });
-}
 async function manualSync(){
   if(syncStatus==='syncing')return;
   syncStatus='syncing';
@@ -590,10 +497,6 @@ async function syncAll(){
     }
     await sbUpsert('kmc_settings',[{key:'invite',value:DB.invite.get()},{key:'cutoff',value:DB.cutoff.get()}]);
   }catch(e){console.error('syncAll error:',e);syncAvailable=false;}
-}
-
-//@deprecated_sbSyncOne
-async function sbSyncOne(table,data){
   await sbUpsert('kmc_'+table,data);
 }
 
