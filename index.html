@@ -1707,7 +1707,7 @@ function renderSettings(){
     +'<div class="card"><div class="card-h">☁ '+bi('云同步 / Cloud Sync','Cloud Sync')+'</div>'
     +'<div class="fld"><label>🔑 '+bi('GitHub Token','GitHub Token')+'</label>'
     +'<input type="password" id="st-gist-token" value="'+gistToken+'" placeholder="github_pat_..." style="font-size:11px">'
-    +'<button class="bt bt-p bt-sm" onclick="(()=>{const t=document.getElementById('st-gist-token').value.trim();if(t){gistToken=t;localStorage.setItem('kmc_gist_token',t);toast('Token saved');}})()" style="margin-top:4px">'+T('common_save')+'</button></div>'
+    +'<button class="bt bt-p bt-sm" onclick="(()=>{const t=document.getElementById(\'st-gist-token\').value.trim();if(t){gistToken=t;localStorage.setItem('kmc_gist_token',t);toast(\'Token saved\');}})()" style="margin-top:4px">'+T('common_save')+'</button></div>'
     +'<button class="bt bt-s bt-b" onclick="manualSync()">☁ '+bi('立即同步','Sync Now')+'</button>'
     +'<div style="font-size:11px;color:var(--tx-dim);margin-top:6px">'+(syncAvailable?bi('✅ 云同步正常','✅ Cloud sync active'):bi('⚠ 请配置 GitHub Token 后同步','⚠ Configure GitHub Token to enable cloud sync'))+'</div></div>'
     +'<div class="card"><div class="card-h">📤 '+bi('每日推送 / Daily Push','Push Settings')+'</div>'
