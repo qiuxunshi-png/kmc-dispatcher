@@ -223,7 +223,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
     <h2>KMC 派车调度</h2>
-    <div style="display:flex;align-items:center;gap:8px"><span class="ti" id="mt-info"></span>
+    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="S.lang='zh';renderPage()" id="lang-zh-btn">中</button><button id="lang-en-btn" onclick="S.lang='en';renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
   <div class="main" id="main-mob"></div>
@@ -330,7 +330,7 @@ const T=key=>{
 };
 
 // Helper for bilingual display in current language
-function bi(cn,en){return L==='zh'?cn+' / '+en:en+' / '+cn;}
+function bi(cn,en){return S.lang==='zh'?(cn||en):(en||cn);}
 
 const DEPTS_CN=['总经理办','财务部','综合部','安全生产部','质量技术部','仓储部','后勤部','业务部','采矿部','选厂','机电工程部'];
 const DCN2EN={'总经理办':'GM Office','财务部':'Finance','综合部':'General Affairs','安全生产部':'Safety Production',
@@ -1051,6 +1051,11 @@ function switchTab(id){
 }
 
 function renderPage(){
+  // Update lang toggle buttons
+  const zhBtn=document.getElementById('lang-zh-btn'),enBtn=document.getElementById('lang-en-btn');
+  if(zhBtn&&enBtn){
+    zhBtn.className=S.lang==='zh'?'active':'';enBtn.className=S.lang==='en'?'active':'';
+  }
   const m1=document.getElementById('main-mob');
   const m2=document.getElementById('main-pc');
   let html='';
