@@ -1139,8 +1139,18 @@ function updatePurposeStatus(){
 
 // Smart translate: copy content from active field to the other language field
 function doTranslate(field){
-  const src=field==='dest'?(S.dLang==='cn'?'rq-dest':'rq-destEn'):(field==='purpose'?(S.pLang==='cn'?'rq-purpose':'rq-purposeEn'):(S.nLang==='cn'?'rq-notes':'rq-notesEn'));
-  const dst=field==='dest'?(S.dLang==='cn'?'rq-destEn':'rq-dest'):(field==='purpose'?(S.pLang==='cn'?'rq-purposeEn':'rq-purpose'):(S.nLang==='cn'?'rq-notesEn':'rq-notes'));
+  // For destination field, determine source based on visibility not S state
+  let src, dst;
+  if(field==='dest'){
+    const cn=document.getElementById('rq-dest'),en=document.getElementById('rq-destEn');
+    if(!cn||!en)return toast('字段未找到 / Field not found');
+    if(cn.style.display!=='none'){src='rq-dest';dst='rq-destEn';}
+    else{src='rq-destEn';dst='rq-dest';}
+  }else if(field==='purpose'){
+    src=S.pLang==='cn'?'rq-purpose':'rq-purposeEn';dst=S.pLang==='cn'?'rq-purposeEn':'rq-purpose';
+  }else{
+    src=S.nLang==='cn'?'rq-notes':'rq-notesEn';dst=S.nLang==='cn'?'rq-notesEn':'rq-notes';
+  }
   const srcEl=document.getElementById(src),dstEl=document.getElementById(dst);
   if(!srcEl||!dstEl||!srcEl.value.trim())return toast('请先在当前语言框中输入内容');
   const srcText=srcEl.value.trim();
