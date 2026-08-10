@@ -1161,7 +1161,7 @@ function doTranslate(field){
     .then(data=>{
       let translated='';
       if(data&&data[0]&&data[0][0]&&data[0][0][0]){translated=data[0].map(x=>x[0]).join('');}
-      if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');}
+      if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');      /* Auto-show translated field */      cnEl.style.display=srcId===cnId?'none':'block';      enEl.style.display=srcId===cnId?'block':'none';      if(field==='purpose'){S.pLang=srcId===cnId?'en':'cn';updatePurposeStatus();}      else if(field==='dest')S.dLang=srcId===cnId?'en':'cn';      else S.nLang=srcId===cnId?'en':'cn';}
       else{dstEl.value=srcText;toast('⚠ 翻译失败，已复制原文');}
     })
     .catch(e=>{dstEl.value=srcText;toast('⚠ 网络失败，已复制原文');})
