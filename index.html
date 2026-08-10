@@ -519,8 +519,10 @@ async function manualSync(){
   if(syncStatus==='syncing')return;
   syncStatus='syncing';
   updateSyncIcon();
+  // 10 second timeout
+  const timeout=new Promise((_,r)=>setTimeout(()=>r('timeout'),10000));
   try{
-    await syncAll();
+    await Promise.race([syncAll(),timeout]);
     syncStatus='ok';
     toast('✅ 已同步 / Synced');
   }catch(e){
@@ -528,46 +530,49 @@ async function manualSync(){
     toast('⚠ 同步失败 / Sync failed');
   }
   updateSyncIcon();
-  setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);
+  setTimeout(()=>{if(syncStatus==='ok'||syncStatus==='error'){syncStatus='idle';updateSyncIcon();}},3000);
 }
 
 
 async function syncAll(){
-  const sb=await sbInit();if(!sb){console.log('Supabase not connected');return;}
-  await sbCreateTables();
-  // Sync each table
-  const tables=[
-    ['kmc_vehicles',DB.vehicles.get()],
-    ['kmc_drivers',DB.drivers.get()],
-    ['kmc_users',DB.users.get()],
-    ['kmc_requests',DB.requests.get()],
-    ['kmc_dispatches',DB.dispatches.get()],
-  ];
-  for(const [table,local] of tables){
-    const remote=await sbLoad(table);
-    if(remote===null)continue;
-    if(remote&&remote.length){
-      // Remote has data, use it
-      const key=table.replace('kmc_','');
-      const LS=LS(key);
-      const localMap=new Map((local||[]).map(r=>[r.id,r]));
-      const merged=[...remote.map(r=>({...localMap.get(r.id)||{},...r}))];
-      LS.set(merged);
+  try{
+    const sb=await sbInit();if(!sb){console.log('Supabase not connected');return;}
+    await sbCreateTables();
+    const tables=[
+      ['kmc_vehicles',DB.vehicles.get()],
+      ['kmc_drivers',DB.drivers.get()],
+      ['kmc_users',DB.users.get()],
+      ['kmc_requests',DB.requests.get()],
+      ['kmc_dispatches',DB.dispatches.get()],
+    ];
+    for(const [table,local] of tables){
+      try{
+        const remote=await sbLoad(table);
+        if(remote===null)continue;
+        if(remote&&remote.length){
+          const key=table.replace('kmc_','');
+          const LS=LS(key);
+          const localMap=new Map((local||[]).map(r=>[r.id,r]));
+          const merged=[...remote.map(r=>({...localMap.get(r.id)||{},...r}))];
+          LS.set(merged);
+        }
+      }catch(e){console.warn('Sync',table,e);}
     }
-  }
-  // Sync settings
-  const settingsRemote=await sbLoad('kmc_settings');
-  if(settingsRemote){
-    settingsRemote.forEach(s=>{
-      if(s.key==='invite')DB.invite.set(s.value);
-      if(s.key==='cutoff')DB.cutoff.set(s.value);
-    });
-  }
-  // Push local data to cloud
-  for(const [table,local] of tables){
-    if(local&&local.length)await sbUpsert(table,local);
-  }
-  await sbUpsert('kmc_settings',[{key:'invite',value:DB.invite.get()},{key:'cutoff',value:DB.cutoff.get()}]);
+    try{
+      const settingsRemote=await sbLoad('kmc_settings');
+      if(settingsRemote){
+        settingsRemote.forEach(s=>{
+          if(s.key==='invite')DB.invite.set(s.value);
+          if(s.key==='cutoff')DB.cutoff.set(s.value);
+        });
+      }
+    }catch(e){console.warn('Settings sync',e);}
+    // Push local data to cloud
+    for(const [table,local] of tables){
+      try{if(local&&local.length)await sbUpsert(table,local);}catch(e){console.warn('Push',table,e);}
+    }
+    await sbUpsert('kmc_settings',[{key:'invite',value:DB.invite.get()},{key:'cutoff',value:DB.cutoff.get()}]);
+  }catch(e){console.error('syncAll error:',e);}
 }
 
 async function sbSyncOne(table,data){
@@ -1931,6 +1936,23 @@ function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Del
   const u=DB.user.get();
   if(u){S.user=u;showApp();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
 })();
+
+// Auto-sync every 60 seconds
+setInterval(async()=>{
+  if(syncStatus==='syncing')return;
+  syncStatus='syncing';
+  updateSyncIcon();
+  try{
+    await Promise.race([syncAll(),new Promise((_,r)=>setTimeout(()=>r('timeout'),8000))]);
+    syncStatus='ok';
+    setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},2000);
+  }catch(e){
+    syncStatus='error';
+    setTimeout(()=>{syncStatus='idle';updateSyncIcon();},3000);
+  }
+  updateSyncIcon();
+},60000);
+
 </script>
 </body>
 </html>
