@@ -122,8 +122,8 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:5000;
   display:flex;justify-content:center;align-items:center}
 .modal-bg.hide{display:none}
-.modal-box{background:#fff;border-radius:12px;padding:24px;max-width:500px;width:90%;
-  box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.modal-box{background:#fff;border-radius:12px;padding:24px;max-width:500px;width:95%;margin:20px;
+  box-shadow:0 8px 32px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto}
 .modal-box.sig{max-width:600px;padding:20px}
 .sig-canvas{width:100%;height:200px;background:#fff;border-radius:10px;
   cursor:crosshair;border:2px solid #d1d5db}
@@ -1350,27 +1350,29 @@ function doSubmit(){
 
 // ==================== SIGNATURE ====================
 function openSig(){
-  showModal('<h3>📝 '+T('submit_signTitle')+'</h3>'
-    +'<canvas id="sig-cvs" class="sig-pad"></canvas>'
-    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="bt bt-o bt-sm" onclick="sigClear()">🗑️ Clear</button>'
+  showModal('<h3 style="margin-bottom:12px">📝 '+T('submit_signTitle')+'</h3>'
+    +'<canvas id="sig-cvs" style="display:block;width:100%;height:200px;background:#fff;border-radius:8px;border:2px solid #d1d5db;cursor:crosshair;touch-action:none"></canvas>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="bt bt-o bt-sm" onclick="sigClear()">🗑 '+bi('清除','Clear')+'</button>'
     +'<div style="flex:1"></div><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
-    +'<button class="bt bt-p bt-sm" onclick="sigSave()">✓ Save</button></div>',true);
-  setTimeout(initSig,150);
+    +'<button class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button></div>',true);
+  setTimeout(initSig,200);
 }
 let sigCtx=null,sigDrawing=false,sigLX=0,sigLY=0,sigDone=false;
 function initSig(){
   const c=document.getElementById('sig-cvs');if(!c)return;
-  const r=c.getBoundingClientRect();
-  c.width=r.width*2;c.height=r.height*2;
+  const w=c.offsetWidth,h=c.offsetHeight;
+  c.width=w*2;c.height=h*2;
   sigCtx=c.getContext('2d');sigCtx.scale(2,2);
   sigCtx.strokeStyle='#0f172a';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
-  if(S.sigData){const img=new Image();img.onload=()=>{sigCtx.drawImage(img,0,0,r.width,r.height);sigDone=true;};img.src=S.sigData;}
+  if(S.sigData){const img=new Image();img.onload=()=>{sigCtx.drawImage(img,0,0,w,h);sigDone=true;};img.src=S.sigData;}
+  // Mouse (PC)
   c.onmousedown=e=>{sigDrawing=true;sigDone=true;const p=pos(e,c);sigLX=p.x;sigLY=p.y;};
   c.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e,c);sigCtx.beginPath();sigCtx.moveTo(sigLX,sigLY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLX=p.x;sigLY=p.y;};
   c.onmouseup=c.onmouseleave=()=>{sigDrawing=false;};
-  c.ontouchstart=e=>{e.preventDefault();sigDrawing=true;sigDone=true;const t=e.touches[0];const p=pos(t,c);sigLX=p.x;sigLY=p.y;};
-  c.ontouchmove=e=>{e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const p=pos(t,c);sigCtx.beginPath();sigCtx.moveTo(sigLX,sigLY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLX=p.x;sigLY=p.y;};
-  c.ontouchend=()=>{sigDrawing=false;};
+  // Touch (Mobile)
+  c.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;sigDone=true;const t=e.touches[0];const p=pos(t,c);sigLX=p.x;sigLY=p.y;},{passive:false});
+  c.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const p=pos(t,c);sigCtx.beginPath();sigCtx.moveTo(sigLX,sigLY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLX=p.x;sigLY=p.y;},{passive:false});
+  c.addEventListener('touchend',()=>{sigDrawing=false;});
 }
 function pos(e,c){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
 function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;const r=c.getBoundingClientRect();sigCtx.clearRect(0,0,r.width,r.height);sigDone=false;S.sigData='';}
