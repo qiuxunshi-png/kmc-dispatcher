@@ -375,29 +375,45 @@ function closeModal(){document.getElementById('modal-root').innerHTML='';}
 
 
 
-const GIST_ID='b544862f2f12b3faab4f1c02aa3d84d1';
+const REPO_OWNER='qiuxunshi-png';
+const REPO_NAME='kmc-调度器-同步';
+const DATA_FILE='kmc-data.json';
 let gistToken=localStorage.getItem('kmc_gist_token')||'';
 
 async function gistRead(){
-  const r=await fetch('https://api.github.com/gists/'+GIST_ID,{
-    headers:{'Accept':'application/vnd.github+json'}
-  });
-  if(!r.ok)return null;
-  const d=await r.json();
-  try{return JSON.parse(d.files['kmc-data.json'].content);}catch(e){return null;}
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/'+REPO_OWNER+'/'+REPO_NAME+'/main/'+DATA_FILE);
+    if(!r.ok)return null;
+    const text=await r.text();
+    if(!text||text.trim()==='')return null;
+    return JSON.parse(text);
+  }catch(e){return null;}
 }
 
 async function gistWrite(data){
   if(!gistToken)return false;
   try{
-    const r=await fetch('https://api.github.com/gists/'+GIST_ID,{
-      method:'PATCH',
+    // First get current SHA
+    const getR=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+      headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json'}
+    });
+    let sha=null;
+    if(getR.ok){
+      const j=await getR.json();
+      sha=j.sha;
+    }
+    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+      method:'PUT',
       headers:{
         'Authorization':'token '+gistToken,
         'Accept':'application/vnd.github+json',
         'Content-Type':'application/json'
       },
-      body:JSON.stringify({files:{'kmc-data.json':{content:JSON.stringify(data,null,2)}}})
+      body:JSON.stringify({
+        message:'Sync from KMC Dispatcher',
+        content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
+        sha:sha
+      })
     });
     return r.ok;
   }catch(e){return false;}
@@ -409,18 +425,45 @@ async function sbLoad(t){return null;}
 async function sbDel(t,i){return false;}
 
 
-// Initialize cloud database tables
-//@deprecated_sbCreateTables
+// Initialize cloud database tables (kept for back-compat)
 async function sbCreateTables(){
-  const sb=await sbInit();if(!sb)return false;
-  // Use RPC for raw SQL via service - but anon can't create tables
-  // Tables need to be pre-created in Supabase dashboard
-  // We just verify they exist
+  return gistToken !== '';
+}
+
+// Sync icon update
+let syncStatus='idle';
+function updateSyncIcon(){
+  const els=[document.getElementById('sync-icon'),document.getElementById('sync-icon-mob')];
+  els.forEach(el=>{
+    if(!el)return;
+    const colors={
+      idle:{bg:'rgba(91,138,245,0.15)',bd:'rgba(91,138,245,0.3)',shadow:'0 0 12px rgba(91,138,245,0.2)',text:'☁️'},
+      syncing:{bg:'rgba(91,138,245,0.25)',bd:'#5b8af5',shadow:'0 0 16px rgba(91,138,245,0.4)',text:'🔄'},
+      ok:{bg:'rgba(52,199,123,0.2)',bd:'rgba(52,199,123,0.4)',shadow:'0 0 12px rgba(52,199,123,0.3)',text:'☁️'},
+      error:{bg:'rgba(245,85,93,0.2)',bd:'rgba(245,85,93,0.4)',shadow:'0 0 12px rgba(245,85,93,0.3)',text:'⚠️'}
+    };
+    const c=colors[syncStatus]||colors.idle;
+    el.style.background=c.bg;
+    el.style.borderColor=c.bd;
+    el.style.boxShadow=c.shadow;
+    el.textContent=c.text;
+    if(syncStatus==='syncing'){el.style.animation='spin 1s linear infinite';el.textContent='🔄';}
+    else{el.style.animation='none';}
+  });
+}
+
+// Single-table quick sync (used after data mutations)
+async function sbSyncOne(table,data){
+  if(!syncAvailable)return;
+  await gistWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get()});
+}
+
+async function sbDelOne(table,id){}
+
 async function manualSync(){
   if(syncStatus==='syncing')return;
   syncStatus='syncing';
   updateSyncIcon();
-  // 10 second timeout
   const timeout=new Promise((_,r)=>setTimeout(()=>r('timeout'),10000));
   try{
     await Promise.race([syncAll(),timeout]);
@@ -432,6 +475,12 @@ async function manualSync(){
   }
   updateSyncIcon();
   setTimeout(()=>{if(syncStatus==='ok'||syncStatus==='error'){syncStatus='idle';updateSyncIcon();}},3000);
+}
+
+function saveGistToken(){
+  const t=document.getElementById('st-gist-token').value.trim();
+  if(t){gistToken=t;localStorage.setItem('kmc_gist_token',t);toast('Token saved');syncStatus='idle';updateSyncIcon();setTimeout(()=>manualSync(),500);}
+  else{toast('Enter token first');}
 }
 
 
@@ -462,43 +511,6 @@ async function syncAll(){
     if(!ok)syncAvailable=false;
   }catch(e){console.error('syncAll',e);syncAvailable=false;}
 }
-    const tables=[
-      ['kmc_vehicles',DB.vehicles.get()],
-      ['kmc_drivers',DB.drivers.get()],
-      ['kmc_users',DB.users.get()],
-      ['kmc_requests',DB.requests.get()],
-      ['kmc_dispatches',DB.dispatches.get()],
-    ];
-    for(const [table,local] of tables){
-      try{
-        const remote=await sbLoad(table);
-        if(remote===null)continue;
-        if(remote&&remote.length){
-          const key=table.replace('kmc_','');
-          const LS=LS(key);
-          const localMap=new Map((local||[]).map(r=>[r.id,r]));
-          const merged=[...remote.map(r=>({...localMap.get(r.id)||{},...r}))];
-          LS.set(merged);
-        }
-      }catch(e){console.warn('Sync',table,e);}
-    }
-    try{
-      const settingsRemote=await sbLoad('kmc_settings');
-      if(settingsRemote){
-        settingsRemote.forEach(s=>{
-          if(s.key==='invite')DB.invite.set(s.value);
-          if(s.key==='cutoff')DB.cutoff.set(s.value);
-        });
-      }
-    }catch(e){console.warn('Settings sync',e);}
-    // Push local data to cloud
-    for(const [table,local] of tables){
-      try{if(local&&local.length)await sbUpsert(table,local);}catch(e){console.warn('Push',table,e);}
-    }
-    await sbUpsert('kmc_settings',[{key:'invite',value:DB.invite.get()},{key:'cutoff',value:DB.cutoff.get()}]);
-  await sbUpsert('kmc_'+table,data);
-}
-
 //@deprecated_sbDelOne
 async function sbDelOne(table,id){
   await sbDel('kmc_'+table,id);
@@ -1704,10 +1716,10 @@ function renderSettings(){
     +'<div class="fld"><label>⏰ '+bi('每日车辆整合截止时间','Daily vehicle consolidation cutoff')+' *</label>'
     +'<div style="display:flex;gap:8px;align-items:center"><input type="time" id="st-cutoff" value="'+getCutoff()+'" style="flex:1;padding:12px;border:2px solid #f59e0b;border-radius:8px;font-size:16px;font-weight:700;color:#dc2626">'
     +'<button class="bt bt-p bt-sm" onclick="setCutoff(document.getElementById(\'st-cutoff\').value);toast(\'截止时间已更新 / Cutoff updated\');renderPage()">✓ '+T('common_save')+'</button></div></div>'
-    +'<div class="card"><div class="card-h">☁ '+bi('云同步 / Cloud Sync','Cloud Sync')+'</div>'
+    +'<div class="card"><div class="card-h">☁ '+bi('云同步 (GitHub仓库) / Cloud Sync (GitHub Repo)','Cloud Sync (GitHub Repo)')+'</div>'
     +'<div class="fld"><label>🔑 '+bi('GitHub Token','GitHub Token')+'</label>'
     +'<input type="password" id="st-gist-token" value="'+gistToken+'" placeholder="github_pat_..." style="font-size:11px">'
-    +'<button class="bt bt-p bt-sm" onclick="(()=>{const t=document.getElementById(\'st-gist-token\').value.trim();if(t){gistToken=t;localStorage.setItem('kmc_gist_token',t);toast(\'Token saved\');}})()" style="margin-top:4px">'+T('common_save')+'</button></div>'
+    +'<button class="bt bt-p bt-sm" onclick="saveGistToken()" style="margin-top:4px">'+T('common_save')+'</button></div>'
     +'<button class="bt bt-s bt-b" onclick="manualSync()">☁ '+bi('立即同步','Sync Now')+'</button>'
     +'<div style="font-size:11px;color:var(--tx-dim);margin-top:6px">'+(syncAvailable?bi('✅ 云同步正常','✅ Cloud sync active'):bi('⚠ 请配置 GitHub Token 后同步','⚠ Configure GitHub Token to enable cloud sync'))+'</div></div>'
     +'<div class="card"><div class="card-h">📤 '+bi('每日推送 / Daily Push','Push Settings')+'</div>'
