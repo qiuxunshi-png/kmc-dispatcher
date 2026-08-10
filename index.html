@@ -197,31 +197,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 </div>
 
 <!-- APP MOBILE -->
-<div id="login-screen" class="hide">
-  <div class="login-box">
-    <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
-    <div class="lsm">Vehicle Dispatch System</div>
-    <div class="fld"><label>部门 / Department *</label>
-    <select id="ld">
-      <option value="">请选择 / Select</option>
-      <option value="总经理办">总经理办 / GM Office</option>
-      <option value="财务部">财务部 / Finance</option>
-      <option value="综合部">综合部 / General Affairs</option>
-      <option value="安全生产部">安全生产部 / Safety</option>
-      <option value="质量技术部">质量技术部 / Quality</option>
-      <option value="仓储部">仓储部 / Warehouse</option>
-      <option value="后勤部">后勤部 / Logistics</option>
-      <option value="业务部">业务部 / Business</option>
-      <option value="采矿部">采矿部 / Mining</option>
-      <option value="选厂">选厂 / Plant</option>
-      <option value="机电工程部">机电工程部 / M&amp;E</option>
-    </select></div>
-    <div class="fld"><label>姓名 / Name *</label>
-    <input type="text" id="ln" placeholder="Your name"></div>
-    <button class="bt bt-p bt-b" onclick="doLogin()">进入系统 / ENTER</button>
-    <p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:10px">选择部门并输入姓名即可登录 · 如无账号请联系管理员</p>
-  </div>
-</div>
+<div id="login-screen" class="hide"></div>
 
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
@@ -961,6 +937,21 @@ function doLogin(){
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
+  // Build login screen content
+  document.getElementById('login-screen').innerHTML=
+    '<div class="login-box">'+
+    '<div style="font-size:42px;font-weight:900;letter-spacing:-1px;color:#0f172a;margin-bottom:4px;text-align:center">KMC</div>'+
+    '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:24px;font-weight:500">'+(L==='zh'?'车辆调度系统':'Vehicle Dispatch System')+'</div>'+
+    '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'部门 / Department':'Department')+'</label>'+
+    '<select id="ld" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none">'+
+    '<option value="">'+(L==='zh'?'请选择 / Select':'Select')+'</option>'+
+    ['总经理办','财务部','综合部','安全生产部','质量技术部','仓储部','后勤部','业务部','采矿部','选厂','机电工程部'].map(d=>'<option value="'+d+'">'+d+' / '+(DCN2EN[d]||'')+'</option>').join('')+
+    '</select></div>'+
+    '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
+    '<input type="text" id="ln" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
+    '<button class="bt bt-p bt-b" onclick="doLogin()">'+(L==='zh'?'进入系统 / ENTER':'ENTER / Enter')+'</button>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'选择部门并输入姓名即可登录':'Select department & enter your name')+'</div>'+
+    '</div>';
   document.getElementById('login-screen').classList.remove('hide');
   document.getElementById('app-mob').classList.add('hide');
   document.getElementById('app-pc').classList.add('hide');}}
