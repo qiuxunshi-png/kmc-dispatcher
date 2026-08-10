@@ -1156,11 +1156,11 @@ function doTranslate(field){
   const btn=dstEl.parentElement?dstEl.parentElement.querySelector('[data-tr-btn="'+field+'"]'):null;
   if(btn){btn.disabled=true;btn.textContent='⏳ 翻译中...';}
   toast('🔄 正在调用在线翻译...');
-  fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl='+tgtLang.replace('-','_')+'&dt=t&q='+encodeURIComponent(srcText))
+  fetch('https://api.mymemory.translated.net/get?langpair='+srcLang+'|'+tgtLang+'&q='+encodeURIComponent(srcText))
     .then(r=>r.json())
     .then(data=>{
       let translated='';
-      if(data&&data[0]&&data[0][0]&&data[0][0][0]){translated=data[0].map(x=>x[0]).join('');}
+      if(data&&data.responseStatus===200&&data.responseData&&data.responseData.translatedText){translated=data.responseData.translatedText;}
       if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');      /* Auto-show translated field */      cnEl.style.display=srcId===cnId?'none':'block';      enEl.style.display=srcId===cnId?'block':'none';      if(field==='purpose'){S.pLang=srcId===cnId?'en':'cn';updatePurposeStatus();}      else if(field==='dest')S.dLang=srcId===cnId?'en':'cn';      else S.nLang=srcId===cnId?'en':'cn';}
       else{dstEl.value=srcText;toast('⚠ 翻译失败，已复制原文');}
     })
