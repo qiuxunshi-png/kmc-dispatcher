@@ -530,6 +530,7 @@ const DB={
   vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
+  wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
   init(){
     if(!this.vehicles.get())this.vehicles.set([
       {plate:'AGE 2915',type:'黑色丰田普拉多（7座）',typeEn:'Black Prado (7-seater)',seats:7},
