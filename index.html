@@ -196,7 +196,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <!-- APP MOBILE -->
 <div id="login-screen" class="hide">
   <div class="login-box">
-    <h2>'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+    <h2>'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
     <div class="lsm">Vehicle Dispatch System</div>
     <div class="fld"><label>部门 / Department *</label>
     <select id="ld">
@@ -222,7 +222,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
-    <h2>'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+    <h2>'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
     <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
@@ -234,7 +234,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <div class="shell-pc hide" id="app-pc">
   <aside>
     <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)">
-      <h2 style="font-size:16px;font-weight:700">'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+      <h2 style="font-size:16px;font-weight:700">'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
       <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
     </div>
     <div style="padding:8px 12px"><div class="ls ls-dark" id="ls-pc"></div></div>
@@ -330,7 +330,7 @@ const T=key=>{
 };
 
 // Helper for bilingual display in current language
-function bi(cn,en){return S.lang==='zh'?(cn||en):(en||cn);}
+function bi(cn,en){return L==='zh'?(cn||en):(en||cn);}
 
 const DEPTS_CN=['总经理办','财务部','综合部','安全生产部','质量技术部','仓储部','后勤部','业务部','采矿部','选厂','机电工程部'];
 const DCN2EN={'总经理办':'GM Office','财务部':'Finance','综合部':'General Affairs','安全生产部':'Safety Production',
