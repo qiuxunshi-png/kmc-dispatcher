@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-lang="zh">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -155,6 +155,9 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 @media(min-width:769px){
   .shell{display:none}.shell-pc{display:flex}
 }
+
+[data-lang="en"] .lang-cn{display:none!important}
+[data-lang="zh"] .lang-en{display:none!important}
 </style>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
@@ -165,8 +168,8 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <!-- LOGIN -->
 <div class="login-bg" id="login-screen">
 <div class="login-box">
-  <h1 id="lt">KMC '+(S.lang==='zh'?'车辆调度':'Dispatcher')+'</h1>
-  <p class="lsu" id="lsub">Vehicle Dispatch System</p>
+  <h1 id="lt">KMC <span id="lt-cn">车辆调度</span><span id="lt-en" style="display:none">Dispatcher</span></h1>
+  <p class="lsu" id="lsub"><span class="lang-cn">车辆调度系统</span><span class="lang-en" style="display:none">Vehicle Dispatch System</span></p>
 
   <div class="fld"><label>部门 / Department</label>
     <select id="ld">
@@ -196,7 +199,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <!-- APP MOBILE -->
 <div id="login-screen" class="hide">
   <div class="login-box">
-    <h2>'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+    <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
     <div class="lsm">Vehicle Dispatch System</div>
     <div class="fld"><label>部门 / Department *</label>
     <select id="ld">
@@ -222,7 +225,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
-    <h2>'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+    <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
     <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
@@ -234,7 +237,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <div class="shell-pc hide" id="app-pc">
   <aside>
     <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)">
-      <h2 style="font-size:16px;font-weight:700">'+(L==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+      <h2 style="font-size:16px;font-weight:700"><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
       <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
     </div>
     <div style="padding:8px 12px"><div class="ls ls-dark" id="ls-pc"></div></div>
@@ -1054,7 +1057,7 @@ function renderPage(){
   // Update lang toggle buttons
   const zhBtn=document.getElementById('lang-zh-btn'),enBtn=document.getElementById('lang-en-btn');
   if(zhBtn&&enBtn){
-    zhBtn.className=S.lang==='zh'?'active':'';enBtn.className=S.lang==='en'?'active':'';
+    zhBtn.className=L==='zh'?'active':'';enBtn.className=L==='en'?'active':'';
   }
   const m1=document.getElementById('main-mob');
   const m2=document.getElementById('main-pc');
@@ -1476,7 +1479,7 @@ function expPDF(){
   h+='.stat .sn{font-size:22px;font-weight:800;color:#2563eb}.stat .sl{font-size:9px;color:#666}';
   h+='@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
   h+='<\\/style><script>(function(){const h=new Date().getHours();const isDark=h<7||h>=19;const saved=localStorage.getItem(\"kmc_theme\");const theme=saved||(isDark?\"dark\":\"light\");document.documentElement.setAttribute(\"data-theme\",theme);})();<\\/script></head><body>';
-  h+='<h1>'+(S.lang==='zh'?'车辆调度台账':'KMC Vehicle Dispatch Report')+'<small><br>'+bi('车辆调度台账 · Vehicle Dispatch Ledger','KMC Vehicle Dispatch Ledger')+'<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
+  h+='<h1>'+(L==='zh'?'车辆调度台账':'KMC Vehicle Dispatch Report')+'<small><br>'+bi('车辆调度台账 · Vehicle Dispatch Ledger','KMC Vehicle Dispatch Ledger')+'<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
   
   // Stats
   const allDepts=Array.from(new Set(rs.map(r=>r.department))).filter(Boolean);
