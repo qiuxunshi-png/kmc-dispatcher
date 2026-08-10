@@ -165,7 +165,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <!-- LOGIN -->
 <div class="login-bg" id="login-screen">
 <div class="login-box">
-  <h1 id="lt">KMC 车辆调度</h1>
+  <h1 id="lt">KMC '+(S.lang==='zh'?'车辆调度':'Dispatcher')+'</h1>
   <p class="lsu" id="lsub">Vehicle Dispatch System</p>
 
   <div class="fld"><label>部门 / Department</label>
@@ -196,7 +196,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <!-- APP MOBILE -->
 <div id="login-screen" class="hide">
   <div class="login-box">
-    <h2>KMC 派车调度</h2>
+    <h2>'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
     <div class="lsm">Vehicle Dispatch System</div>
     <div class="fld"><label>部门 / Department *</label>
     <select id="ld">
@@ -222,8 +222,8 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
-    <h2>KMC 派车调度</h2>
-    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="S.lang='zh';renderPage()" id="lang-zh-btn">中</button><button id="lang-en-btn" onclick="S.lang='en';renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
+    <h2>'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
+    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
   <div class="main" id="main-mob"></div>
@@ -234,7 +234,7 @@ body{font-size:16px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont
 <div class="shell-pc hide" id="app-pc">
   <aside>
     <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)">
-      <h2 style="font-size:16px;font-weight:700">KMC 派车调度</h2>
+      <h2 style="font-size:16px;font-weight:700">'+(S.lang==='zh'?'KMC 派车调度':'KMC Dispatcher')+'</h2>
       <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
     </div>
     <div style="padding:8px 12px"><div class="ls ls-dark" id="ls-pc"></div></div>
@@ -1270,7 +1270,7 @@ function renderSubmit(){
     +'<div id="sig-st" style="display:none;color:#059669;font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
-  html+='<div class="card"><div class="card-h">📋 '+(isAdmin()?'All Requests':S.user.department+' Requests')+'</div><div id="my-reqs">';
+  html+='<div class="card"><div class="card-h">📋 '+bi('需求池','All Requests')+'</div><div id="my-reqs">';
   let reqs=isAdmin()?DB.requests.get():DB.requests.get().filter(r=>r.department===S.user.department);
   reqs=reqs.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30);
   if(!reqs.length)html+='<div class="emp">'+T('common_no')+'</div>';
@@ -1476,7 +1476,7 @@ function expPDF(){
   h+='.stat .sn{font-size:22px;font-weight:800;color:#2563eb}.stat .sl{font-size:9px;color:#666}';
   h+='@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
   h+='<\\/style><script>(function(){const h=new Date().getHours();const isDark=h<7||h>=19;const saved=localStorage.getItem(\"kmc_theme\");const theme=saved||(isDark?\"dark\":\"light\");document.documentElement.setAttribute(\"data-theme\",theme);})();<\\/script></head><body>';
-  h+='<h1>KMC Vehicle Dispatch Report<small><br>车辆调度台账 · Vehicle Dispatch Ledger<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
+  h+='<h1>'+(S.lang==='zh'?'车辆调度台账':'KMC Vehicle Dispatch Report')+'<small><br>'+bi('车辆调度台账 · Vehicle Dispatch Ledger','KMC Vehicle Dispatch Ledger')+'<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
   
   // Stats
   const allDepts=Array.from(new Set(rs.map(r=>r.department))).filter(Boolean);
@@ -1707,7 +1707,7 @@ function renderSettings(){
     }
     html+='<div class="fld" style="margin-top:12px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
       +'<button class="bt bt-p bt-sm" onclick="changeAdminPw()">'+T('common_save')+'</button></div>'
-    +'<div class="card" style="border:2px solid #f59e0b"><div class="card-h">⏰ '+bi('截止时间 / Cutoff Time','Cutoff Time')+' <span style="background:#dc2626;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:6px">管理员专属</span></div>'
+    +'<div class="card" style="border:2px solid #f59e0b"><div class="card-h">⏰ '+bi('截止时间 / Cutoff Time','Cutoff Time')+' <span style="background:#dc2626;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:6px">'+bi('管理员专属','Admin Only')+'</span></div>'
     +'<div class="fld"><label>⏰ '+bi('每日车辆整合截止时间','Daily vehicle consolidation cutoff')+' *</label>'
     +'<div style="display:flex;gap:8px;align-items:center"><input type="time" id="st-cutoff" value="'+getCutoff()+'" style="flex:1;padding:12px;border:2px solid #f59e0b;border-radius:8px;font-size:16px;font-weight:700;color:#dc2626">'
     +'<button class="bt bt-p bt-sm" onclick="setCutoff(document.getElementById(\'st-cutoff\').value);toast(\'截止时间已更新 / Cutoff updated\');renderPage()">✓ '+T('common_save')+'</button></div></div>'
