@@ -150,6 +150,7 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
   animation:fadeSlideUp 0.4s ease}
 .login-box::before{content:'';position:absolute;top:0;left:30%;right:30%;height:2px;
   background:var(--ac-g);border-radius:0 0 4px 4px;display:none}
+@keyframes spin{100%{transform:rotate(360deg)}}
 @keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
@@ -227,7 +228,7 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
     <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
-    <div style="display:flex;align-items:center;gap:8px"><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');document.documentElement.setAttribute('data-lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');document.documentElement.setAttribute('data-lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
+    <div style="display:flex;align-items:center;gap:8px"><div id="sync-icon-mob" onclick="manualSync()" title="云同步" style="width:32px;height:32px;border-radius:50%;background:rgba(91,138,245,0.15);border:1px solid rgba(91,138,245,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">☁️</div><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');document.documentElement.setAttribute('data-lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');document.documentElement.setAttribute('data-lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
   <div class="main" id="main-mob"></div>
@@ -237,9 +238,14 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 <!-- APP PC -->
 <div class="shell-pc hide" id="app-pc">
   <aside>
-    <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)">
-      <h2 style="font-size:16px;font-weight:700"><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
-      <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
+    <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <h2 style="font-size:16px;font-weight:700"><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
+        <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
+      </div>
+      <div id="sync-icon" onclick="manualSync()" title="云同步状态 / Cloud Sync Status" style="width:36px;height:36px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .3s">
+        ☁️
+      </div>
     </div>
     <div style="padding:8px 12px"><div class="ls ls-dark" id="ls-pc"></div></div>
     <nav class="pcnav" id="pcnav"></nav>
@@ -481,6 +487,48 @@ async function pushDailySummary(){
   if(!wxUrl&&!waNum)return toast('请先在设置中配置推送渠道');
   
   DB.lastpush.set(today_);
+}
+
+
+
+let syncStatus='idle';// idle | syncing | ok | error
+function updateSyncIcon(){
+  const els=[document.getElementById('sync-icon'),document.getElementById('sync-icon-mob')];
+  els.forEach(el=>{
+    if(!el)return;
+    const colors={
+      idle:{bg:'rgba(91,138,245,0.15)',bd:'rgba(91,138,245,0.3)',shadow:'0 0 12px rgba(91,138,245,0.2)',text:'☁️'},
+      syncing:{bg:'rgba(91,138,245,0.25)',bd:'#5b8af5',shadow:'0 0 16px rgba(91,138,245,0.4)',text:'🔄'},
+      ok:{bg:'rgba(52,199,123,0.2)',bd:'rgba(52,199,123,0.4)',shadow:'0 0 12px rgba(52,199,123,0.3)',text:'☁️'},
+      error:{bg:'rgba(245,85,93,0.2)',bd:'rgba(245,85,93,0.4)',shadow:'0 0 12px rgba(245,85,93,0.3)',text:'⚠️'}
+    };
+    const c=colors[syncStatus]||colors.idle;
+    el.style.background=c.bg;
+    el.style.borderColor=c.bd;
+    el.style.boxShadow=c.shadow;
+    el.textContent=c.text;
+    if(syncStatus==='syncing'){
+      el.style.animation='spin 1s linear infinite';
+      el.textContent='🔄';
+    }else{
+      el.style.animation='none';
+    }
+  });
+}
+async function manualSync(){
+  if(syncStatus==='syncing')return;
+  syncStatus='syncing';
+  updateSyncIcon();
+  try{
+    await syncAll();
+    syncStatus='ok';
+    toast('✅ 已同步 / Synced');
+  }catch(e){
+    syncStatus='error';
+    toast('⚠ 同步失败 / Sync failed');
+  }
+  updateSyncIcon();
+  setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);
 }
 
 
@@ -958,7 +1006,7 @@ function doLogin(){
   DB.users.set(us);
   S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
   DB.user.set(S.user);
-  showApp();setTimeout(()=>syncAll(),500);
+  showApp();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
@@ -1881,8 +1929,8 @@ function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Del
 // ==================== BOOT ====================
 (function(){
   const u=DB.user.get();
-  if(u){S.user=u;showApp();setTimeout(()=>syncAll(),500);}
+  if(u){S.user=u;showApp();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
 })();
 </script>
 </body>
-</html><!-- v51-refresh-1786398094 -->
+</html>
