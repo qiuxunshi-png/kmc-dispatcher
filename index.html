@@ -496,7 +496,6 @@ async function syncAll(){
       try{if(local&&local.length)await sbUpsert(table,local);}catch(e){console.warn('Push',table,e);}
     }
     await sbUpsert('kmc_settings',[{key:'invite',value:DB.invite.get()},{key:'cutoff',value:DB.cutoff.get()}]);
-  }catch(e){console.error('syncAll error:',e);syncAvailable=false;}
   await sbUpsert('kmc_'+table,data);
 }
 
