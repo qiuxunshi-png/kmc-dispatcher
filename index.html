@@ -229,7 +229,7 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 
 <div class="shell hide" id="app-mob">
   <div class="mob-top">
-    <h2><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
+    <h2 id="sysname-mob"></h2>
     <div style="display:flex;align-items:center;gap:8px"><div id="sync-icon-mob" onclick="manualSync()" title="云同步" style="width:32px;height:32px;border-radius:50%;background:rgba(91,138,245,0.15);border:1px solid rgba(91,138,245,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">☁️</div><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');document.documentElement.setAttribute('data-lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');document.documentElement.setAttribute('data-lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
       <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
@@ -242,7 +242,7 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
   <aside>
     <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between">
       <div>
-        <h2 style="font-size:16px;font-weight:700"><span class="lang-cn">KMC 派车调度</span><span class="lang-en" style="display:none">KMC Dispatcher</span></h2>
+        <h2 style="font-size:16px;font-weight:700" id="sysname-pc"></h2>
         <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
       </div>
       <div id="sync-icon" onclick="manualSync()" title="云同步状态 / Cloud Sync Status" style="width:36px;height:36px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .3s">
@@ -536,7 +536,7 @@ async function sbDelOne(table,id){
 }
 
 const DB={
-  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
   wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
@@ -963,7 +963,7 @@ function doLogin(){
   DB.users.set(us);
   S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
   DB.user.set(S.user);
-  showApp();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
+  showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
@@ -1808,6 +1808,16 @@ function renderSettings(){
     +(showAdmin?'<button class="bt bt-o bt-sm" onclick="document.getElementById(\'ifile\').click()">📤 '+T('import_json')+'</button><input type="file" id="ifile" accept=".json" onchange="impData(this)" style="display:none"><button class="bt bt-d bt-sm" onclick="wipe()">⚠ '+T('clear_data')+'</button>':'')
     +'</div><p style="font-size:11px;color:#94a3b8;margin-top:6px">Data stored in browser localStorage. Export regularly.</p></div>';
 
+  // System settings (admin only)
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">⚙️ '+bi('系统设置','System Settings')+'</div>'
+      +'<div class="fld"><label>'+bi('系统名称（中文）','System Name (CN)')+'</label>'
+      +'<input type="text" id="st-syscn" value="'+DB.sysName.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+      +'<div class="fld"><label>'+bi('系统名称（英文）','System Name (EN)')+'</label>'
+      +'<input type="text" id="st-sysen" value="'+DB.sysNameEn.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+      +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
+  }
+
   // Department management (admin only)
   if(showAdmin){
     html+='<div class="card"><div class="card-h">🏢 '+bi('部门管理','Departments')+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+getDepts().length+' '+bi('个','depts')+')</span></div>'
@@ -1924,7 +1934,7 @@ function saveUser(i){
   rs.forEach(r=>{if(r.submitter===oldName&&r.department===oldDept){r.submitter=us[i].name;r.department=us[i].department;}});
   DB.requests.set(rs);closeModal();toast('Updated');renderPage();
 }
-function expData(){const data={vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),users:DB.users.get(),invite:DB.invite.get(),exportedAt:new Date().toISOString()};
+function expData(){localStorage.setItem('kmc_last_backup',today());const data={vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),users:DB.users.get(),invite:DB.invite.get(),exportedAt:new Date().toISOString()};
   const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Data_'+today()+'.json';a.click();URL.revokeObjectURL(u);toast('Exported');}
 function impData(inp){if(!isAdmin())return;const f=inp.files[0];if(!f||!confirm('Overwrite all data?')){inp.value='';return;}
   const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.vehicles)DB.vehicles.set(d.vehicles);if(d.drivers)DB.drivers.set(d.drivers);if(d.requests)DB.requests.set(d.requests);if(d.dispatches)DB.dispatches.set(d.dispatches);if(d.users)DB.users.set(d.users);if(d.invite)DB.invite.set(d.invite);toast('Imported');renderPage();}catch{toast('Invalid file');}};r.readAsText(f);inp.value='';}
@@ -1934,8 +1944,24 @@ function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Del
 // ==================== BOOT ====================
 (function(){
   const u=DB.user.get();
-  if(u){S.user=u;showApp();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
+  if(u){S.user=u;showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
 })();
+
+
+// Backup reminder - remind admin to export every 7 days
+function checkBackupReminder(){
+  const lastBackup=localStorage.getItem('kmc_last_backup')||'';
+  if(!lastBackup){
+    localStorage.setItem('kmc_last_backup',today());
+    return;
+  }
+  const last=new Date(lastBackup),now=new Date();
+  const days=Math.floor((now-last)/86400000);
+  if(days>=7&&isAdmin()){
+    const doIt=confirm(bi('距上次备份已 '+days+' 天，建议现在导出 JSON 备份（设置→数据备份）。是否立即导出？','Last backup was '+days+' days ago. Export JSON backup now?'));
+    if(doIt){expData();localStorage.setItem('kmc_last_backup',today());}
+  }
+}
 
 // Auto-sync every 60 seconds
 setInterval(async()=>{
