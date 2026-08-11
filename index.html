@@ -1270,9 +1270,18 @@ function renderSubmit(){
     +'<input type="text" id="rq-notesEn" style="display:none"></div>';
 
   html+='<div class="fld"><label>📝 '+bi('签字板 / Signature','Signature Pad')+' <span style="color:#dc2626">* '+bi('必填','Required')+'</span>'
-    +'<br><small style="font-weight:400;color:#64748b">'+bi('签署后方可提交，支持触屏手写和鼠标绘制','Must sign before submitting, touchscreen & mouse supported')+'</small></label>'
-    +'<button class="bt bt-o bt-b" onclick="openSig()" id="sig-btn" style="border:2px dashed #d1d5db;justify-content:flex-start;text-align:left;padding-left:16px">🖊️ '+T('submit_sign')+'</button>'
-    +'<div id="sig-st" style="display:none;color:#059669;font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
+    +'<br><small style="font-weight:400;color:var(--tx-dim)">'+bi('签署后方可提交，支持触屏手写和鼠标绘制','Must sign before submitting, touchscreen & mouse supported')+'</small></label>'
+    +'<button type="button" class="bt bt-o bt-b" onclick="toggleSig()" id="sig-btn" style="border:2px dashed var(--bd-hi);justify-content:flex-start;text-align:left;padding-left:16px;height:48px">🖊️ <span id="sig-btn-text">'+T('submit_sign')+'</span></button>'
+    +'<div id="sig-panel" style="display:none;margin-top:12px;border:1px solid var(--bd);border-radius:12px;padding:14px;background:var(--bg-elevated)">'
+    +'<div style="font-weight:600;margin-bottom:8px;font-size:13px;color:var(--tx-dim)">'+bi('部门负责人签字 / Department Head Signature','Department Head Signature')+'</div>'
+    +'<canvas id="sig-cvs" style="display:block;width:100%;height:300px;background:#fff;border-radius:8px;border:2px solid var(--bd-hi);cursor:crosshair;touch-action:none"></canvas>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button type="button" class="bt bt-o bt-sm" onclick="sigClear()">🗑 '+bi('清除','Clear')+'</button>'
+    +'<div style="flex:1"></div>'
+    +'<button type="button" class="bt bt-o bt-sm" onclick="toggleSig()">✕ '+T('common_cancel')+'</button>'
+    +'<button type="button" class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button>'
+    +'</div></div>'
+    +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
   html+='<div class="card"><div class="card-h">📋 '+bi('需求池','All Requests')+'</div><div id="my-reqs">';
@@ -1354,13 +1363,22 @@ function doSubmit(){
 }
 
 // ==================== SIGNATURE ====================
-function openSig(){
-  showModal('<h3 style="margin-bottom:12px">📝 '+T('submit_signTitle')+'</h3>'
-    +'<canvas id="sig-cvs" style="display:block;width:100%;height:200px;background:#fff;border-radius:8px;border:2px solid #d1d5db;cursor:crosshair;touch-action:none"></canvas>'
-    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="bt bt-o bt-sm" onclick="sigClear()">🗑 '+bi('清除','Clear')+'</button>'
-    +'<div style="flex:1"></div><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
-    +'<button class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button></div>',true);
-  setTimeout(initSig,200);
+function toggleSig(){
+  const panel=document.getElementById('sig-panel');
+  const st=document.getElementById('sig-st');
+  const btnText=document.getElementById('sig-btn-text');
+  const sigSt=document.getElementById('sig-st');
+  if(!panel)return;
+  if(panel.style.display==='none'||!panel.style.display){
+    panel.style.display='block';
+    if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('重新签字','Re-sign'):'✖ '+bi('收起','Collapse');
+    setTimeout(initSig,150);
+    // Scroll the panel into view on mobile
+    setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'center'}),200);
+  }else{
+    panel.style.display='none';
+    if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('已签字','Signed'):'🖊 '+T('submit_sign');
+  }
 }
 let sigCtx=null,sigDrawing=false,sigLX=0,sigLY=0,sigDone=false;
 function initSig(){
@@ -1383,13 +1401,15 @@ function initSig(){
   c.addEventListener('touchend',()=>{sigDrawing=false;});
 }
 function pos(e,c){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
-function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;const r=c.getBoundingClientRect();sigCtx.clearRect(0,0,r.width,r.height);sigDone=false;S.sigData='';}
+function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;sigCtx.clearRect(0,0,c.width,c.height);sigDone=false;S.sigData='';const st=document.getElementById('sig-st');if(st)st.style.display='none';const btnText=document.getElementById('sig-btn-text');if(btnText)btnText.textContent='🖊 '+T('submit_sign');}
 function sigSave(){
-  if(!sigDone)return toast('Please sign first');
+  if(!sigDone)return toast(L==='zh'?'请先签字':'Please sign first');
   S.sigData=document.getElementById('sig-cvs').toDataURL('image/png');
   const st=document.getElementById('sig-st');if(st)st.style.display='block';
-  const btn=document.getElementById('sig-btn');if(btn)btn.textContent='✏️ Edit Signature';
-  closeModal();toast('Signature saved');
+  const panel=document.getElementById('sig-panel');if(panel)panel.style.display='none';
+  const btnText=document.getElementById('sig-btn-text');
+  if(btnText)btnText.textContent='✏️ '+bi('已签字','Signed');
+  toast(L==='zh'?'✓ 签字已保存':'Signature saved');
 }
 
 // ==================== DISPATCH ====================
