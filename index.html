@@ -344,12 +344,26 @@ const T=key=>{
 // Helper for bilingual display in current language
 function bi(cn,en){return L==='zh'?(cn||en):(en||cn);}
 
-const DEPTS_CN=['总经理办','财务部','综合部','安全生产部','质量技术部','仓储部','后勤部','业务部','采矿部','选厂','机电工程部'];
-const DCN2EN={'总经理办':'GM Office','财务部':'Finance','综合部':'General Affairs','安全生产部':'Safety Production',
-  '质量技术部':'Quality Tech','仓储部':'Warehouse','后勤部':'Logistics','业务部':'Business','采矿部':'Mining',
-  '选厂':'Processing Plant','机电工程部':'Mech & Elec'};
-function dShow(d){if(!d)return '';const c=DEPTS_CN.find(x=>x===d||(DCN2EN[x]&&DCN2EN[x]===d));if(!c)return d;
-  return L==='zh'?c:c+' / '+DCN2EN[c];}
+// Dynamic department list (admin-managed, synced to cloud)
+const DEFAULT_DEPTS=[
+  {cn:'总经理办',en:'GM Office'},{cn:'财务部',en:'Finance'},{cn:'综合部',en:'General Affairs'},
+  {cn:'安全生产部',en:'Safety Production'},{cn:'质量技术部',en:'Quality Tech'},{cn:'仓储部',en:'Warehouse'},
+  {cn:'后勤部',en:'Logistics'},{cn:'业务部',en:'Business'},{cn:'采矿部',en:'Mining'},
+  {cn:'选厂',en:'Processing Plant'},{cn:'机电工程部',en:'Mech & Elec'}
+];
+function getDepts(){
+  const d=DB.depts.get();
+  if(!d||!d.length)return DEFAULT_DEPTS;
+  return d;
+}
+const DEPTS_CN=getDepts().map(x=>x.cn);
+const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
+function dShow(d){
+  if(!d)return '';
+  const dept=getDepts().find(x=>x.cn===d||x.en===d);
+  if(!dept)return d;
+  return L==='zh'?dept.cn:dept.cn+' / '+dept.en;
+}
 
 function renderLT(){
   const m=(v,p)=>'<button class="'+(L===v?'active':'')+'" onclick="switchL(\''+v+'\')">'+p+'</button>';
@@ -458,7 +472,7 @@ function updateSyncIcon(){
 // Single-table quick sync (used after data mutations)
 async function sbSyncOne(table,data){
   if(!syncAvailable)return;
-  await gistWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get()});
+  await gistWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),depts:DB.depts.get()||DEFAULT_DEPTS});
 }
 
 async function sbDelOne(table,id){}
@@ -502,6 +516,7 @@ async function syncAll(){
       if(remote.users&&remote.users.length)DB.users.set(remote.users||[]);
       if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests||[]);
       if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches||[]);
+      if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
     }
     const data={
       vehicles:DB.vehicles.get()||[],
@@ -509,6 +524,7 @@ async function syncAll(){
       users:DB.users.get()||[],
       requests:DB.requests.get()||[],
       dispatches:DB.dispatches.get()||[],
+      depts:DB.depts.get()||DEFAULT_DEPTS,
     };
     const ok=await gistWrite(data);
     if(!ok)syncAvailable=false;
@@ -520,7 +536,7 @@ async function sbDelOne(table,id){
 }
 
 const DB={
-  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
   wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
@@ -959,7 +975,7 @@ function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
     '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'部门 / Department':'Department')+'</label>'+
     '<select id="ld" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none">'+
     '<option value="">'+(L==='zh'?'请选择 / Select':'Select')+'</option>'+
-    ['总经理办','财务部','综合部','安全生产部','质量技术部','仓储部','后勤部','业务部','采矿部','选厂','机电工程部'].map(d=>'<option value="'+d+'">'+d+' / '+(DCN2EN[d]||'')+'</option>').join('')+
+    getDepts().map(d=>'<option value="'+d.cn+'">'+d.cn+' / '+(d.en||'')+'</option>').join('')+
     '</select></div>'+
     '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
     '<input type="text" id="ln" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
@@ -1481,6 +1497,52 @@ function expCSV(){
   const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Records.csv';a.click();URL.revokeObjectURL(u);toast('CSV Exported');
 }
 
+function expXLS(){
+  // Excel-compatible export (HTML table .xls, Chinese-safe) - details + summary
+  const rs=DB.requests.get(),ds=DB.dispatches.get();
+  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>台账明细</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet><x:ExcelWorksheet><x:Name>统计汇总</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+
+  // Sheet 1: Details
+  h+='<table border="1"><tr><th>日期</th><th>车辆</th><th>司机</th><th>人数</th><th>部门</th><th>外出事由(中文)</th><th>外出事由(English)</th><th>乘车人员</th><th>备注</th></tr>';
+  ds.forEach(d=>{
+    const rl=rs.filter(r=>d.requestIds&&d.requestIds.includes(r.id));
+    h+='<tr><td>'+esc(d.date)+'</td><td>'+esc(d.vehicle)+'</td><td>'+esc(d.driver)+'</td><td>'+(rl.reduce((s,r)=>s+(r.passengers||1),0))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.department))].join('/'))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.purpose))].join('; '))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.purposeEn||''))].join('; '))+'</td>'
+      +'<td>'+esc(rl.map(r=>r.submitter+'('+r.department+')').join('/'))+'</td>'
+      +'<td>'+esc(d.notes||'')+'</td></tr>';
+  });
+  h+='</table>';
+
+  // Sheet 2: Summary
+  h+='<br><br><table border="1"><tr><th colspan="3">统计汇总 / Summary</th></tr>';
+  // By department
+  h+='<tr><th colspan="3">按部门 / By Department</th></tr><tr><th>部门</th><th>需求数</th><th>占比</th></tr>';
+  const deptCnt={};rs.forEach(r=>{deptCnt[r.department]=(deptCnt[r.department]||0)+1;});
+  Object.entries(deptCnt).sort((a,b)=>b[1]-a[1]).forEach(([d,c])=>{
+    h+='<tr><td>'+esc(dShow(d))+'</td><td>'+c+'</td><td>'+Math.round(c/rs.length*100)+'%</td></tr>';
+  });
+  // By vehicle
+  h+='<tr><th colspan="3">按车辆 / By Vehicle</th></tr><tr><th>车辆</th><th>派车次数</th><th>占比</th></tr>';
+  const vehCnt={};ds.forEach(d=>{vehCnt[d.vehicle]=(vehCnt[d.vehicle]||0)+1;});
+  Object.entries(vehCnt).sort((a,b)=>b[1]-a[1]).forEach(([v,c])=>{
+    h+='<tr><td>'+esc(v)+'</td><td>'+c+'</td><td>'+Math.round(c/ds.length*100)+'%</td></tr>';
+  });
+  // By driver
+  h+='<tr><th colspan="3">按司机 / By Driver</th></tr><tr><th>司机</th><th>出车次数</th><th>占比</th></tr>';
+  const drvCnt={};ds.forEach(d=>{drvCnt[d.driver]=(drvCnt[d.driver]||0)+1;});
+  Object.entries(drvCnt).sort((a,b)=>b[1]-a[1]).forEach(([v,c])=>{
+    h+='<tr><td>'+esc(v)+'</td><td>'+c+'</td><td>'+Math.round(c/ds.length*100)+'%</td></tr>';
+  });
+  h+='</table></body></html>';
+
+  const b=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');
+  a.href=u;a.download='KMC_台账_'+today()+'.xls';a.click();URL.revokeObjectURL(u);toast('✅ Excel 已导出 / Exported');
+}
+
 function expPDF(){
   // A4 bilingual PDF report with signatures
   const ds=DB.dispatches.get().sort((a,b)=>b.date.localeCompare(a.date)),rs=DB.requests.get();
@@ -1508,7 +1570,7 @@ function expPDF(){
   const vc={};DB.vehicles.get().forEach(v=>vc[v.plate]=0);ds.forEach(d=>{if(vc[d.vehicle]!==undefined)vc[d.vehicle]++;});
   const top=Object.entries(vc).sort((a,b)=>b[1]-a[1])[0];
   if(top)h+='<div class="stat"><div class="sn">'+top[0]+'</div><div class="sl">'+T('most_used')+' / Most Used</div></div>';
-  allDepts.forEach(d=>{const cnt=rs.filter(r=>r.department===d).length;h+='<div class="stat"><div class="sn">'+cnt+'</div><div class="sl">'+dShow(d)+' / '+DCN2EN[d]+'</div></div>';});
+  getDepts().forEach(d=>{const cnt=rs.filter(r=>r.department===d.cn).length;h+='<div class="stat"><div class="sn">'+cnt+'</div><div class="sl">'+dShow(d.cn)+'</div></div>';});
   h+='</div>';
 
   // Group by month
@@ -1682,8 +1744,9 @@ function renderRecords(){
     +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
     +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
     +'</div></div>';
-  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>';
-  html+='<div style="margin-top:14px;display:flex;gap:8px"><button class="bt bt-o bt-sm" onclick="resetRecFilters()">🔄 '+T('reset')+'</button><div class="sp"></div><button class="bt bt-p bt-sm" onclick="expPDF()">📄 PDF / 台账</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button></div>';
+  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'
+  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>';
+  html+='<div style="margin-top:14px;display:flex;gap:8px"><button class="bt bt-o bt-sm" onclick="resetRecFilters()">🔄 '+T('reset')+'</button><div class="sp"></div><button class="bt bt-p bt-sm" onclick="expPDF()">📄 '+bi('PDF','PDF')+'</button><button class="bt bt-o bt-sm" onclick="expXLS()">📊 '+bi('Excel','Excel')+'</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button></div>';
   html+='</div>';
 
   let fd=ds;
@@ -1745,8 +1808,59 @@ function renderSettings(){
     +(showAdmin?'<button class="bt bt-o bt-sm" onclick="document.getElementById(\'ifile\').click()">📤 '+T('import_json')+'</button><input type="file" id="ifile" accept=".json" onchange="impData(this)" style="display:none"><button class="bt bt-d bt-sm" onclick="wipe()">⚠ '+T('clear_data')+'</button>':'')
     +'</div><p style="font-size:11px;color:#94a3b8;margin-top:6px">Data stored in browser localStorage. Export regularly.</p></div>';
 
+  // Department management (admin only)
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">🏢 '+bi('部门管理','Departments')+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+getDepts().length+' '+bi('个','depts')+')</span></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:10px">'+bi('删除部门将同时删除该部门所有人员','Deleting a department also removes all its staff')+'</div>'
+      +getDepts().map((d,i)=>{
+        const cnt=DB.users.get().filter(u=>u.department===d.cn).length;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px">'
+          +'<div style="flex:1"><strong>'+d.cn+'</strong> <span style="color:var(--tx-dim);font-size:11px">/'+(d.en||'')+'</span>'
+          +'<span style="background:var(--ac);color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:8px">'+cnt+' '+bi('人','pax')+'</span></div>'
+          +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="bt bt-o bt-sm" onclick="editDept('+i+')">'+T('edit')+'</button>'
+          +'<button class="bt bt-d bt-sm" onclick="delDept('+i+')">'+T('del')+'</button></div></div>';
+      }).join('')
+      +'<div style="margin-top:10px;padding:12px;border:1px dashed var(--bd-hi);border-radius:8px;background:var(--bg-soft)">'
+      +'<div style="font-weight:600;margin-bottom:8px;font-size:13px">+ '+bi('新增部门','Add Department')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+      +'<input id="nd-cn" placeholder="'+bi('中文名','CN name')+'" style="flex:1;min-width:90px;padding:9px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;background:var(--bg-soft);color:var(--tx)">'
+      +'<input id="nd-en" placeholder="'+bi('英文名','EN name')+'" style="flex:1;min-width:90px;padding:9px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;background:var(--bg-soft);color:var(--tx)">'
+      +'<button class="bt bt-p bt-sm" onclick="addDept()">+ '+T('add')+'</button></div></div></div>';
+  }
+
   html+='<div style="text-align:center;margin-top:16px"><button class="bt bt-o bt-sm" onclick="logout()">Logout</button></div>';
   return html;
+}
+
+function addDept(){
+  const cn=document.getElementById('nd-cn').value.trim();
+  const en=document.getElementById('nd-en').value.trim();
+  if(!cn)return toast(bi('请输入中文部门名','Enter CN department name'));
+  const depts=getDepts();
+  if(depts.find(d=>d.cn===cn))return toast(bi('部门已存在','Department exists'));
+  depts.push({cn,en:en||cn});
+  DB.depts.set(depts);toast('✅ '+bi('已新增','Added'));renderPage();
+}
+function delDept(i){
+  const depts=getDepts();
+  const d=depts[i];if(!d)return;
+  if(!confirm(bi('删除部门「'+d.cn+'」将同时删除该部门全部人员，确定？','Delete dept "'+d.cn+'" will also remove all its staff. Confirm?')))return;
+  depts.splice(i,1);
+  DB.depts.set(depts);
+  // Remove users of this dept (option C: delete staff together)
+  const us=DB.users.get().filter(u=>u.department!==d.cn);
+  DB.users.set(us);
+  toast('✅ '+bi('已删除部门及人员','Dept & staff removed'));renderPage();
+}
+function editDept(i){
+  const depts=getDepts();
+  const d=depts[i];if(!d)return;
+  const cn=prompt(bi('中文名','CN name'),d.cn);
+  if(!cn)return;
+  const en=prompt(bi('英文名','EN name'),d.en||d.cn);
+  d.cn=cn;d.en=en||cn;
+  DB.depts.set(depts);
+  toast('✅ '+bi('已更新','Updated'));renderPage();
 }
 
 function changeAdminPw(){
@@ -1794,7 +1908,7 @@ function editUser(i){
   const u=DB.users.get()[i];
   showModal('<h3>'+T('edit')+' '+T('user_name')+'</h3>'
     +'<div class="fld"><label>'+T('user_name')+' / Name</label><input id="eu-n" value="'+u.name+'"></div>'
-    +'<div class="fld"><label>'+T('user_dept')+' / Department</label><select id="eu-d">'+DEPTS_CN.map(d=>'<option value="'+d+'" '+(d===u.department?'selected':'')+'>'+d+' / '+DCN2EN[d]+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>'+T('user_dept')+' / Department</label><select id="eu-d">'+getDepts().map(d=>'<option value="'+d.cn+'" '+(d.cn===u.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+'</select></div>'
     +'<div class="fld"><label>'+T('user_role')+' / Role</label><select id="eu-r"><option value="user" '+(u.role==='user'?'selected':'')+'>User 用户</option><option value="admin" '+(u.role==='admin'?'selected':'')+'>Admin 管理员</option></select></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveUser('+i+')">'+T('common_save')+'</button></div>',true);
 }
