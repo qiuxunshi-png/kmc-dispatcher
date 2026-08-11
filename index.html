@@ -1365,16 +1365,12 @@ function doSubmit(){
 // ==================== SIGNATURE ====================
 function toggleSig(){
   const panel=document.getElementById('sig-panel');
-  const st=document.getElementById('sig-st');
   const btnText=document.getElementById('sig-btn-text');
-  const sigSt=document.getElementById('sig-st');
   if(!panel)return;
   if(panel.style.display==='none'||!panel.style.display){
     panel.style.display='block';
     if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('重新签字','Re-sign'):'✖ '+bi('收起','Collapse');
     setTimeout(initSig,150);
-    // Scroll the panel into view on mobile
-    setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'center'}),200);
   }else{
     panel.style.display='none';
     if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('已签字','Signed'):'🖊 '+T('submit_sign');
