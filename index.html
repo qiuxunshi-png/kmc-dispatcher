@@ -534,7 +534,7 @@ async function sbDelOne(table,id){
 }
 
 const DB={
-  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
   wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
@@ -1235,14 +1235,34 @@ function renderSubmit(){
 
   // Rules
   html+='<div class="card"><div class="card-h">📝 '+T('submit_title')+'</div>';
-  html+='<div class="fld"><label>'+T('submit_date')+' *</label><input type="date" id="rq-date" min="'+_t+'" max="'+_tm+'" value="'+_t+'"></div>';
+  // Determine date min/max based on admin toggle
+  const dateEnabled=DB.dateRange.get();
+  const dateMin=dateEnabled?_t:(new Date().getHours()>=parseInt(getCutoff().split(':')[0])?_tm:_t);
+  const dateMax=dateEnabled?(new Date(Date.now()+30*86400000)).toISOString().slice(0,10):_tm;
+  html+='<div class="fld"><label>'+T('submit_date')+' * <small style="font-weight:400;color:var(--tx-dim)">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
+    +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'"></div>';
+  // Primary time slot
   html+='<div class="fld"><label>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></label>'
     +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
     +'<input type="time" id="rq-dep" value="08:00" style="font-size:16px;padding:10px">'
-    +'<div style="font-size:11px;color:#64748b;margin-top:4px">'+bi('示例：06:30 / 08:00 / 14:30','Example: 06:30 / 08:00 / 14:30')+'</div></div>'
+    +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：06:30 / 08:00 / 14:30','Example: 06:30 / 08:00 / 14:30')+'</div></div>'
     +'<div class="bi-c"><label style="font-size:12px">'+bi('返程 Return','Return')+'</label>'
     +'<input type="time" id="rq-ret" value="12:00" style="font-size:16px;padding:10px">'
-    +'<div style="font-size:11px;color:#64748b;margin-top:4px">'+bi('示例：12:00 / 18:00 / 22:00','Example: 12:00 / 18:00 / 22:00')+'</div></div></div></div>';
+    +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：12:00 / 18:00 / 22:00','Example: 12:00 / 18:00 / 22:00')+'</div></div></div>'
+    +'<input type="text" id="rq-slot-notes" placeholder="'+bi('备注（选填）例如：同一路线不同时间段','Notes (optional) e.g., same route different time')+'" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)"></div>';
+  // Extra slot groups (when multiSlot enabled)
+  if(DB.multiSlot.get()){
+    [2,3].forEach(n=>{
+      html+='<div class="fld" style="padding:12px;border:1px dashed var(--bd-hi);border-radius:8px;background:var(--bg-soft)">'
+        +'<label style="font-weight:600;font-size:12px;color:var(--tx-dim)">⏰ '+bi('时段 (可选)',('Time Slot '+n+' (Optional)'))+'</label>'
+        +'<div class="bi" style="margin-top:6px"><div class="bi-c"><label style="font-size:11px">'+bi('出发','Departure')+'</label>'
+        +'<input type="time" id="rq-dep'+n+'" style="font-size:15px;padding:9px;border:1px solid var(--bd);border-radius:6px;background:var(--bg-soft);color:var(--tx)">'
+        +'</div><div class="bi-c"><label style="font-size:11px">'+bi('返程','Return')+'</label>'
+        +'<input type="time" id="rq-ret'+n+'" style="font-size:15px;padding:9px;border:1px solid var(--bd);border-radius:6px;background:var(--bg-soft);color:var(--tx)">'
+        +'</div></div>'
+        +'<input type="text" id="rq-notes'+n+'" placeholder="'+bi('备注（选填）','Notes (optional)')+'" style="width:100%;margin-top:6px;padding:8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)"></div>';
+    });
+  }
 
   // Destination field
   html+='<div class="fld"><label>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span><br><small style="font-weight:400;color:#64748b">'+bi('明确标注出发地和目的地','Specify origin & destination, e.g., Kamativi → Hwange')+'</small></label>'
@@ -1305,6 +1325,18 @@ function renderSubmit(){
     +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
+  // My recent requests with recall option
+  const myReqs=DB.requests.get().filter(r=>r.submitter===S.user.name&&r.department===S.user.department&&r.status==='pending').sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
+  if(myReqs.length){
+    html+='<div class="card" style="margin-top:12px"><div class="card-h">📋 '+bi('我的待处理需求','My Pending Requests')+' ('+myReqs.length+') <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('截止前可撤回','Recallable before cutoff')+'</span></div>';
+    myReqs.forEach(r=>{
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px">'
+        +'<div style="flex:1"><div style="font-weight:500">📅 '+fmtL(r.date)+' ⏰ '+r.timeSlot+'</div>'
+        +'<div style="color:var(--tx-dim);font-size:11px">👥 '+r.passengers+' pax · 📍 '+(r.destination||'—')+'</div></div>'
+        +'<button class="bt bt-d bt-sm" onclick="recallReq(\''+r.id+'\')" style="flex-shrink:0;margin-left:8px">↩ '+bi('撤回','Recall')+'</button></div>';
+    });html+='</div>';
+  }
+
   html+='<div class="card"><div class="card-h">📋 '+bi('需求池','All Requests')+'</div><div id="my-reqs">';
   let reqs=isAdmin()?DB.requests.get():DB.requests.get().filter(r=>r.department===S.user.department);
   reqs=reqs.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30);
@@ -1359,7 +1391,17 @@ function doSubmit(){
   const date=document.getElementById('rq-date').value;
   const dep=document.getElementById('rq-dep').value,ret=document.getElementById('rq-ret').value;
   const time=(dep&&ret)?(dep+'-'+ret):(dep||ret||'');
-  // Parse pax names from textarea (one per line OR comma-separated)
+  const slotNotes=document.getElementById('rq-slot-notes').value.trim();
+  // Collect extra slots
+  const extraSlots=[];
+  if(DB.multiSlot.get()){
+    [2,3].forEach(n=>{
+      const ed=document.getElementById('rq-dep'+n),er=document.getElementById('rq-ret'+n);
+      if(ed&&ed.value&&er&&er.value){
+        extraSlots.push({slot:ed.value+'-'+er.value,notes:(document.getElementById('rq-notes'+n)||{}).value||''});
+      }
+    });
+  }
   const paxRaw=document.getElementById('rq-pax-names').value.trim();
   const paxNames=paxRaw?(paxRaw.split(/[,\n\r，]/).map(s=>s.trim()).filter(Boolean)):[];
   const pax=paxNames.length||1;
@@ -1371,15 +1413,32 @@ function doSubmit(){
   const notesEn=document.getElementById('rq-notesEn').value.trim();
   if(!date||!dep||!ret||!dest||!purpose||!purposeEn)return toast(L==='zh'?'请填写日期、出发返程时间和中英双语外出事由':'Please fill date, departure/return time and bilingual purpose');
   
+  // Build full notes including slot notes and extra slots
+  let fullNotes=notes||'';
+  if(slotNotes)fullNotes=(fullNotes?fullNotes+' | ':'')+'⏰ '+slotNotes;
+  extraSlots.forEach(s=>{
+    fullNotes=(fullNotes?fullNotes+' | ':'')+'⏰'+s.slot+(s.notes?' ('+s.notes+')':'');
+  });
 
   const reqs=DB.requests.get();
   reqs.push({id:uid(),date,timeSlot:time,passengers:pax,paxNames,purpose,purposeEn,
-    destination:dest||'',destinationEn:destEn||'',notes:notes||'',notesEn:notesEn||'',
+    destination:dest||'',destinationEn:destEn||'',notes:fullNotes,notesEn:notesEn||'',
     approved:'yes',signature:S.sigData,department:S.user.department,submitter:S.user.name,
     status:'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
   DB.requests.set(reqs);sbSyncOne('requests',DB.requests.get());
   toast(T('common_success'));
   S.sigData='';
+  renderPage();
+}
+
+function recallReq(rid){
+  if(!confirm(L==='zh'?'确定撤回该需求？':'Confirm recall this request?'))return;
+  const reqs=DB.requests.get();
+  const idx=reqs.findIndex(r=>r.id===rid);
+  if(idx===-1)return toast('Not found');
+  reqs.splice(idx,1);
+  DB.requests.set(reqs);
+  toast(L==='zh'?'✅ 已撤回':'Recalled');
   renderPage();
 }
 
@@ -1970,6 +2029,18 @@ function renderSettings(){
       +'<input type="text" id="st-sysen" value="'+DB.sysNameEn.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
       +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
   }
+
+  // Admin feature toggles
+    html+='<div class="card"><div class="card-h">⚙️ '+bi('功能开关','Feature Toggles')+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">📅 '+bi('日期范围开关','Date Range')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.dateRange.get()?bi('开启：允许30天内自由选','ON: 30-day calendar'):bi('关闭：仅允许明天或后天','OFF: tomorrow/after-tomorrow only'))+'</div></div>'
+      +'<button class="bt '+((DB.dateRange.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.dateRange.set(!DB.dateRange.get());renderPage()">'+(DB.dateRange.get()?'ON':'OFF')+'</button></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">⏰ '+bi('多时段开关','Multi-slot')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.multiSlot.get()?bi('开启：允许同一路线多组出发/返程','ON: multiple time slots per request'):bi('关闭：每组单时段','OFF: single slot only'))+'</div></div>'
+      +'<button class="bt '+((DB.multiSlot.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.multiSlot.set(!DB.multiSlot.get());renderPage()">'+(DB.multiSlot.get()?'ON':'OFF')+'</button></div>'
+      +'</div>';
 
   // Department management (admin only)
   if(showAdmin){
