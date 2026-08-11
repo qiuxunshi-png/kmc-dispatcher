@@ -1795,9 +1795,9 @@ function renderRecords(){
     advHtml+='<div class="fld" style="margin:0"><label>🔎 Keyword</label><input type="text" id="rec-kw" value="'+S.recKeyword+'" placeholder="Search purpose/destination" onchange="S.recKeyword=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"></div>';
     advHtml+='<div class="fld" style="margin:0"><label>👤 Driver</label><select id="rec-dr" onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">All Drivers</option>'+drivers.map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>';
     advHtml+='<div class="fld" style="margin:0"><label>📊 Sort</label><select id="rec-sort" onchange="S.recSort=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="date-desc" '+(S.recSort==='date-desc'?'selected':'')+'>Date New→Old</option><option value="date-asc" '+(S.recSort==='date-asc'?'selected':'')+'>Date Old→New</option><option value="plate-asc" '+(S.recSort==='plate-asc'?'selected':'')+'>Plate A→Z</option><option value="driver-asc" '+(S.recSort==='driver-asc'?'selected':'')+'>Driver A→Z</option></select></div></div></div>';
-    // Advanced filter UI built into html below
   }
   const ad=Array.from(new Set(rs.map(r=>r.department))).filter(Boolean);
+  const allSubmitters=Array.from(new Set(rs.map(r=>r.submitter))).filter(Boolean).sort();
   if(!ds.length)return '<div class="emp">'+T('no_records')+'</div>';
 
   // Multi-select dept chips
@@ -1817,9 +1817,25 @@ function renderRecords(){
     +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
     +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
     +'</div></div>';
-  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'
-  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>';
-  html+='<div style="margin-top:14px;display:flex;gap:8px"><button class="bt bt-o bt-sm" onclick="resetRecFilters()">🔄 '+T('reset')+'</button><div class="sp"></div><button class="bt bt-p bt-sm" onclick="expPDF()">📄 '+bi('PDF','PDF')+'</button><button class="bt bt-o bt-sm" onclick="expXLS()">📊 '+bi('Excel','Excel')+'</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button></div>';
+  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'
+  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>'
+  // New: Status filter
+  +'<div class="fld"><label>🔄 '+bi('状态','Status')+'</label><div style="display:flex;gap:6px">'
+  +['all','pending','dispatched'].map(v=>{
+    const t=v==='all'?bi('全部','All'):v==='pending'?bi('待处理','Pending'):bi('已派车','Dispatched');
+    const c=v==='all'?'#2563eb':v==='pending'?'#f59e0b':'#10b981';
+    const sel=S.fStatus===v;
+    return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
+  }).join('')+'</div></div>'
+  // New: Submitter filter
+  +'<div class="fld"><label>👤 '+bi('提交人','Submitter')+'</label><select onchange="S.fSubmitter=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部','All')+'</option>'+allSubmitters.map(n=>'<option '+(S.fSubmitter===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div>'
+  // New: Pax range
+  +'<div class="fld"><label>👥 '+bi('人数范围','Passengers')+' ('+S.fPaxMin+' - '+(S.fPaxMax>=99?'∞':S.fPaxMax)+')</label><div style="display:flex;gap:6px;align-items:center">'
+  +'<input type="number" min="0" max="99" value="'+S.fPaxMin+'" onchange="S.fPaxMin=parseInt(this.value)||0;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
+  +'<span style="color:#94a3b8">→</span>'
+  +'<input type="number" min="0" max="99" value="'+S.fPaxMax+'" onchange="S.fPaxMax=parseInt(this.value)||99;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
+  +'</div></div>'
+  +'<div style="margin-top:14px;display:flex;gap:8px"><button class="bt bt-o bt-sm" onclick="resetRecFilters()">🔄 '+T('reset')+'</button><div class="sp"></div><button class="bt bt-p bt-sm" onclick="expPDF()">📄 '+bi('PDF','PDF')+'</button><button class="bt bt-o bt-sm" onclick="expXLS()">📊 '+bi('Excel','Excel')+'</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button></div>';
   html+='</div>';
 
   let fd=ds;
@@ -1832,6 +1848,13 @@ function renderRecords(){
   else if(S.recSort==="plate-asc")fd.sort((a,b)=>a.vehicle.localeCompare(b.vehicle));
   else if(S.recSort==="driver-asc")fd.sort((a,b)=>a.driver.localeCompare(b.driver));
   if(S.fDepts.length>0)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>S.fDepts.includes(r.department));});
+  // New filter: status
+  if(S.fStatus==='pending')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.every(r=>r.status==='pending');});
+  else if(S.fStatus==='dispatched')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.status==='dispatched');});
+  // New filter: submitter
+  if(S.fSubmitter)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.submitter===S.fSubmitter);});
+  // New filter: pax range
+  if(S.fPaxMin>0||S.fPaxMax<99)fd=fd.filter(d=>{const pax=rs.filter(r=>d.requestIds.includes(r.id)).reduce((s,r)=>s+(r.passengers||1),0);return pax>=S.fPaxMin&&pax<=S.fPaxMax;});
   if(!fd.length)html+='<div class="emp">'+T('no_match')+'</div>';
   else{html+=fd.map(d=>{
     const rl=rs.filter(r=>d.requestIds.includes(r.id));const pax=rl.reduce((s,r)=>s+r.passengers,0);
@@ -1849,7 +1872,7 @@ function renderRecords(){
 }
 
 function resetRecFilters(){
-  S.fFrom='';S.fTo='';S.fDepts=[];S.fVeh='';renderPage();
+  S.fFrom='';S.fTo='';S.fDepts=[];S.fVeh='';S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;renderPage();
 }
 
 // ==================== SETTINGS ====================
