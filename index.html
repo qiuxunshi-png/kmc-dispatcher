@@ -859,7 +859,7 @@ function importOrgUsers(){
 }
 
 const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),sigData:'',tapCount:0,unlockUntil:0,
-  fFrom:'',fTo:'',fDepts:[],fVeh:'',pLang:'cn',nLang:'cn',dLang:'cn',
+  fFrom:'',fTo:'',fDepts:[],fVeh:'',fStatus:'all',fSubmitter:'',fPaxMin:0,fPaxMax:99,fKeywordPool:'',pLang:'cn',nLang:'cn',dLang:'cn',
   recKeyword:'',recDriver:'',recSort:'date-desc'};
 
 // Tap counter for hidden admin unlock
@@ -1607,53 +1607,120 @@ function expPDF(){
 // ==================== POOL ====================
 function renderPool(){
   if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
-  const dt=S.selDate||tmrw();S.selReqs.clear();
+  S.selDate=null;S.selReqs.clear();
 
   // Multi-select dept filter
-  const allDepts=Array.from(new Set(DB.requests.get().map(r=>r.department))).filter(Boolean);
+  const allReqs=DB.requests.get();
+  const allDepts=Array.from(new Set(allReqs.map(r=>r.department))).filter(Boolean);
+  const allSubmitters=Array.from(new Set(allReqs.map(r=>r.submitter))).filter(Boolean).sort();
   const deptChips=allDepts.map(d=>{
     const sel=S.fDepts.length===0||S.fDepts.includes(d);
     return '<button onclick="togDept(\''+d+'\')" style="padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?'#2563eb':'#e5e7eb')+';background:'+(sel?'#eff6ff':'#fff')+';color:'+(sel?'#2563eb':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+dShow(d)+'</button>';
   }).join('');
 
-  let reqs=DB.requests.get().filter(r=>r.date===dt&&r.status==='pending');
-  let done=DB.requests.get().filter(r=>r.date===dt&&r.status==='dispatched');
-  if(S.fDepts.length>0){
-    reqs=reqs.filter(r=>S.fDepts.includes(r.department));
-    done=done.filter(r=>S.fDepts.includes(r.department));
+  // Apply filters
+  let reqs=allReqs.slice();
+  if(S.fFrom)reqs=reqs.filter(r=>r.date>=S.fFrom);
+  if(S.fTo)reqs=reqs.filter(r=>r.date<=S.fTo);
+  if(S.fDepts.length>0)reqs=reqs.filter(r=>S.fDepts.includes(r.department));
+  if(S.fStatus==='pending')reqs=reqs.filter(r=>r.status==='pending');
+  else if(S.fStatus==='dispatched')reqs=reqs.filter(r=>r.status==='dispatched');
+  if(S.fSubmitter)reqs=reqs.filter(r=>r.submitter===S.fSubmitter);
+  if(S.fPaxMin>0)reqs=reqs.filter(r=>(r.passengers||1)>=S.fPaxMin);
+  if(S.fPaxMax<99)reqs=reqs.filter(r=>(r.passengers||1)<=S.fPaxMax);
+  if(S.fKeywordPool){
+    const kw=S.fKeywordPool.toLowerCase();
+    reqs=reqs.filter(r=>(r.purpose||'').toLowerCase().includes(kw)||(r.purposeEn||'').toLowerCase().includes(kw)||(r.destination||'').toLowerCase().includes(kw)||(r.destinationEn||'').toLowerCase().includes(kw));
   }
+  // Sort by date desc then time
+  reqs.sort((a,b)=>{
+    if(b.date!==a.date)return b.date.localeCompare(a.date);
+    return (b.timeSlot||'').localeCompare(a.timeSlot||'');
+  });
+  const pending=reqs.filter(r=>r.status==='pending');
+  const dispatched=reqs.filter(r=>r.status==='dispatched');
 
-  let html='<div class="card"><div class="card-h">🔍 '+T('pool_title')+' · '+bi('筛选面板','Filter Panel')+'</div>';
+  let html='<div class="card"><div class="card-h">🔍 '+bi('需求池筛选面板','Request Pool Filter')+'</div>';
+
+  // 1. Date range
   html+='<div class="fld"><label>📅 '+bi('日期范围','Date Range')+'</label><div style="display:flex;gap:6px;align-items:center">'
     +'<input type="date" id="pl-from" value="'+(S.fFrom||'')+'" onchange="S.fFrom=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
     +'<span style="color:#94a3b8">→</span>'
     +'<input type="date" id="pl-to" value="'+(S.fTo||'')+'" onchange="S.fTo=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
     +'</div></div>';
+
+  // 2. Department chips
   html+='<div class="fld"><label>🏢 '+T('select_depts')+(S.fDepts.length?' · '+T('selected')+' '+S.fDepts.length:'')+'</label>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
     +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
-    +'</div></div></div>';
-  html+='<div class="ntf"><div><div class="nt">📋 '+fmtL(dt)+' '+T('stat_pending')+'</div><div style="font-size:11px;color:#92400e;margin-top:2px">'+T('stat_dispatched')+': '+done.length+'</div></div><div class="nn">'+reqs.length+'</div></div>';
-  if(reqs.length){
-    html+=reqs.map(r=>{
+    +'</div></div>';
+
+  // 3. Status
+  const statChips=[
+    ['all',bi('全部','All'),'#2563eb'],
+    ['pending',bi('待处理','Pending'),'#f59e0b'],
+    ['dispatched',bi('已派车','Dispatched'),'#10b981'],
+  ].map(([v,t,c])=>{
+    const sel=S.fStatus===v;
+    return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
+  }).join('');
+  html+='<div class="fld"><label>🔄 '+bi('状态','Status')+'</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+statChips+'</div></div>';
+
+  // 4. Submitter
+  html+='<div class="fld"><label>👤 '+bi('提交人','Submitter')+'</label>'
+    +'<select id="pl-sub" onchange="S.fSubmitter=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+bi('全部','All')+'</option>'
+    +allSubmitters.map(n=>'<option '+(S.fSubmitter===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div>';
+
+  // 5. Pax range
+  html+='<div class="fld"><label>👥 '+bi('人数范围','Passengers')+' ('+S.fPaxMin+' - '+(S.fPaxMax>=99?'∞':S.fPaxMax)+')</label>'
+    +'<div style="display:flex;gap:6px;align-items:center">'
+    +'<input type="number" min="0" max="99" value="'+S.fPaxMin+'" onchange="S.fPaxMin=parseInt(this.value)||0;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'<span style="color:#94a3b8">→</span>'
+    +'<input type="number" min="0" max="99" value="'+S.fPaxMax+'" onchange="S.fPaxMax=parseInt(this.value)||99;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'</div></div>';
+
+  // 6. Keyword
+  html+='<div class="fld"><label>🔎 '+bi('关键词','Keyword')+' ('+bi('事由/目的地','purpose/destination')+')</label>'
+    +'<input type="text" id="pl-kw" value="'+S.fKeywordPool+'" placeholder="'+bi('搜索事由、目的地...','Search purpose, destination...')+'" oninput="S.fKeywordPool=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"></div>';
+
+  // Reset all
+  html+='<div style="margin-top:10px"><button class="bt bt-o bt-sm" onclick="resetPoolFilters()">🔄 '+T('reset')+' '+bi('全部筛选','All Filters')+'</button></div>';
+
+  html+='</div>';
+
+  // Summary stats
+  html+='<div style="display:flex;gap:8px;margin-bottom:12px"><div class="st" style="flex:1"><div class="st-n">'+pending.length+'</div><div class="st-l">⏳ '+bi('待处理','Pending')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+dispatched.length+'</div><div class="st-l">✅ '+bi('已派车','Dispatched')+'</div></div></div>';
+
+  // Pending list (selectable)
+  if(pending.length){
+    html+='<div class="sec-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')</div>';
+    pending.forEach(r=>{
       const apv=r.approved?('<span class="tag '+(r.approved==='yes'?'tg-d':'tg-r')+'" style="margin-left:4px">'+(r.approved==='yes'?'✓':'✗')+'</span>'):'';
-      return '<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
+      html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
         +(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
-        +'<div class="rr-m"><span>📅 '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div></div></div>';
-    }).join('');
-    html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()">🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
+        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div></div></div>';
+    });
+    html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()" disabled>🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
   }
-  if(done.length){
-    html+='<div class="sec-title">✅ '+T('stat_dispatched')+'</div>';
-    const g={};done.forEach(r=>{const k=r.mergedToDispatchId||'?';if(!g[k])g[k]=[];g[k].push(r);});
+
+  // Dispatched list (grouped by dispatch id)
+  if(dispatched.length){
+    html+='<div class="sec-title">✅ '+bi('已派车','Dispatched')+' ('+dispatched.length+')</div>';
+    const g={};dispatched.forEach(r=>{const k=r.mergedToDispatchId||'?';if(!g[k])g[k]=[];g[k].push(r);});
     Object.entries(g).forEach(([k,grp])=>{const dd=DB.dispatches.get().find(d=>d.id===k);
-      html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?dd.vehicle:'?')+' · '+(dd?dd.driver:'?')+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
+      html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?dd.vehicle:'?')+' · '+(dd?dd.driver:'?')+' · '+fmtL(grp[0].date)+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
         +grp.map(r=>'<div style="font-size:13px;padding:4px 0">'+dShow(r.department)+' '+r.submitter+': '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' ('+r.timeSlot+', '+r.passengers+'pax)</div>').join('')
         +(dd&&dd.meetingPoint?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📍 '+dd.meetingPoint+'</div>':'')+'</div>';
     });
   }
-  if(!reqs.length&&!done.length)html+='<div class="emp">No requests for this date</div>';
+
+  if(!pending.length&&!dispatched.length)html+='<div class="emp">'+bi('无匹配需求','No matching requests')+'</div>';
   return html;
+}
+function resetPoolFilters(){
+  S.fFrom='';S.fTo='';S.fDepts=[];S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;S.fKeywordPool='';renderPage();
 }
 function togR(id){const e=document.getElementById('rr-'+id);if(!e)return;
   if(S.selReqs.has(id)){S.selReqs.delete(id);e.classList.remove('sel');}
@@ -1665,9 +1732,17 @@ function togDept(d){
   else S.fDepts.push(d);
   renderPage();
 }
-function selAll(){const dt=S.selDate||tmrw();const rs=DB.requests.get().filter(r=>r.date===dt&&r.status==='pending');
-  rs.forEach(r=>{S.selReqs.add(r.id);const e=document.getElementById('rr-'+r.id);if(e)e.classList.add('sel');});
-  const b=document.getElementById('bt-disp');if(b)b.disabled=false;}
+function selAll(){const reqs=DB.requests.get().filter(r=>S.fSubmitter?r.submitter===S.fSubmitter:true);
+  const allReqs=DB.requests.get().filter(r=>{
+    if(r.status!=='pending')return false;
+    if(S.fFrom&&r.date<S.fFrom)return false;
+    if(S.fTo&&r.date>S.fTo)return false;
+    if(S.fDepts.length&&!S.fDepts.includes(r.department))return false;
+    if(S.fSubmitter&&r.submitter!==S.fSubmitter)return false;
+    return true;
+  });
+  allReqs.forEach(r=>{S.selReqs.add(r.id);const e=document.getElementById('rr-'+r.id);if(e)e.classList.add('sel');});
+  const b=document.getElementById('bt-disp');if(b)b.disabled=S.selReqs.size===0;}
 function showDisp(){
   const vs=DB.vehicles.get(),ds=DB.drivers.get(),rl=DB.requests.get().filter(r=>S.selReqs.has(r.id));
   const pax=rl.reduce((s,r)=>s+r.passengers,0);
@@ -1979,4 +2054,4 @@ setInterval(async()=>{
 
 </script>
 </body>
-</html><!--v66-1786471348 -->
+</html>
