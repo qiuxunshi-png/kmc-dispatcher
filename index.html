@@ -261,9 +261,9 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 'use strict';
 
 // ==================== DATA ====================
-const LS=k=>{
+const LS=(k,opts)=>{
   const key='kmc2_'+k;
-  return{get(){try{return JSON.parse(localStorage.getItem(key))}catch{return null}},
+  return{get(){try{const v=JSON.parse(localStorage.getItem(key));return(v===null||v===undefined)&&opts&&opts.onGet?opts.onGet(v):v}catch{return opts&&opts.onGet?opts.onGet(null):null}},
     set(v){localStorage.setItem(key,JSON.stringify(v))}};
 };
 (function(){const v=localStorage.getItem('kmc2_ver');
@@ -953,7 +953,7 @@ function doLogin(){
   if(!name)return toast('Enter your name / 请输入姓名');
 
   // Auto-register or login existing user
-  const us=DB.users.get();
+  const us=DB.users.get()||[];
   const existingUser=us.find(u=>u.name===name&&u.department===dept);
   if(!existingUser){
     us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:'user',password:''});
