@@ -1042,6 +1042,9 @@ function renderNav(){
   if(isAdmin())navs.push({id:'pool',label:T('nav_pool'),
       ico:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 14l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
       ni:'#a855f7',ni2:'#c084fc',ng:'rgba(168,85,247,.25)'});
+  if(isAdmin())navs.push({id:'daily',label:T('nav_daily'),
+      ico:'<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 9h18M9 3v18" stroke="currentColor" stroke-width="2"/><text x="6" y="16" font-size="9" fill="currentColor" font-weight="bold">M</text>',
+      ni:'#ec4899',ni2:'#f472b6',ng:'rgba(236,72,153,.25)'});
   if(isAdmin())navs.push({id:'records',label:T('nav_records'),
       ico:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>',
       ni:'#10b981',ni2:'#34d399',ng:'rgba(16,185,129,.25)'});
@@ -1086,6 +1089,7 @@ function renderPage(){
       case'submit':html=renderSubmit();break;
       case'dispatch':html=renderDispatch();break;
       case'pool':html=renderPool();break;
+      case'daily':html=renderDaily();break;
       case'records':html=renderRecords();break;
       case'settings':html=renderSettings();break;
     }
@@ -1781,6 +1785,59 @@ function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did)
 function cancelD(did){if(!confirm('Revert?'))return;
   const ds=DB.dispatches.get();const i=ds.findIndex(d=>d.id===did);if(i===-1)return;const dd=ds[i];ds.splice(i,1);DB.dispatches.set(ds);
   const rs=DB.requests.get();rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);toast('Reverted');renderPage();}
+
+
+// ==================== DAILY SUMMARY ====================
+function renderDaily(){
+  if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
+  const dt=S.selDate||tmrw();
+  const rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date===dt);
+  // Group by department
+  const deptGroups={};
+  rs.forEach(r=>{const d=r.department||(L==='zh'?'未知':'Unknown');if(!deptGroups[d])deptGroups[d]=[];deptGroups[d].push(r);});
+  
+  let html='<div class="card"><div class="card-h">📋 '+bi('每日汇总','Daily Summary')+' · '+fmtL(dt)+'</div>';
+  html+='<div class="fld"><label>📅 '+bi('选择日期','Select Date')+'</label>'
+    +'<input type="date" value="'+dt+'" onchange="S.selDate=this.value;renderPage()" style="padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)"></div>';
+  
+  const totalDepartments=Object.keys(deptGroups).length;
+  const totalRequests=rs.length;
+  const totalPax=rs.reduce((s,r)=>s+(r.passengers||1),0);
+  
+  html+='<div style="display:flex;gap:8px;margin-bottom:14px">'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalRequests+'</div><div class="st-l">'+bi('需求数','Requests')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalPax+'</div><div class="st-l">👥 '+bi('总人数','Total Pax')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalDepartments+'</div><div class="st-l">🏢 '+bi('涉及部门','Depts')+'</div></div>'
+    +'</div></div>';
+	
+  if(!rs.length){
+    html+='<div class="emp">'+bi('当日暂无待处理需求','No pending requests for this date')+'</div>';
+  }else{
+    // By department
+    const sortedDepts=Object.keys(deptGroups).sort((a,b)=>{
+      // 后勤部 first
+      if(a==='后勤部')return -1;if(b==='后勤部')return 1;
+      return a.localeCompare(b);
+    });
+    sortedDepts.forEach(dept=>{
+      const items=deptGroups[dept].sort((a,b)=>(a.timeSlot||'').localeCompare(b.timeSlot||''));
+      html+='<div class="card"><div class="card-h">'+dept+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+items.length+' '+bi('项','items')+')</span></div>';
+      items.forEach(r=>{
+        html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);font-size:13px;gap:8px">'
+          +'<div style="flex:1"><div style="font-weight:600;color:var(--tx);line-height:1.5">'+r.submitter+'</div>'
+          +'<div style="color:var(--tx-dim);margin-top:2px">📍 '+(L==='zh'?r.destination:(r.destinationEn||r.destination))+'</div>'
+          +'<div style="color:var(--tx-dim)">🖊 '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--ac);font-size:14px">'+r.timeSlot+'</div>'
+          +'<div style="color:var(--tx-dim);font-size:11px">👥 '+r.passengers+' pax</div>'
+          +(r.notes?'<div style="color:var(--tx-dim);font-size:10px;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 '+r.notes+'</div>':'')
+          +'</div></div>';
+      });
+      html+='</div>';
+    });
+  }
+  return html;
+}
+
 
 // ==================== RECORDS ====================
 function renderRecords(){
