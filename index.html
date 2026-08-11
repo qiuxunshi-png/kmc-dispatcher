@@ -1821,7 +1821,7 @@ function renderSettings(){
     html+='<div class="card"><div class="card-h">🏢 '+bi('部门管理','Departments')+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+getDepts().length+' '+bi('个','depts')+')</span></div>'
       +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:10px">'+bi('删除部门将同时删除该部门所有人员','Deleting a department also removes all its staff')+'</div>'
       +getDepts().map((d,i)=>{
-        const cnt=DB.users.get().filter(u=>u.department===d.cn).length;
+        const cnt=(DB.users.get()||[]).filter(u=>u.department===d.cn).length;
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px">'
           +'<div style="flex:1"><strong>'+d.cn+'</strong> <span style="color:var(--tx-dim);font-size:11px">/'+(d.en||'')+'</span>'
           +'<span style="background:var(--ac);color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:8px">'+cnt+' '+bi('人','pax')+'</span></div>'
@@ -1856,7 +1856,7 @@ function delDept(i){
   depts.splice(i,1);
   DB.depts.set(depts);
   // Remove users of this dept (option C: delete staff together)
-  const us=DB.users.get().filter(u=>u.department!==d.cn);
+  const us=(DB.users.get()||[]).filter(u=>u.department!==d.cn);
   DB.users.set(us);
   toast('✅ '+bi('已删除部门及人员','Dept & staff removed'));renderPage();
 }
