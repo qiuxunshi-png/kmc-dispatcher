@@ -40,26 +40,28 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
   display:flex;flex-direction:column;flex-shrink:0;backdrop-filter:blur(20px)}
 .shell-pc main{flex:1;padding:32px 40px;overflow-y:auto;background:transparent}
 .shell-pc .pcnav{padding:8px 12px;flex:1;overflow-y:auto}
-.shell-pc .pcnav button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;
+.shell-pc .pcnav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;
   font-size:14px;color:var(--tx-dim);background:transparent;border:none;text-align:left;cursor:pointer;
   border-radius:10px;transition:var(--tr);margin-bottom:2px;font-weight:500}
+.shell-pc .pcnav button .nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .shell-pc .pcnav button:hover{background:rgba(91,138,245,0.08);color:var(--tx)}
 .shell-pc .pcnav button.active{background:rgba(91,138,245,0.15);color:var(--ac);font-weight:600}
 .shell-pc .pcnav button.active::before{content:'';width:3px;height:18px;background:var(--ac);
   border-radius:2px;margin-right:-13px}
 
 /* Top mobile bar - WhatsApp style */
-.mt{position:fixed;top:0;left:0;right:0;z-index:100;padding:12px 16px;display:flex;
+.mt{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 18px;display:flex;
   justify-content:space-between;align-items:center;
-  background:rgba(11,16,20,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--bd)}
+  background:rgba(11,16,20,0.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,0.2)}
 .mt h2{font-size:16px;font-weight:600;color:var(--tx);letter-spacing:-0.3px}
 .mt p{font-size:11px;color:var(--tx-muted);margin-top:1px}
 .mt .ti{font-size:11px;color:var(--tx-dim);margin-right:8px;white-space:nowrap}
 
 /* Card - WhatsApp style */
 .card{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:20px;margin-bottom:14px;box-shadow:var(--sh);
+  padding:20px;margin-bottom:14px;box-shadow:var(--sh);transition:var(--tr);}
+.card:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
   backdrop-filter:blur(12px)}
 .card-h{font-weight:600;font-size:14px;color:var(--tx);margin-bottom:14px;
   padding-bottom:12px;border-bottom:1px solid var(--bd);
@@ -112,7 +114,8 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
 .st{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:16px;text-align:center}
+  padding:16px;text-align:center;transition:var(--tr)}
+.st:hover{border-color:var(--bd-hi);transform:translateY(-1px)}
 .st-n{font-size:26px;font-weight:700;color:var(--tx);font-family:var(--mono)}
 .st-l{font-size:10px;color:var(--tx-dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px}
 
@@ -120,8 +123,8 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .edb:hover{text-decoration:underline}
 
 .dc{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:16px;margin-bottom:12px;transition:var(--tr)}
-.dc:hover{border-color:var(--bd-hi)}
+  padding:18px;margin-bottom:12px;transition:var(--tr)}
+.dc:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
 .dc-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 .dc-h h4{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-0.2px}
 .dc-p{font-size:12px;font-weight:600;color:var(--ac);padding:4px 12px;
@@ -1724,82 +1727,10 @@ function renderSettings(){
   if(showAdmin){
     html+='<div class="card" style="border-left:3px solid #f59e0b"><div class="card-h">🔐 '+T('common_unlockTitle')+(unlocked&&!isAdmin()?' <span style="background:#dc2626;color:#fff;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px">UNLOCKED</span>':'')+'</div>';
     if(unlocked&&!isAdmin()){
-      html+='<button class="bt bt-d bt-sm" onclick="lockAdmin()">🔒 '+T('common_lockedMsg')+'</button>';
+      html+='<button class="bt bt-d bt-sm" onclick="lockAdmin()" style="margin-bottom:8px">🔒 '+T('common_lockedMsg')+'</button>';
     }
-    html+='<div class="fld" style="margin-top:12px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
-      +'<button class="bt bt-p bt-sm" onclick="changeAdminPw()">'+T('common_save')+'</button></div>'
-    +'<div class="card" style="border:2px solid #f59e0b"><div class="card-h">⏰ '+bi('截止时间 / Cutoff Time','Cutoff Time')+' <span style="background:#dc2626;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:6px">'+bi('管理员专属','Admin Only')+'</span></div>'
-    +'<div class="fld"><label>⏰ '+bi('每日车辆整合截止时间','Daily vehicle consolidation cutoff')+' *</label>'
-    +'<div style="display:flex;gap:8px;align-items:center"><input type="time" id="st-cutoff" value="'+getCutoff()+'" style="flex:1;padding:12px;border:2px solid #f59e0b;border-radius:8px;font-size:16px;font-weight:700;color:#dc2626">'
-    +'<button class="bt bt-p bt-sm" onclick="setCutoff(document.getElementById(\'st-cutoff\').value);toast(\'截止时间已更新 / Cutoff updated\');renderPage()">✓ '+T('common_save')+'</button></div></div>'
-    +'<div class="card"><div class="card-h">☁ '+bi('云同步 (GitHub仓库) / Cloud Sync (GitHub Repo)','Cloud Sync (GitHub Repo)')+'</div>'
-    +'<div class="fld"><label>🔑 '+bi('GitHub Token','GitHub Token')+'</label>'
-    +'<input type="password" id="st-gist-token" value="'+gistToken+'" placeholder="github_pat_..." style="font-size:11px">'
-    +'<button class="bt bt-p bt-sm" onclick="saveGistToken()" style="margin-top:4px">'+T('common_save')+'</button></div>'
-    +'<button class="bt bt-s bt-b" onclick="manualSync()">☁ '+bi('立即同步','Sync Now')+'</button>'
-    +'<div style="font-size:11px;color:var(--tx-dim);margin-top:6px">'+(syncAvailable?bi('✅ 云同步正常','✅ Cloud sync active'):bi('⚠ 请配置 GitHub Token 后同步','⚠ Configure GitHub Token to enable cloud sync'))+'</div></div>'
-    +'<div class="card"><div class="card-h">📤 '+bi('每日推送 / Daily Push','Push Settings')+'</div>'
-    +'<div class="fld"><label>🔔 '+bi('企业微信机器人 Webhook','WeCom Bot Webhook')+'</label>'
-    +'<input type="text" id="st-wxhook" value="'+DB.wxhook.get()+'" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx" style="font-size:11px">'
-    +'<button class="bt bt-p bt-sm" onclick="DB.wxhook.set(document.getElementById(\'st-wxhook\').value.trim());toast(\'Saved\')"\ style="margin-top:4px">'+T('common_save')+'</button></div>'
-    +'<div class="fld"><label>📱 '+bi('WhatsApp 接收号码','WhatsApp Number')+'</label>'
-    +'<input type="text" id="st-waphone" value="'+DB.waphone.get()+'" placeholder="+263 77 xxx xxxx">'
-    +'<button class="bt bt-p bt-sm" onclick="DB.waphone.set(document.getElementById(\'st-waphone\').value.trim());toast(\'Saved\')"\ style="margin-top:4px">'+T('common_save')+'</button></div>'
-    +'<button class="bt bt-s bt-b" onclick="pushDailySummary()">📤 '+bi('推送今日汇总','Push Today Summary')+'</button>'
-    +'<div style="font-size:11px;color:#64748b;margin-top:6px">'+bi('推送到企业微信 + WhatsApp，可配置任一或两者','Push to WeCom bot + WhatsApp, configure either or both')+'</div></div>'
-    +'<div style="background:#fef3c7;padding:10px;border-radius:6px;font-size:11px;color:#78350f;line-height:1.6;margin-top:6px">'
-    +bi('• 当前截止时间：','Current cutoff: ')+'<strong>'+getCutoff()+'</strong><br>'
-    +bi('• 修改后全公司人员的需求页立即同步显示','• All submit pages update instantly across the company')+'<br>'
-    +bi('• 建议设置为下班前 1 小时（如 17:00），便于车辆管理员整合','• Recommended: 1hr before off-work (e.g., 17:00) for consolidation')+'<br>'
-    +bi('• 默认 19:00，如非必要请勿改动（合规性）','• Default 19:00; avoid changes unless necessary (compliance)')
-    +'</div></div>';
-
-    html+='<div class="card"><div class="card-h">🔑 '+T('invite_code')+' / Invite Code</div><div class="fld"><input type="text" id="st-inv" value="'+DB.invite.get()+'"></div><button class="bt bt-p bt-sm" onclick="DB.invite.set(document.getElementById(\'st-inv\').value.trim());toast(\'Updated\')">'+T('common_save')+'</button></div>';
-
-    // User Management - covers all departments
-    const us=DB.users.get();
-    html+='<div class="card"><div class="card-h">👥 '+T('users')+' / User Management ('+us.length+')</div>';
-    html+='<div style="font-size:12px;color:#64748b;margin-bottom:10px">'+bi('为各部门分发账号或删减人员','Distribute or remove accounts across departments')+'</div>';
-    DEPTS_CN.forEach(d=>{
-      const list=us.filter(u=>u.department===d);
-      const enName=DCN2EN[d]||'';
-      html+='<div style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff">'
-        +'<div style="padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between">'
-        +'<div style="font-weight:600;font-size:14px;color:#0f172a">'+d+' / '+enName+'</div>'
-        +'<div style="background:#2563eb;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600">'+list.length+' '+bi('姓名','names')+'</div>'
-        +'</div>';
-      if(!list.length){
-        html+='<div style="padding:10px 14px;font-size:12px;color:#94a3b8;text-align:center">'+bi('该部门暂无人员','No staff in this department')+'</div>';
-      }else{
-        list.forEach(u=>{
-          const idx=us.indexOf(u);
-          html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid #f1f5f9;font-size:13px">'
-            +'<div style="flex:1"><span style="font-weight:500;color:#0f172a">'+u.name+'</span>'+(u.role==='admin'?' <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:3px;margin-left:4px;font-weight:700">ADMIN</span>':'')+'</div>'
-            +'<div style="display:flex;gap:6px;flex-shrink:0">'
-            +'<button class="bt bt-o bt-sm" onclick="editUser('+idx+')" style="padding:6px 14px;font-size:12px;border-radius:6px">✏ '+T('edit')+'</button>'
-            +'<button class="bt bt-d bt-sm" onclick="delUser('+idx+')" style="padding:6px 14px;font-size:12px;border-radius:6px">🗑 '+T('del')+'</button>'
-            +'</div></div>';
-        });
-      }
-      html+='</div>';
-    });
-    // Add new user form
-    html+='<div style="margin-top:10px;padding:12px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc">'
-      +'<div style="font-weight:600;margin-bottom:8px;font-size:13px">+ '+bi('新增人员','Add Staff')+'</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
-      +'<input id="nu-n" placeholder="'+T('user_name')+'" style="flex:1;min-width:120px;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px">'
-      +'<select id="nu-d" style="flex:1;min-width:140px;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"><option value="">'+T('user_dept')+'</option>'
-      +DEPTS_CN.map(d=>'<option value="'+d+'">'+d+' / '+(DCN2EN[d]||'')+'</option>').join('')+'</select>'
-      +'<button class="bt bt-p bt-sm" onclick="addUser()" style="padding:9px 18px">+ '+T('add')+'</button>'
-      +'</div></div></div>';
-
-    html+='<div class="card"><div class="card-h">🚗 '+T('vehicles')+' / Vehicles ('+vs.length+')</div>'
-      +vs.map((v,i)=>'<div class="sr"><div class="sr-i"><div class="sr-l">'+v.plate+'</div><div class="sr-s">'+(L==='zh'?v.type:v.typeEn)+' · '+v.seats+' '+T('seats')+'</div></div><div class="sr-a"><button class="bt bt-o bt-sm" onclick="editV('+i+')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="delV('+i+')">'+T('del')+'</button></div></div>').join('')
-      +'<div class="si"><input id="nv-p" placeholder="'+T('plate')+'"><input id="nv-t" placeholder="'+bi('车型 CN','Type CN')+'"><input id="nv-te" placeholder="'+bi('车型 EN','Type EN')+'"><input id="nv-s" type="number" value="5" style="width:50px" title="'+T('seats')+'"><button class="bt bt-p bt-sm" onclick="addV()">+ '+T('add')+'</button></div></div>';
-
-    html+='<div class="card"><div class="card-h">👤 '+T('drivers')+' / Drivers ('+ds.length+')</div>'
-      +ds.map((d,i)=>'<div class="sr"><div class="sr-i"><div class="sr-l">'+d.name+'</div></div><div class="sr-a"><button class="bt bt-o bt-sm" onclick="editDr('+i+')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="delDr('+i+')">'+T('del')+'</button></div></div>').join('')
-      +'<div class="si"><input id="nd-n" placeholder="'+T('driver_name')+'"><button class="bt bt-p bt-sm" onclick="addDr()">+ '+T('add')+'</button></div></div>';
+    html+='<div class="fld" style="margin-top:8px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
+      +'<button class="bt bt-p bt-sm" onclick="changeAdminPw()">'+T('common_save')+'</button></div>';
   }else{
     html+='<div class="card" style="background:rgba(37,99,235,.05);border:1px dashed #94a3b8;text-align:center;color:#64748b;font-size:13px"><div style="padding:6px">🔒 '+T('common_locked')+'</div></div>';
   }
