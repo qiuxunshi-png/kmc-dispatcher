@@ -13,7 +13,11 @@
   --ac:#5b8af5;--ac-g:linear-gradient(135deg,#5b8af5,#7c5bf5);
   --gn:#34c77b;--gn-g:linear-gradient(135deg,#34c77b,#2db88a);
   --rd:#f5555d;--rd-g:linear-gradient(135deg,#f5555d,#e04050);
-  --or:#f5a623;
+  --or:#f5a623;--or-g:linear-gradient(135deg,#f5a623,#e89313);
+  --warn-bg:rgba(245,166,35,0.08);--warn-bd:rgba(245,166,35,0.3);
+  --info-bg:rgba(91,138,245,0.08);--info-bd:rgba(91,138,245,0.3);
+  --danger-bg:rgba(245,85,93,0.08);--danger-bd:rgba(245,85,93,0.3);
+  --success-bg:rgba(52,199,123,0.06);--success-bd:rgba(52,199,123,0.3);
   --rx:12px;--rx-lg:16px;--rx-sm:8px;
   --sh:0 4px 16px rgba(0,0,0,0.25);
   --sh-lg:0 12px 40px rgba(0,0,0,0.5);
@@ -24,6 +28,11 @@ html[data-theme="light"]{
   --bg:#f5f7fa;--bg-soft:#fff;--bg-elevated:#fff;
   --bd:rgba(0,0,0,0.06);--bd-hi:rgba(0,0,0,0.12);
   --tx:#1f2937;--tx-dim:#6b7280;--tx-muted:#9ca3af;
+  --or-g:linear-gradient(135deg,#f59e0b,#d97706);
+  --warn-bg:rgba(245,158,11,0.08);--warn-bd:rgba(245,158,11,0.3);
+  --info-bg:rgba(59,130,246,0.06);--info-bd:rgba(59,130,246,0.25);
+  --danger-bg:rgba(239,68,68,0.06);--danger-bd:rgba(239,68,68,0.25);
+  --success-bg:rgba(16,185,129,0.06);--success-bd:rgba(16,185,129,0.25);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-size:14px;line-height:1.55;font-family:var(--font);
@@ -128,12 +137,33 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .dc-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 .dc-h h4{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-0.2px}
 .dc-p{font-size:12px;font-weight:600;color:var(--ac);padding:4px 12px;
-  background:rgba(91,138,245,0.1);border-radius:6px}
+  background:var(--info-bg);border:1px solid var(--info-bd);border-radius:6px}
 .dc-b .dc-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;
   border-bottom:1px solid var(--bd)}
 .dc-b .dc-row:last-child{border:none}
 .dc-l{color:var(--tx-dim)}
 .dc-v{color:var(--tx);font-weight:500}
+
+/* ========== Semantic status blocks (info / warn) ========== */
+.dc2-pax{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 12px;
+  background:var(--info-bg);border:1px solid var(--info-bd);border-radius:var(--rx-sm);margin:10px 0}
+.dc2-pax-avatars{display:flex;margin-right:4px}
+.dc2-pax-avatars span{width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  border:2px solid var(--bg-elevated);margin-left:-6px;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.dc2-pax-avatars span:first-child{margin-left:0}
+.dc2-pax-count{font-size:12px;font-weight:700;color:var(--ac);
+  background:var(--bg-elevated);padding:4px 10px;border-radius:12px}
+.dc2-pax-names{font-size:12px;color:var(--tx-dim);flex:1;line-height:1.5}
+.dc2-purpose{padding:12px 14px;background:var(--warn-bg);border:1px solid var(--warn-bd);
+  border-radius:var(--rx-sm);font-size:13px;line-height:1.6;color:var(--tx);margin-bottom:10px}
+.dc2-purpose-label{font-size:10px;font-weight:700;color:var(--or);letter-spacing:0.6px;
+  text-transform:uppercase;margin-bottom:4px}
+.dc2-purpose-en{color:var(--tx-dim);font-style:italic;margin-top:4px;font-size:12px}
+.dc2-notes{padding:10px 12px;background:var(--info-bg);border:1px dashed var(--info-bd);
+  border-radius:var(--rx-sm);font-size:12px;color:var(--tx-dim);line-height:1.5}
+.dc2-notes-label{font-size:10px;font-weight:700;color:var(--ac);letter-spacing:0.6px;
+  text-transform:uppercase;margin-bottom:3px}
 
 .rr{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx-sm);
   padding:12px 14px;margin-bottom:6px;font-size:13px;transition:var(--tr)}
@@ -182,7 +212,9 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
   margin-top:6px;display:inline-block;background:var(--ac-g);color:#fff}
 .pcu-locked{font-size:10px;color:var(--tx-muted);margin-top:4px}
 
-@media(max-width:768px){.shell-pc{display:none}.shell{display:block}}
+@media(max-width:768px){.shell-pc{display:none}.shell{display:block}
+  .dc2-pax{padding:8px 10px}
+  .dc2-pax-names{font-size:11px;width:100%;flex-basis:100%}}
 @media(min-width:769px){.shell{display:none}.shell-pc{display:flex}}
 
 [data-lang="en"] .lang-cn{display:none!important}
@@ -1550,15 +1582,24 @@ function buildDC(d){
   const paxNames=[];
   rl.forEach(r=>{if(r.paxNames)r.paxNames.forEach(n=>{if(n)paxNames.push(n);});});
   if(!paxNames.length)rl.forEach(r=>paxNames.push(r.submitter));
+  const avatars=paxNames.slice(0,5).map((n,i)=>'<span style="background:'+['#5b8af5','#7c5bf5','#34c77b','#f5a623','#f5555d'][i%5]+';z-index:'+(5-i)+'">'+((n||'?').slice(0,1))+'</span>').join('');
+  const more=paxNames.length>5?'<span style="background:var(--tx-dim);z-index:0">+'+(paxNames.length-5)+'</span>':'';
   return '<div class="dc"><div class="dc-h"><div><h4>'+T('dispatch_title')+'</h4><div style="font-size:11px;opacity:.7">'+fmtL(d.date)+' ('+d.date+')</div></div><div class="dc-p">'+d.vehicle+'</div></div>'
     +'<div class="dc-b"><div class="dc-row"><span class="dc-l">'+T('driver_label')+' / Driver</span><span class="dc-v"><strong>'+d.driver+'</strong></span></div>'
     +'<div class="dc-row"><span class="dc-l">'+T('meeting_point')+' / Point</span><span class="dc-v">'+(d.meetingPoint||'—')+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('pax')+' / Pax</span><span class="dc-v">'+pax+'</span></div>'
     +'<div class="dc-row"><span class="dc-l">'+T('dept')+' / Dept</span><span class="dc-v">'+depts+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('purpose')+' / Purpose</span><span class="dc-v">'+prps+(prpsE?' <small style="color:#64748b;font-style:italic">('+prpsE+')</small>':'')+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">👥 '+bi('乘车人','Passengers')+'</span><span class="dc-v">'+paxNames.join('、')+'</span></div>'
-    +(dnotesCn?'<div class="dc-row"><span class="dc-l">'+T('notes')+' / Notes</span><span class="dc-v">'+dnotesCn+(dnotesEn?' <small style="color:#64748b;font-style:italic">('+dnotesEn+')</small>':'')+'</span></div>':'')
-    +'</div></div>';
+    +'</div>'
+    +'<div class="dc2-pax">'
+    +'<div class="dc2-pax-avatars">'+avatars+more+'</div>'
+    +'<span class="dc2-pax-count">'+pax+' '+bi('人','ppl')+'</span>'
+    +'<span class="dc2-pax-names">'+paxNames.join('、')+'</span>'
+    +'</div>'
+    +(prps?'<div class="dc2-purpose"><div class="dc2-purpose-label">📋 '+T('purpose')+'</div>'+prps+(prpsE?'<div class="dc2-purpose-en">'+prpsE+'</div>':'')+'</div>':'')
+    +(dnotesCn||dnotesEn?'<div class="dc2-notes">'
+      +(dnotesCn?'<div class="dc2-notes-label">📝 '+T('notes')+'</div>'+dnotesCn:'')
+      +(dnotesEn&&dnotesEn!==dnotesCn?'<div style="color:var(--tx-muted);font-style:italic;margin-top:3px">'+dnotesEn+'</div>':'')
+      +'</div>':'')
+    +'</div>';
 }
 
 function expImg(){
