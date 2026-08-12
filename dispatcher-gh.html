@@ -389,8 +389,6 @@ function getDepts(){
   if(!d||!d.length)return DEFAULT_DEPTS;
   return d;
 }
-const DEPTS_CN=getDepts().map(x=>x.cn);
-const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
 function dShow(d){
   if(!d)return '';
   const dept=getDepts().find(x=>x.cn===d||x.en===d);
