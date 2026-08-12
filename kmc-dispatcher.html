@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KMC派车">
+<meta name="theme-color" content="#0a0a1a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22KMC%20Dispatcher%22%2C%22short_name%22%3A%22KMC%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a1a%22%2C%22theme_color%22%3A%22%230a0a1a%22%7D">
+<title>KMC 车辆调度系统</title>
+<style>
+:root{
+  --bg:#eef1f6;--bg-grad:linear-gradient(135deg,#f8fafc 0%,#e0e7ff 50%,#fce7f3 100%);
+  --surface:rgba(255,255,255,.75);--surface2:rgba(255,255,255,.55);
+  --brand:#0a0a1a;--brand2:#1e293b;
+  --primary:#2563eb;--primary2:#1d4ed8;--primary-glow:rgba(37,99,235,.18);
+  --success:#059669;--success-bg:rgba(5,150,105,.08);
+  --danger:#dc2626;--danger-bg:rgba(220,38,38,.06);
+  --warn:#d97706;--warn-bg:rgba(217,119,6,.08);
+  --text:#0f172a;--text2:#475569;--text3:#64748b;--text4:#94a3b8;
+  --border:rgba(255,255,255,.4);--border2:rgba(0,0,0,.06);
+  --r:20px;--rs:14px;--rx:10px;
+  --sh:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.02);
+  --shm:0 8px 24px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.03);
+  --shl:0 20px 60px rgba(0,0,0,.12);
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",system-ui,sans-serif;
+  --fs:17px;/* base font up one notch */
+  --t:0.25s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:17px;-webkit-text-size-adjust:100%;}
+body{font-family:var(--f);background:var(--bg-grad);color:var(--text);min-height:100dvh;
+  line-height:1.55;-webkit-font-smoothing:antialiased;font-size:var(--fs);}
+button,input,select,textarea{font-family:var(--f);font-size:1em;color:var(--text);}
+button{touch-action:manipulation;cursor:pointer;border:none;background:none;color:inherit;}
+input,select,textarea{color:var(--text);}
+.hidden{display:none!important;}
+::selection{background:var(--primary);color:#fff;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:4px;}
+
+/* GLASS MIXINS */
+.glass{background:var(--surface);backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid var(--border);
+  box-shadow:0 8px 32px rgba(0,0,0,.08),0 1px 1px rgba(0,0,0,.02);}
+.glass-light{background:var(--surface2);backdrop-filter:blur(16px);border:1px solid var(--border);}
+
+/* LOGIN */
+.login-bg{display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:24px;
+  background:linear-gradient(135deg,#0a0a1a 0%,#1e3a5f 50%,#16213e 100%);position:relative;overflow:hidden;}
+.login-bg::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(37,99,235,.2) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 80% at 80% 90%,rgba(5,150,105,.15) 0%,transparent 60%),
+             radial-gradient(ellipse 40% 60% at 10% 80%,rgba(168,85,247,.12) 0%,transparent 60%);}
+.login-bg::after{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0);
+  background-size:24px 24px;opacity:.6;}
+.login-card{position:relative;background:rgba(255,255,255,.88);backdrop-filter:blur(40px) saturate(180%);
+  -webkit-backdrop-filter:blur(40px) saturate(180%);
+  border-radius:28px;box-shadow:0 25px 70px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.2);
+  padding:48px 40px;width:100%;max-width:460px;}
+.login-brand{text-align:center;margin-bottom:32px;}
+.login-brand .lb-icon{width:56px;height:56px;
+  background:linear-gradient(135deg,#1d4ed8,#3b82f6);border-radius:18px;
+  margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 24px rgba(37,99,235,.35);}
+.login-brand .lb-icon svg{width:28px;height:28px;fill:#fff;}
+.login-brand h1{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px;}
+.login-brand p{font-size:13px;color:var(--text3);margin-top:4px;letter-spacing:.3px;}
+
+/* FIELD */
+.fg{margin-bottom:18px;text-align:left;}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--text2);
+  margin-bottom:5px;letter-spacing:.4px;text-transform:uppercase;}
+.fg-hint{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.45;}
+.fg-hint small{display:block;font-style:italic;margin-top:1px;}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:13px 15px;border:1.5px solid rgba(0,0,0,.08);
+  border-radius:var(--rx);font-size:1em;background:rgba(255,255,255,.95);
+  transition:all var(--t);appearance:none;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 4px var(--primary-glow);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 22px;
+  border-radius:var(--rx);font-size:1em;font-weight:600;transition:all var(--t);letter-spacing:.2px;
+  white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+  box-shadow:0 4px 12px rgba(37,99,235,.3);}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.4);}
+.btn-p:active{transform:translateY(0);}
+.btn-b{width:100%;padding:16px;font-size:1.06em;border-radius:var(--rs);}
+.btn-sm{padding:7px 14px;font-size:.85em;border-radius:6px;}
+.btn-o{background:rgba(255,255,255,.6);border:1.5px solid rgba(0,0,0,.08);color:var(--text2);
+  backdrop-filter:blur(8px);}
+.btn-o:hover{border-color:rgba(0,0,0,.15);background:rgba(255,255,255,.85);}
+.btn-d{background:var(--danger);color:#fff;}
+.btn-s{background:var(--success);color:#fff;}
+.btn-w{background:var(--warn);color:#fff;}
+.btn-gh{color:var(--text3);}.btn-gh:hover{color:var(--text);background:rgba(0,0,0,.05);border-radius:6px;}
+
+/* LANG TOGGLE */
+.ltg{display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,.15);
+  border-radius:22px;padding:3px;border:1px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(10px);}
+.ltg button{padding:6px 14px;border-radius:18px;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,.55);transition:all var(--t);letter-spacing:.3px;}
+.ltg button.active{background:#fff;color:#0a0a1a;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.ltg-dark{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);}
+
+/* APP SHELL */
+.app-pg{min-height:100dvh;display:flex;flex-direction:column;}
+@media(min-width:1024px){.app-pg{flex-direction:row;}}
+
+/* SIDEBAR */
+.sbar{display:none;flex-direction:column;background:rgba(10,10,26,.92);color:#fff;width:240px;
+  flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 0;
+  backdrop-filter:blur(20px);}
+@media(min-width:1024px){.sbar{display:flex;}}
+.sb-h{padding:0 22px 24px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px;}
+.sb-icon{width:40px;height:40px;background:linear-gradient(135deg,#2563eb,#3b82f6);
+  border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+  box-shadow:0 4px 12px rgba(37,99,235,.3);}
+.sb-icon svg{width:22px;height:22px;fill:#fff;}
+.sb-h h2{font-size:17px;font-weight:700;letter-spacing:-.3px;}
+.sb-h .sb-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px;letter-spacing:.4px;}
+.sbar .s-u{margin-top:auto;border-top:1px solid rgba(255,255,255,.06);padding:18px 22px 0;}
+.sbar .s-u .su-n{font-size:14px;font-weight:600;}
+.sbar .s-u .su-d{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
+.sbar .s-u .su-b{display:inline-block;background:rgba(37,99,235,.4);color:#93c5fd;
+  font-size:10px;padding:3px 9px;border-radius:4px;margin-top:6px;font-weight:700;letter-spacing:.3px;}
+.sbar .lwrap{padding:6px 22px 14px;}
+.s-nav{display:flex;flex-direction:column;gap:3px;padding:0 12px;}
+.s-nav button{display:flex;align-items:center;gap:11px;padding:11px 16px;font-size:.92em;
+  font-weight:500;color:rgba(255,255,255,.5);border-radius:11px;transition:all var(--t);
+  width:100%;text-align:left;}
+.s-nav button:hover{color:rgba(255,255,255,.75);background:rgba(255,255,255,.05);}
+.s-nav button.active{color:#fff;background:rgba(37,99,235,.25);font-weight:600;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1);}
+.s-nav button svg{width:19px;height:19px;opacity:.6;flex-shrink:0;}
+.s-nav button.active svg{opacity:1;}
+
+/* TOPBAR mobile */
+.tbar{display:none;align-items:center;justify-content:space-between;padding:14px 16px;
+  background:rgba(10,10,26,.92);color:#fff;position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(20px);}
+@media(max-width:1023px){.tbar{display:flex;}}
+.tbar h3{font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.tbar .tb-r{display:flex;align-items:center;gap:10px;}
+.tbar .tb-i{font-size:11px;color:rgba(255,255,255,.5);}
+
+/* MAIN */
+.main-w{flex:1;overflow-y:auto;padding:24px 18px 88px;}
+@media(min-width:1024px){.main-w{padding:36px 44px;}}
+.page-v{display:none;max-width:1000px;margin:0 auto;}
+.page-v.active{display:block;animation:fIn .25s ease;}
+@keyframes fIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* BOTTOM NAV */
+.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.85);
+  backdrop-filter:blur(30px) saturate(180%);border-top:1px solid rgba(0,0,0,.06);
+  z-index:50;padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:0 -4px 20px rgba(0,0,0,.05);}
+@media(max-width:1023px){.bnav{display:flex;}}
+.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 6px;
+  font-size:10px;color:var(--text3);transition:all var(--t);gap:2px;font-weight:500;}
+.bnav button.active{color:var(--primary);}
+.bnav button svg{width:21px;height:21px;}
+
+/* CARDS */
+.card{border-radius:var(--r);overflow:hidden;margin-bottom:16px;
+  background:rgba(255,255,255,.75);backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid rgba(255,255,255,.6);box-shadow:0 8px 32px rgba(0,0,0,.06);}
+.card-bd{padding:22px;}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.card-h h3{font-size:1.05em;font-weight:700;color:var(--text);letter-spacing:-.2px;}
+.card-h .ch-b{display:flex;gap:6px;}
+
+/* TAG */
+.tag{display:inline-flex;align-items:center;padding:3px 11px;border-radius:13px;
+  font-size:.78em;font-weight:600;letter-spacing:.2px;}
+.tg-p{background:var(--warn-bg);color:var(--warn);}
+.tg-d{background:var(--success-bg);color:var(--success);}
+.tg-m{background:var(--primary-glow);color:var(--primary);}
+
+/* NOTIFY */
+.nt{background:linear-gradient(135deg,rgba(254,243,199,.9),rgba(253,224,71,.7));
+  border:1px solid rgba(234,179,8,.4);border-radius:var(--rs);
+  padding:16px 20px;margin-bottom:18px;display:flex;
+  align-items:center;justify-content:space-between;backdrop-filter:blur(10px);}
+.nt .nt-t{font-size:1em;font-weight:700;color:#854d0e;}
+.nt .nt-n{font-size:30px;font-weight:800;color:#a16207;}
+
+/* REQUEST ROW */
+.rr{display:flex;align-items:flex-start;gap:12px;padding:14px;margin-bottom:8px;
+  background:rgba(255,255,255,.6);border-radius:var(--rs);
+  border:1.5px solid transparent;cursor:pointer;transition:all var(--t);
+  backdrop-filter:blur(8px);}
+.rr:hover{border-color:rgba(0,0,0,.1);box-shadow:var(--sh);}
+.rr.sel{border-color:var(--primary);background:var(--primary-glow);}
+.rr.merged{opacity:.5;pointer-events:none;}
+.rr .rr-c{width:22px;height:22px;border-radius:6px;border:2px solid rgba(0,0,0,.15);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all var(--t);margin-top:2px;}
+.rr.sel .rr-c{background:var(--primary);border-color:var(--primary);}
+.rr.sel .rr-c::after{content:'';width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px;}
+.rr-b{flex:1;min-width:0;}
+.rr-t{font-size:1em;font-weight:600;line-height:1.4;}
+.rr-m{font-size:.85em;color:var(--text3);margin-top:3px;display:flex;gap:11px;flex-wrap:wrap;}
+.rr-d{font-size:.75em;color:var(--primary);font-weight:700;background:var(--primary-glow);padding:2px 8px;border-radius:5px;}
+.rr-e{font-size:.92em;color:var(--text3);margin-top:4px;font-style:italic;}
+
+/* DISPATCH CARD */
+.dc{border-radius:var(--r);margin-bottom:18px;overflow:hidden;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid rgba(255,255,255,.6);box-shadow:var(--shm);}
+.dc-hd{background:linear-gradient(135deg,#0a0a1a,#1e3a5f);color:#fff;
+  padding:18px 22px;display:flex;justify-content:space-between;align-items:center;}
+.dc-hd h4{font-size:1.05em;font-weight:700;}
+.dc-hd .dc-p{font-size:32px;font-weight:800;letter-spacing:1px;opacity:.95;}
+.dc-bd{padding:18px 22px;}
+.dc-row{display:flex;padding:8px 0;font-size:.95em;border-bottom:1px solid rgba(0,0,0,.05);}
+.dc-row:last-child{border-bottom:none;}
+.dc-l{color:var(--text3);width:96px;flex-shrink:0;font-size:.88em;}
+.dc-v{color:var(--text);flex:1;font-weight:500;}
+.dc-v small{color:var(--text3);font-weight:400;font-size:.85em;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+.st{border-radius:var(--rs);padding:18px 20px;text-align:center;
+  background:rgba(255,255,255,.7);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.6);box-shadow:var(--sh);}
+.st-n{font-size:32px;font-weight:800;color:var(--primary);letter-spacing:-1px;}
+.st-l{font-size:.78em;color:var(--text3);margin-top:3px;}
+
+/* FILTER BAR */
+.ftb{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.ftb select,.ftb input{padding:10px 13px;border:1.5px solid rgba(0,0,0,.08);border-radius:var(--rx);
+  font-size:.92em;background:rgba(255,255,255,.95);min-width:110px;transition:all var(--t);}
+.ftb select:focus,.ftb input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow);}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;}
+.empty svg{width:80px;height:80px;margin-bottom:14px;opacity:.15;}
+.empty p{font-size:1em;color:var(--text3);}
+
+/* MODAL */
+.mdl-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;animation:fIn .2s ease;
+  backdrop-filter:blur(8px);}
+.mdl-mask.ctr{align-items:center;}
+.mdl{margin-top:30px;background:rgba(255,255,255,.95);backdrop-filter:blur(30px) saturate(180%);
+  border-radius:24px 24px 0 0;padding:24px 22px;width:100%;max-width:540px;
+  max-height:88vh;overflow-y:auto;animation:mdlUp .25s ease;}
+.mdl-mask.ctr .mdl{border-radius:20px;margin:20px;}
+@keyframes mdlUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.mdl h3{font-size:1.15em;font-weight:700;margin-bottom:14px;}
+
+/* TOAST */
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;
+  padding:11px 24px;border-radius:22px;font-size:.92em;font-weight:600;z-index:300;
+  opacity:0;pointer-events:none;transition:all .3s;box-shadow:var(--shl);}
+.toast.show{opacity:1;}
+
+/* ACTION BAR */
+.acb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+.acb .sp{flex:1;}
+
+/* SETTINGS */
+.sr{display:flex;justify-content:space-between;align-items:center;padding:14px 0;
+  border-bottom:1px solid rgba(0,0,0,.05);}
+.sr:last-child{border-bottom:none;}
+.sr-i{flex:1;}
+.sr-l{font-size:.95em;font-weight:600;}
+.sr-s{font-size:.78em;color:var(--text3);margin-top:2px;}
+.sr-a{display:flex;gap:5px;}
+.si{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.si input{flex:1;min-width:80px;padding:10px 12px;border:1.5px solid rgba(0,0,0,.08);border-radius:6px;font-size:.92em;}
+
+/* BILINGUAL FORM */
+.bi{display:flex;gap:12px;margin-bottom:16px;}
+@media(max-width:680px){.bi{flex-direction:column;}}
+.bi-c{flex:1;}
+.bi-c label{display:block;font-size:.78em;font-weight:700;color:var(--text2);
+  margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase;}
+.bi-c label small{display:block;font-size:.92em;font-weight:500;color:var(--text3);
+  text-transform:none;letter-spacing:0;margin-top:2px;font-style:italic;}
+.bi-c textarea,.bi-c input{width:100%;padding:11px 13px;border:1.5px solid rgba(0,0,0,.08);
+  border-radius:var(--rx);font-size:.95em;background:rgba(255,255,255,.95);resize:vertical;min-height:75px;
+  transition:all var(--t);line-height:1.6;}
+.bi-c input{min-height:auto;}
+.bi-c textarea:focus,.bi-c input:focus{outline:none;border-color:var(--primary);
+  background:#fff;box-shadow:0 0 0 3px var(--primary-glow);}
+
+/* EDIT BUTTON */
+.ed-b{font-size:.78em;color:var(--primary);cursor:pointer;font-weight:600;
+  padding:2px 8px;border-radius:4px;margin-left:4px;}
+.ed-b:hover{background:var(--primary-glow);}
+
+/* SIGNATURE PAD */
+.sig-pad{width:100%;height:200px;border:2px dashed rgba(0,0,0,.15);
+  border-radius:var(--rx);background:rgba(255,255,255,.6);
+  touch-action:none;cursor:crosshair;backdrop-filter:blur(8px);}
+.sig-preview{max-width:180px;max-height:90px;border:1px solid rgba(0,0,0,.1);
+  border-radius:6px;background:rgba(255,255,255,.7);padding:4px;}
+.sig-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+
+/* PRINT */
+@media print{
+  .sbar,.tbar,.bnav,.acb,.ftb,.nt,.stats,.btn,.ed-b{display:none!important;}
+  .main-w{padding:0!important;}.page-v{max-width:100%!important;}
+  .card,.dc{border:1px solid #000!important;break-inside:avoid;}
+  body{background:#fff!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-bg" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="lb-icon"><svg viewBox="0 0 24 24"><path d="M5 11l4-7h2l-4 7h4l-4 7H5l4-7H5zm10 0l4-7h2l-4 7h4l-4 7h-2l4-7h-4z"/></svg></div>
+      <h1 id="login-title">KMC 车辆调度系统</h1>
+      <p id="login-sub">Vehicle Dispatch System</p>
+    </div>
+    <div class="fg"><label id="lbl-code">邀请码 INVITE CODE</label>
+      <input type="text" id="login-code" placeholder="Invite Code" autocomplete="off">
+      <div class="fg-hint" id="hint-code">请输入管理员分发的邀请码<br><small>Enter the invite code provided by admin</small></div>
+    </div>
+    <div class="fg"><label id="lbl-dept">部门 DEPARTMENT</label>
+      <select id="login-dept"></select>
+      <div class="fg-hint" id="hint-dept">选择你所在的部门<br><small>Select your department</small></div>
+    </div>
+    <div class="fg"><label id="lbl-name">姓名 NAME</label>
+      <input type="text" id="login-name" placeholder="Your Name">
+      <div class="fg-hint" id="hint-name">请输入你的中文姓名<br><small>Enter your Chinese name</small></div>
+    </div>
+    <button class="btn btn-p btn-b" onclick="doLogin()" id="login-btn">进入系统 ENTER</button>
+    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:14px;" id="login-hint">Invite code required for first access</p>
+    <p style="font-size:10px;color:var(--text4);text-align:center;margin-top:8px;font-family:monospace;">Build: <span id="build-tag">v4</span></p>
+  </div>
+  <div style="position:absolute;top:20px;right:20px;z-index:2;"><div class="ltg" id="ltg-login"></div></div>
+</div>
+
+<!-- APP -->
+<div class="app-pg hidden" id="app-screen">
+  <aside class="sbar" id="sidebar">
+    <div class="sb-h"><div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M5 11l4-7h2l-4 7h4l-4 7H5l4-7H5zm10 0l4-7h2l-4 7h4l-4 7h-2l4-7h-4z"/></svg></div>
+      <h2>KMC Dispatcher</h2><div class="sb-sub">Vehicle Dispatch System</div></div>
+    <div class="lwrap"><div class="ltg" id="ltg-sbar"></div></div>
+    <nav class="s-nav" id="s-nav"></nav>
+    <div class="s-u" id="s-u"></div>
+  </aside>
+  <div class="tbar" id="tbar"><h3>KMC Dispatcher</h3>
+    <div class="tb-r"><span class="tb-i" id="tb-i"></span><div class="ltg" id="ltg-tbar"></div></div>
+  </div>
+  <div class="main-w" id="main-area"></div>
+  <nav class="bnav" id="bnav"></nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="modal-root"></div>
+<canvas id="export-canvas" style="display:none;"></canvas>
+
+<script>
+// ================ IMPORTED DATA ================
+// Auto-imported historical dispatches from user's Excel (workbook1.xlsx)
+const HIST_DATA=[
+{date:"2025-10-08",driver:"Nkala",vehicle:"AGE 2915",purpose:"陪同谢总、姜部长矿山出发至布拉瓦约公办，预计留宿一晚，上午8点出发，10号下午返回，旅途中需注意行车安全及接待礼仪",purposeEn:"Accompanying General Manager Xie and Minister Jiang on their departure from the mine to Bravayo Public Office, expected to stay overnight. They will depart at 8am and return on the afternoon of the 10th. During the journey, it is important to pay attention to driving safety and reception etiquette",pax:2},
+{date:"2025-10-09",driver:"Reginald",vehicle:"AGN 4371",purpose:"飞机故障、空车返回，形成修改次日",purposeEn:"Aircraft malfunction, returning without a passenger, travel schedule revised for the next day",pax:1},
+{date:"2025-10-09",driver:"Samuel",vehicle:"AGA 5395",purpose:"陪同moyo先生去万基参与活动，同时与程先生沟通是否采购后勤物资等事宜，需上午有8点以前出发",purposeEn:"Accompany Mr. Moyo to participate in the event at Wanji, and communicate with Mr. Cheng on whether to purchase logistics materials and other matters. Departure before 8am in the morning is required",pax:2},
+{date:"2025-10-10",driver:"Reginald",vehicle:"AGN 4371",purpose:"瀑布成机场接一共3人，哈拉雷返回2人，飞机抵达时间中午13点25分，中国返回1人，到达时间中午12点10分，行程中注意行车安全，注意接待礼仪",purposeEn:"Pick up a total of 3 people at Victoria Falls Airport: 2 returning from Harare (flight arrival time: 1:25 PM) and 1 returning from China (arrival time: 12:10 PM). Please drive safely and observe proper etiquette during the trip",pax:3},
+{date:"2025-10-11",driver:"Samuel",vehicle:"AGA 5395",purpose:"瀑布成机场接回中国返回员工王中平先生，飞机到达时间中午12点10分，自行计划出发时间，不可延误",purposeEn:"The waterfall airport will receive Mr. Wang Zhongping, a Chinese employee returning from abroad. The arrival time of the plane is 12:10 in the afternoon. Please plan your departure time accordingly and do not delay",pax:1},
+{date:"2025-10-11",driver:"Reginald",vehicle:"AGN 4371",purpose:"财务部四人、外出瀑布城团建，当日返回",purposeEn:"Four members of the Finance Department went to a waterfall city for a team-building activity and returned on the same day",pax:4},
+{date:"2025-10-13",driver:"Nkala",vehicle:"AGE 2915",purpose:"瀑布城到达，谢澜谊，袁老师（女），JASON黄老师(男)  12点10 ，瀑布城到达南非的男老师2人，10点45 ，（共5人，机场汇合共同返回）",purposeEn:"Waterfall City arrival, Xie Lanyi, Teacher Yuan (female), Teacher Jason Huang (male), 12:10 PM. Waterfall City arrival, two male teachers from South Africa, 10:45 AM. (Total of 5 people, meet at the airport and return together)",pax:5},
+{date:"2025-10-13",driver:"Samuel",vehicle:"AGA 5395",purpose:"张峻经理瀑布城机场出发，15点起飞  （1人）",purposeEn:"Manager Zhang Jun departs from Waterfall City Airport at 15:00 (1 person)",pax:1},
+{date:"2025-10-14",driver:"Nkala",vehicle:"AGE 2915",purpose:"西二号瀑布城机场到达，廖辉瀑布城机场到达 （共2人）",purposeEn:"Arrived at West No.2 Waterfall City Airport at 12:55, and arrived at Liaohui Waterfall City Airport at 12:10 (2 people in total)",pax:2},
+{date:"2025-10-14",driver:"Reginald",vehicle:"AGN 9991",purpose:"上午6点准时中国营地食堂出发，去中矿资源调研，途经布拉瓦约1人下车，预计15号与张总共同返回（出发2人，返回2人）",purposeEn:"Depart from the China Camp canteen at 6:00 AM sharp for a research visit to Sinomine Resources. One person will disembark while passing through Bulawayo. It is expected to return with General Manager Zhang on the 15th (2 people depart, 2 people return)",pax:2},
+{date:"2025-10-16",driver:"Nkala",vehicle:"AGE 2915",purpose:"杨晓松、彭恩明、单俊男、苏楠瀑布城机场到达（共4人)",purposeEn:"Yang Xiaosong, Peng Enming, Shan Junnan, and Su Nan arrived at Waterfall City Airport at 12:10, totaling 4 people",pax:4},
+{date:"2025-10-19",driver:"Samuel",vehicle:"AGN 9991",purpose:"瑞龙公司胡国书、、徐福、杨毓品瀑布城出发（3人）",purposeEn:"Ruilong Company Hu Guoshu, Xu Fu, and Yang Yupin depart from Waterfall City (3 people)",pax:3},
+{date:"2025-10-19",driver:"Reginald",vehicle:"AGA 5395",purpose:"张如伟外出瀑布城，送达后返回（3人）",purposeEn:"Zhang Ruwei went out to Waterfall City and returned after delivery (3 people)",pax:3},
+{date:"2025-10-20",driver:"Samuel",vehicle:"AGN 9991",purpose:"朱成涛瀑布城到达（1人）",purposeEn:"Zhu Chengtao arrived at Waterfall City (1 person)",pax:1},
+{date:"2025-10-20",driver:"Nkala",vehicle:"AGE 2915",purpose:"两台车送达哈拉雷移民局录入指纹，预计周三返回，周一上午7点中国食堂出发（合计乘客6人）",purposeEn:"Two vehicles were sent to the Harare Immigration Office for fingerprint registration and are expected to return on Wednesday. Departure from the Chinese cafeteria at 7 AM on Monday, with a total of 6 passengers",pax:6},
+{date:"2025-10-21",driver:"Samuel",vehicle:"AGN 9991",purpose:"张林瀑布城出发、梁得喜同行外出万基（2人）",purposeEn:"Zhang Lin departs from Pubu City, accompanied by Liang Dexi, heading to Wankei (2 people)",pax:2},
+{date:"2025-10-22",driver:"瑞龙司机",vehicle:"AGN 4163",purpose:"西二号、黄卓文、姜宏佳瀑布城出发（3人）",purposeEn:"West No. 2, Huang Zhuowen, and Jiang Hongjia departed from Waterfall City (3 people)",pax:3},
+{date:"2025-10-23",driver:"Samuel",vehicle:"AGN 9991",purpose:"陆海晶、王鹏翔瀑布城出发（2人）",purposeEn:"Lu Haijing and Wang Pengxiang departing from Waterfall City (2 people)",pax:2},
+{date:"2025-10-25",driver:"Samuel",vehicle:"AGN 9991",purpose:"安全生产部用车、送伤员万基医院（3人）",purposeEn:"Safety Production Department vehicle use, transporting three injured personnel to Wanji Hospital",pax:3},
+{date:"2025-10-27",driver:"Nkala",vehicle:"AGE 2915",purpose:"唐佳华、古文瀑布城到达（2人）",purposeEn:"Tang Jiahua and Ancient Waterfall City arrival (2 people)",pax:2},
+{date:"2025-10-28",driver:"Reginald",vehicle:"AGA 5395",purpose:"余洪川、贾帅辉、常磊坡、薛建瀑布城到达（4人） 何铭瀑布城出发（1人）",purposeEn:"Yu Hongchuan, Jia Shuaihui, Chang Leipo, Xue Jian arrived at Waterfall City (4 people). He Ming departed from Waterfall City (1 person)",pax:5},
+{date:"2025-10-29",driver:"Reginald",vehicle:"AGN 9991",purpose:"外出万基采购日用品",purposeEn:"Outing Wanjī Purchase Daily Necessities",pax:2},
+{date:"2025-10-30",driver:"Nkala",vehicle:"AGE 2915",purpose:"叶建国瀑布城到达（1人）",purposeEn:"Ye Jianguo arrived at Waterfall City (1 person)",pax:1},
+{date:"2025-10-30",driver:"Redinald",vehicle:"AGN 9991",purpose:"布拉瓦约车站接病人，下午两点到达车站(3人)",purposeEn:"Pick up patients at Bulawayo station and arrive at the station at 2 pm (3 people)",pax:3},
+{date:"2025-10-31",driver:"Nkala",vehicle:"AGE 2915",purpose:"梁得喜瀑布城到达（1人）",purposeEn:"Liang Dexi arrives at Waterfall City (1 person)",pax:1},
+{date:"2026-04-07",driver:"Nkala",vehicle:"AEC 2489",purpose:"薛旭强-哈拉雷办理签证，陈文康随行返程哈拉雷，上午7.00中方食堂外集合出发。同行0693车辆汇达修理厂返修（2人）",purposeEn:"Xue Xuqiang - Harare visa application, Chen Wenkang accompanying return to Harare, gathering at the Chinese canteen at 7:00 AM. Companion 0693 vehicle to Hyundae repair shop (2 people)",pax:2},
+{date:"2026-04-08",driver:"ishmae",vehicle:"AEC 2489",purpose:"乘坐大巴车出发哈拉雷，业务部协调本地汽修专业人员完成技术验收、薛旭强-同行押车，Nkala、ishmae、Reggie三台车同行安全行驶返回矿山现场（4人）",purposeEn:"Take the bus to Harare, Business Department coordinates local auto repair professionals to complete technical acceptance, Xue Xuqiang accompanies, Nkala, ishmae, Reggie three vehicles travel together safely back to mine site (4 people)",pax:4},
+{date:"2026-04-09",driver:"Samuel",vehicle:"AGA 5395",purpose:"陆海晶-瀑布城机场到达；(1人)",purposeEn:"Lu Haijing - Waterfall City airport arrival (1 person)",pax:1},
+{date:"2026-04-11",driver:"Samuel",vehicle:"AGA 5395",purpose:"曹资瑞、瀑布城机场到达，返程时购买食材。（1人）",purposeEn:"Cao Zirui, Waterfall City airport arrival, purchase food on return trip (1 person)",pax:1},
+{date:"2026-04-12",driver:"Samuel",vehicle:"AGA 5395",purpose:"苟小勇、阮胤-瀑布城出发；罗发元-预约3人到达（出发2人，到达3人）",purposeEn:"Gou Xiaoyong, Ruan Yin - Waterfall City departure; Luo Fayuan - reservation for 3 arrivals (2 departures, 3 arrivals)",pax:5},
+{date:"2026-04-13",driver:"Nkala",vehicle:"AGN 9991",purpose:"罗发元-预约，瀑布城机场到达（3人）返程途中采购食材。上午8点出发",purposeEn:"Luo Fayuan - reservation, Waterfall City airport arrival (3 people) purchase food on return trip. Departure at 8:00 AM",pax:3},
+{date:"2026-04-14",driver:"",vehicle:"AGN 9991",purpose:"廖辉-瀑布城机场出发",purposeEn:"Liao Hui - Waterfall City airport departure",pax:1},
+{date:"2026-04-16",driver:"",vehicle:"AGN 9991",purpose:"王世伟、张腾达-瀑布城机场出发",purposeEn:"Wang Shiwei, Zhang Tengda - Waterfall City airport departure",pax:2},
+{date:"2026-04-18",driver:"",vehicle:"AGN 9991",purpose:"卢天伟、瀑布城机场到达",purposeEn:"Lu Tianwei - Waterfall City airport arrival",pax:1},
+{date:"2026-04-20",driver:"",vehicle:"AGN 9991",purpose:"杨亚、陈佳豪-瀑布城机场到达",purposeEn:"Yang Ya, Chen Jiahao - Waterfall City airport arrival",pax:2}
+];
+
+// ================ VERSION ================
+const APP_VER='v4.1';
+(function(){
+  const prev=localStorage.getItem('kmc_app_ver');
+  if(prev!==APP_VER){
+    // Wipe old data to prevent schema conflicts
+    ['vehicles','drivers','requests','dispatches','users','imported','user','invite'].forEach(k=>localStorage.removeItem('kmc_'+k));
+    localStorage.setItem('kmc_app_ver',APP_VER);
+  }
+})();
+
+// ================ i18n ================
+const I18N={
+zh:{
+  nav:{submit:'提交需求',dispatch:'派车单',pool:'需求池',records:'台账',settings:'设置'},
+  login:{title:'KMC 车辆调度系统',sub:'Vehicle Dispatch System',code:'邀请码',dept:'部门',name:'姓名',enter:'进入系统',hint:'Invite code required for first access',
+    hintCode:'请输入管理员分发的邀请码',hintDept:'选择你所在的部门',hintName:'请输入你的中文姓名'},
+  submit:{title:'提交用车需求',date:'用车日期',time:'时间段',pax:'人数',
+    purposeCn:'中文外出事由',purposeEn:'英文外出事由',
+    notesCn:'中文备注',notesEn:'英文备注',
+    approved:'是否经部门负责人许可',approvedYes:'是 Yes',approvedNo:'否 No',approvedHint:'提交前请确认已获得部门负责人许可<br><small>Confirm department head approval before submitting</small>',
+    signBtn:'📝 点击展开签字面板',signTitle:'部门负责人签字',signHint:'请在上方签字板内手动签名<br><small>Please sign in the signature pad above</small>',signClear:'清除 Clear',signSave:'保存签名 Save',
+    submit:'提交需求',myreqs:'提交记录',myreqsDept:'本部门提交记录',
+    edit:'编辑',del:'删除',noreqs:'暂无提交记录',
+    sigDone:'✓ 已签字',
+    ruleDate:'日期必须为今天或明天<br><small>Date must be today or tomorrow</small>',
+    ruleTime:'选择预计使用时间段<br><small>Select expected time slot</small>',
+    rulePax:'乘车人数（不含司机）<br><small>Number of passengers (excluding driver)</small>',
+    rulePurpose:'用中文和英文各描述一次外出事由<br><small>Describe purpose in both Chinese and English</small>',
+    ruleNotes:'补充说明（选填，可中英文）<br><small>Additional notes (optional, bilingual)</small>',
+    ruleApproved:'选择是否经过部门负责人许可<br><small>Select whether department head approved</small>'},
+  dispatch:{title:'派车计划',exportImg:'导出截图',exportCsv:'导出 CSV',none:'暂无派车安排',plate:'车辆',driver:'司机',time2:'出发时间',point:'集合点',pax:'人数',dept:'部门',purpose:'事由',passengers:'乘车人',notes:'备注',signed:'签字'},
+  pool:{title:'需求池',pending:'待处理',dispatched:'已派车',merge:'合并派车',selAll:'全选',selReq:'已选',reqs:'条需求',totalPax:'共',people:'人',dailyCutoff:'每日 19:00 截止',noreqs:'该日期暂无需求',
+    editDisp:'编辑派车',cancelDisp:'撤销',cancelConfirm:'确定撤销？需求将恢复为待处理。',
+    dispatchModal:'合并派车',vehicle:'指派车辆',driver:'指派司机',confirm:'确认派车'},
+  records:{title:'历史台账',totalTrips:'总派车次数',mostUsed:'最常用车辆',allVeh:'全部车辆',allDept:'全部部门',noMatch:'无匹配记录',edit:'编辑',dateRange:'日期范围'},
+  settings:{title:'设置',invite:'邀请码',vehicles:'车辆管理',drivers:'司机管理',users:'人员管理',
+    backup:'数据备份',exportJson:'导出 JSON',importJson:'导入 JSON',clear:'清空数据',
+    logout:'退出登录',save:'保存',add:'添加',edit:'编辑',del:'删除',
+    backupHint:'数据存储在浏览器本地，建议定期导出备份。',
+    plate:'车牌',vehType:'车型',seats:'座位',drvName:'司机姓名',
+    userName:'姓名',userDept:'部门',addVeh:'添加车辆',addDrv:'添加司机',
+    noUsers:'暂无人员记录（人员登录后自动记录）'},
+  status:{pending:'待处理',merged:'已合并',dispatched:'已派车'},
+  common:{cancel:'取消',confirm:'确认',close:'关闭',edit:'编辑',del:'删除',save:'保存',print:'打印',
+    selectDept:'请选择部门',enterName:'请输入姓名',enterCode:'请输入邀请码',
+    wrongCode:'邀请码错误',success:'成功',updated:'已更新',deleted:'已删除',
+    reqSubmitted:'提交成功',dispatched:'派车成功',reverted:'已撤销',
+    noPerm:'无权限',cantEdit:'该需求已派车，无法修改',
+    importWarn:'导入将覆盖当前数据，确定继续？',clearWarn:'⚠️ 确定清空所有数据？此操作不可恢复！',
+    clearWarn2:'再次确认：将删除所有需求、派车记录、车辆和司机数据',
+    delConfirm:'确定删除？',noData:'暂无数据',exported:'已导出',
+    csvExported:'CSV 已导出',inviteUpdated:'邀请码已更新',adminOnly:'管理员可管理',
+    changeLang:'切换语言'},
+},
+en:{
+  nav:{submit:'Submit Request',dispatch:'Dispatch Plan',pool:'Request Pool',records:'Records',settings:'Settings'},
+  login:{title:'KMC Vehicle Dispatch',sub:'Vehicle Dispatch System',code:'Invite Code',dept:'Department',name:'Name',enter:'Enter System',hint:'Admin sets invite code for first access',
+    hintCode:'Enter the invite code provided by admin',hintDept:'Select your department',hintName:'Enter your Chinese name'},
+  submit:{title:'Submit Vehicle Request',date:'Date',time:'Time Slot',pax:'Passengers',
+    purposeCn:'Purpose (Chinese)',purposeEn:'Purpose (English)',
+    notesCn:'Notes (Chinese)',notesEn:'Notes (English)',
+    approved:'Approved by Dept Head',approvedYes:'Yes',approvedNo:'No',approvedHint:'Confirm department head approval before submitting',
+    signBtn:'📝 Open Signature Panel',signTitle:'Department Head Signature',signHint:'Please sign in the signature pad above',signClear:'Clear',signSave:'Save Signature',
+    submit:'Submit Request',myreqs:'My Requests',myreqsDept:'Department Requests',
+    edit:'Edit',del:'Delete',noreqs:'No requests yet',
+    sigDone:'✓ Signed',
+    ruleDate:'Date must be today or tomorrow',
+    ruleTime:'Select expected time slot',
+    rulePax:'Number of passengers (excluding driver)',
+    rulePurpose:'Describe purpose in both Chinese and English',
+    ruleNotes:'Additional notes (optional, bilingual)',
+    ruleApproved:'Select whether department head approved'},
+  dispatch:{title:'Dispatch Plan',exportImg:'Export Image',exportCsv:'Export CSV',none:'No dispatch plan for today',plate:'Vehicle',driver:'Driver',time2:'Departure',point:'Meeting Point',pax:'Pax',dept:'Department',purpose:'Purpose',passengers:'Passengers',notes:'Notes',signed:'Signed'},
+  pool:{title:'Request Pool',pending:'Pending',dispatched:'Dispatched',merge:'Merge & Dispatch',selAll:'Select All',selReq:'Selected',reqs:'requests',totalPax:'Total',people:'pax',dailyCutoff:'Daily cutoff: 19:00',noreqs:'No requests for this date',
+    editDisp:'Edit Dispatch',cancelDisp:'Revert',cancelConfirm:'Revert dispatch? Requests will return to pending.',
+    dispatchModal:'Merge & Dispatch',vehicle:'Vehicle',driver:'Driver',confirm:'Confirm Dispatch'},
+  records:{title:'History Records',totalTrips:'Total Trips',mostUsed:'Most Used',allVeh:'All Vehicles',allDept:'All Departments',noMatch:'No matching records',edit:'Edit',dateRange:'Date Range'},
+  settings:{title:'Settings',invite:'Invite Code',vehicles:'Vehicle Management',drivers:'Driver Management',users:'User Management',
+    backup:'Data Backup',exportJson:'Export JSON',importJson:'Import JSON',clear:'Clear All Data',
+    logout:'Logout',save:'Save',add:'Add',edit:'Edit',del:'Delete',
+    backupHint:'Data is stored locally in your browser. Export regularly.',
+    plate:'Plate',vehType:'Vehicle Type',seats:'Seats',drvName:'Driver Name',
+    userName:'Name',userDept:'Department',addVeh:'Add Vehicle',addDrv:'Add Driver',
+    noUsers:'No users recorded yet (logged-in users are auto-recorded)'},
+  status:{pending:'Pending',merged:'Merged',dispatched:'Dispatched'},
+  common:{cancel:'Cancel',confirm:'Confirm',close:'Close',edit:'Edit',del:'Delete',save:'Save',print:'Print',
+    selectDept:'Select department',enterName:'Enter your name',enterCode:'Enter invite code',
+    wrongCode:'Invalid invite code',success:'Success',updated:'Updated',deleted:'Deleted',
+    reqSubmitted:'Request submitted',dispatched:'Dispatch confirmed',reverted:'Reverted',
+    noPerm:'Permission denied',cantEdit:'Already dispatched, cannot edit',
+    importWarn:'Import will overwrite all data. Continue?',clearWarn:'Clear all data? This cannot be undone!',
+    clearWarn2:'Final confirm: Delete all requests, dispatches, vehicles and drivers?',
+    delConfirm:'Delete?',noData:'No data',exported:'Exported',
+    csvExported:'CSV exported',inviteUpdated:'Invite code updated',adminOnly:'Admin only',
+    changeLang:'Switch Language'},
+}};
+let L='zh';
+function T(key){const ks=key.split('.');let o=I18N[L];for(const k of ks){if(!o)return key;o=o[k];}return o||key;}
+function loadLang(){const v=localStorage.getItem('kmc_lang');if(v==='en'||v==='zh')L=v;}
+loadLang();
+
+// ================ DEPARTMENTS ================
+const DEPTS=[
+  {cn:'财务部',en:'Finance Department'},
+  {cn:'综合部',en:'General Affairs'},
+  {cn:'安全生产部',en:'Safety Production'},
+  {cn:'质量技术部',en:'Quality Technology'},
+  {cn:'后勤部',en:'Logistics'},
+  {cn:'业务部',en:'Business'},
+  {cn:'采矿部',en:'Mining'},
+  {cn:'选厂',en:'Processing Plant'},
+  {cn:'机电工程部',en:'Mech. & Electrical'},
+];
+function deptName(d){
+  if(typeof d==='string'){const f=DEPTS.find(x=>x.cn===d||x.en===d);return f?(L==='zh'?f.cn:f.en):d;}
+  return d;
+}
+function deptOpts(){
+  return DEPTS.map(d=>`<option value="${d.cn}">${L==='zh'?d.cn:d.cn+' / '+d.en}</option>`).join('');
+}
+
+// ================ DATA ================
+const LS=k=>{
+  const key='kmc_'+k;
+  return{get(){try{return JSON.parse(localStorage.getItem(key))}catch{return null}},
+    set(v){localStorage.setItem(key,JSON.stringify(v))},del(){localStorage.removeItem(key)}};
+};
+const DB={
+  vehicles:LS('vehicles'),drivers:LS('drivers'),
+  requests:LS('requests'),dispatches:LS('dispatches'),
+  invite:LS('invite'),user:LS('user'),users:LS('users'),
+  imported:LS('imported'),
+  init(){
+    if(!this.vehicles.get())this.vehicles.set([
+      {plate:'AGE 2915',type:'黑色丰田普拉多（7座）',typeEn:'Black Toyota Prado (7-seater)',seats:7},
+      {plate:'AGA 5395',type:'白色丰田海拉克斯皮卡（双排）',typeEn:'White Toyota Hilux (Double Cab)',seats:5},
+      {plate:'AGN 4371',type:'白色丰田海拉克斯皮卡（双排）',typeEn:'White Toyota Hilux (Double Cab)',seats:5},
+      {plate:'AGN 9991',type:'黑色丰田海拉克斯皮卡（双排）',typeEn:'Black Toyota Hilux (Double Cab)',seats:5},
+      {plate:'AEC 2489',type:'白色丰田海拉克斯皮卡（手动）',typeEn:'White Toyota Hilux (Manual)',seats:5},
+      {plate:'AFX 6895',type:'白色丰田海拉克斯皮卡（巡逻）',typeEn:'White Toyota Hilux (Patrol)',seats:5},
+    ]);
+    if(!this.drivers.get())this.drivers.set([
+      {name:'Nkala'},{name:'Reginald'},{name:'Samuel'},
+      {name:'Ishmael'},{name:'Kuda'},{name:'Opharn Chuma'},
+      {name:'Robert'},{name:'Taute'},{name:'Ishmael Sibanda'}
+    ]);
+    if(!this.invite.get())this.invite.set('KMC2024');
+    if(!this.requests.get())this.requests.set([]);
+    if(!this.dispatches.get())this.dispatches.set([]);
+    if(!this.users.get())this.users.set([]);
+    // Auto-import historical data on first run
+    if(!this.imported.get()){
+      this.importHistorical();
+      this.imported.set(true);
+    }
+  },
+  importHistorical(){
+    // Convert HIST_DATA into dispatches + matching requests
+    const dispatches=this.dispatches.get();
+    const requests=this.requests.get();
+    HIST_DATA.forEach(h=>{
+      const reqId=uid();
+      requests.push({
+        id:reqId,date:h.date,timeSlot:'08:00-12:00',passengers:h.pax,
+        purpose:h.purpose,purposeEn:h.purposeEn,notes:'',notesEn:'',
+        department:'后勤部',submitter:h.driver,
+        approved:'yes',signature:'',
+        status:'dispatched',mergedToDispatchId:null,createdAt:h.date+'T08:00:00Z'
+      });
+      dispatches.push({
+        id:uid(),date:h.date,vehicle:h.vehicle,driver:h.driver,
+        departureTime:'',meetingPoint:'',
+        notes:'',notesEn:'',signature:'',
+        requestIds:[reqId],createdAt:h.date+'T08:00:00Z'
+      });
+    });
+    this.requests.set(requests);
+    this.dispatches.set(dispatches);
+  }
+};
+DB.init();
+
+// ================ STATE ================
+const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),editingId:null,
+  sigDataUrl:'',// current signature data URL
+  approved:'',// yes/no
+};
+
+// ================ HELPERS ================
+const $=s=>document.querySelector(s);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const fmtD=d=>{const t=new Date(d);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');};
+const fmtCn=d=>{const t=new Date(d);return t.getMonth()+1+'月'+t.getDate()+'日';};
+const fmtEn=d=>{const t=new Date(d);const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return m[t.getMonth()]+' '+t.getDate();};
+const fmtDateLoc=d=>L==='zh'?fmtCn(d):fmtEn(d);
+const today=()=>fmtD(new Date());
+const tmrw=()=>{const d=new Date();d.setDate(d.getDate()+1);return fmtD(d);};
+const now=()=>new Date().toISOString();
+const isAdmin=()=>S.user&&S.user.role==='admin';
+function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000);}
+
+function rrect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w+r,y);ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function renderLangToggles(){
+  const h=(v,p)=>`<button class="${L===v?'active':''}" onclick="switchLang('${v}')">${p}</button>`;
+  const tg=`<div class="ltg">${h('zh','中')}${h('en','EN')}</div>`;
+  ['ltg-login','ltg-sbar','ltg-tbar'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=tg;
+  });
+}
+function switchLang(l){L=l;localStorage.setItem('kmc_lang',l);renderLangToggles();
+  if(S.user)switchTab(S.tab);else updateLoginI18n();}
+function updateLoginI18n(){
+  $('#login-title').textContent=T('login.title');
+  $('#login-sub').textContent=T('login.sub');
+  $('#lbl-code').textContent=T('login.code');
+  $('#lbl-dept').textContent=T('login.dept');
+  $('#lbl-name').textContent=T('login.name');
+  $('#login-btn').textContent=T('login.enter');
+  $('#login-hint').textContent=T('login.hint');
+  $('#hint-code').innerHTML=T('login.hintCode')+(L==='zh'?'<br><small>Enter the invite code provided by admin</small>':'');
+  $('#hint-dept').innerHTML=T('login.hintDept')+(L==='zh'?'<br><small>Select your department</small>':'');
+  $('#hint-name').innerHTML=T('login.hintName')+(L==='zh'?'<br><small>Enter your Chinese name</small>':'');
+}
+
+// ================ MODAL ================
+function showModal(html,center=false){
+  const r=$('#modal-root');r.innerHTML='';
+  const m=document.createElement('div');m.className='mdl-mask'+(center?' ctr':'');
+  m.innerHTML=`<div class="mdl">${html}</div>`;
+  m.onclick=e=>{if(e.target===m)closeModal();};
+  r.appendChild(m);
+}
+function closeModal(){$('#modal-root').innerHTML='';}
+
+// ================ LOGIN ================
+function initLogin(){
+  const s=$('#login-dept');
+  s.innerHTML='<option value="">'+T('common.selectDept')+'</option>'+DEPTS.map(d=>`<option value="${d.cn}">${L==='zh'?d.cn:d.cn+' / '+d.en}</option>`).join('');
+  renderLangToggles();updateLoginI18n();
+}
+(function(){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initLoginAndCheck);else initLoginAndCheck();})();
+function initLoginAndCheck(){
+  try{
+    initLogin();const u=DB.user.get();if(u){S.user=u;renderApp();}
+  }catch(e){
+    // Show error on screen for debugging
+    document.body.innerHTML='<div style="padding:20px;color:red;font-family:monospace;"><h2>JS Error</h2><pre>'+e.message+'<br><br>'+e.stack+'</pre></div>';
+    console.error(e);
+  }
+}
+
+function doLogin(){
+  const code=$('#login-code').value.trim(),dept=$('#login-dept').value,name=$('#login-name').value.trim();
+  if(!code)return toast(T('common.enterCode'));if(!dept)return toast(T('common.selectDept'));if(!name)return toast(T('common.enterName'));
+  if(code!==DB.invite.get())return toast(T('common.wrongCode'));
+  S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user',loginAt:now()};
+  DB.user.set(S.user);
+  const users=DB.users.get();
+  if(!users.find(u=>u.name===name&&u.department===dept))users.push({name,department:dept,firstLogin:now(),lastLogin:now(),role:S.user.role});
+  else{const u=users.find(u=>u.name===name&&u.department===dept);u.lastLogin=now();if(u.role!==S.user.role)u.role=S.user.role;}
+  DB.users.set(users);renderApp();
+}
+function doLogout(){if(!confirm('Logout?'))return;DB.user.set(null);S.user=null;
+  $('#login-screen').classList.remove('hidden');$('#app-screen').classList.add('hidden');updateLoginI18n();}
+
+// ================ APP ================
+function renderApp(){
+  $('#login-screen').classList.add('hidden');$('#app-screen').classList.remove('hidden');
+  renderLangToggles();updateLoginI18n();
+  $('#tb-i').textContent=S.user.department+' · '+S.user.name+(isAdmin()?' [Admin]':'');
+  $('#s-u').innerHTML=`<div class="su-n">${S.user.name}</div><div class="su-d">${deptName(S.user.department)}</div>${isAdmin()?'<div class="su-b">ADMIN</div>':''}`;
+  const navs=[
+    {id:'submit',ico:'<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
+    {id:'dispatch',ico:'<rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
+  ];
+  if(isAdmin()){
+    navs.push({id:'pool',ico:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5v0a2 2 0 002 2h2a2 2 0 002-2v0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M9 14l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'});
+    navs.push({id:'records',ico:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>'});
+  }
+  navs.push({id:'settings',ico:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2" fill="none"/>'});
+  $('#s-nav').innerHTML=navs.map(n=>`<button onclick="switchTab('${n.id}')" data-snav="${n.id}"><svg viewBox="0 0 24 24" fill="none">${n.ico}</svg><span data-i18n="nav.${n.id}">${T('nav.'+n.id)}</span></button>`).join('');
+  $('#bnav').innerHTML=navs.map(n=>`<button onclick="switchTab('${n.id}')" data-bnav="${n.id}"><svg viewBox="0 0 24 24" fill="none">${n.ico}</svg><span data-i18n="nav.${n.id}">${T('nav.'+n.id)}</span></button>`).join('');
+  S.tab='submit';switchTab('submit');
+}
+
+function switchTab(id){
+  S.tab=id;S.editingId=null;
+  document.querySelectorAll('[data-snav]').forEach(b=>b.classList.toggle('active',b.dataset.snav===id));
+  document.querySelectorAll('[data-bnav]').forEach(b=>b.classList.toggle('active',b.dataset.bnav===id));
+  const ma=$('#main-area');ma.innerHTML='';
+  const pg=document.createElement('div');pg.className='page-v active';pg.id='pg-'+id;ma.appendChild(pg);
+  switch(id){case'submit':renderSubmit();break;case'dispatch':renderDispatch();break;
+    case'pool':renderPool();break;case'records':renderRecords();break;case'settings':renderSettings();break;}
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(k)el.textContent=T(k);});
+}
+
+// ================ SUBMIT ================
+function renderSubmit(){
+  const pg=$('#pg-submit');const _today=today();const _tmrw=tmrw();
+  let html=`<div class="card"><div class="card-bd">
+    <div class="card-h"><h3>📝 ${T('submit.title')}</h3></div>
+    <div class="fg"><label>${T('submit.date')} <span style="color:var(--danger);">*</span></label>
+      <input type="date" id="rq-date" min="${_today}" max="${_tmrw}" value="${_today}">
+      <div class="fg-hint">${T('submit.ruleDate')}</div></div>
+    <div class="fg"><label>${T('submit.time')} <span style="color:var(--danger);">*</span></label>
+      <select id="rq-time"><option value="06:00-08:00">06:00-08:00</option><option value="08:00-10:00">08:00-10:00</option><option value="08:00-12:00" selected>08:00-12:00</option><option value="10:00-12:00">10:00-12:00</option><option value="12:00-14:00">12:00-14:00</option><option value="14:00-16:00">14:00-16:00</option><option value="16:00-18:00">16:00-18:00</option><option value="全天">全天</option></select>
+      <div class="fg-hint">${T('submit.ruleTime')}</div></div>
+    <div class="fg"><label>${T('submit.pax')} <span style="color:var(--danger);">*</span></label>
+      <input type="number" id="rq-pax" min="1" max="50" value="1">
+      <div class="fg-hint">${T('submit.rulePax')}</div></div>
+    <div class="bi">
+      <div class="bi-c"><label>${T('submit.purposeCn')} <span style="color:var(--danger);">*</span><small>Chinese purpose / 中文外出事由</small></label>
+        <textarea id="rq-purpose" placeholder="例：去万基医院商谈HOU互助协议"></textarea>
+        <div class="fg-hint">${T('submit.rulePurpose')}</div></div>
+      <div class="bi-c"><label>${T('submit.purposeEn')} <span style="color:var(--danger);">*</span><small>English purpose / 英文外出事由</small></label>
+        <textarea id="rq-purposeEn" placeholder="e.g. Negotiate HOU agreement at Hwange Hospital"></textarea></div>
+    </div>
+    <div class="bi">
+      <div class="bi-c"><label>${T('submit.notesCn')}<small>中文备注</small></label>
+        <input type="text" id="rq-notes" placeholder="其他说明（中文）">
+        <div class="fg-hint">${T('submit.ruleNotes')}</div></div>
+      <div class="bi-c"><label>${T('submit.notesEn')}<small>English notes</small></label>
+        <input type="text" id="rq-notesEn" placeholder="Additional notes (English)"></div>
+    </div>
+
+    <!-- Approval dropdown -->
+    <div class="fg"><label>${T('submit.approved')} <span style="color:var(--danger);">*</span></label>
+      <select id="rq-approved" onchange="S.approved=this.value">
+        <option value="">${L==='zh'?'请选择':'Please select'}</option>
+        <option value="yes">${T('submit.approvedYes')}</option>
+        <option value="no">${T('submit.approvedNo')}</option>
+      </select>
+      <div class="fg-hint">${T('submit.approvedHint')}</div></div>
+
+    <!-- Signature panel trigger -->
+    <div class="fg"><button type="button" class="btn btn-o btn-b" onclick="openSigModal()" id="sig-btn">${T('submit.signBtn')}</button>
+      <div id="sig-status" style="display:none;font-size:.88em;color:var(--success);font-weight:600;margin-top:6px;">${T('submit.sigDone')}</div></div>
+
+    <button class="btn btn-p btn-b" onclick="doSubmit()">${T('submit.submit')}</button>
+  </div></div>`;
+
+  // Pre-fill if editing
+  if(S.editingId){
+    const r=DB.requests.get().find(x=>x.id===S.editingId);
+    if(r){
+      html+=`<script>setTimeout(()=>{
+        document.getElementById('rq-date').value='${r.date}';
+        document.getElementById('rq-time').value='${r.timeSlot}';
+        document.getElementById('rq-pax').value='${r.passengers}';
+        document.getElementById('rq-purpose').value=${JSON.stringify(r.purpose||'')};
+        document.getElementById('rq-purposeEn').value=${JSON.stringify(r.purposeEn||'')};
+        document.getElementById('rq-notes').value=${JSON.stringify(r.notes||'')};
+        document.getElementById('rq-notesEn').value=${JSON.stringify(r.notesEn||'')};
+        document.getElementById('rq-approved').value='${r.approved||''}';
+        S.approved='${r.approved||''}';S.sigDataUrl='${r.signature||''}';
+        if('${r.signature||''}'){document.getElementById('sig-status').style.display='block';document.getElementById('sig-btn').textContent='✏️ '+(L==='zh'?'修改签字':'Edit Signature');}
+      },80);<\/script>`;
+    }
+  }
+
+  html+=`<div class="card"><div class="card-bd">
+    <div class="card-h"><h3>📋 ${isAdmin()?T('submit.myreqs'):T('submit.myreqsDept')}</h3></div>
+    <div id="my-reqs"></div></div></div>`;
+
+  pg.innerHTML=html;
+  setTimeout(renderMyReqs,100);
+}
+
+// ================ SIGNATURE MODAL ================
+function openSigModal(){
+  showModal(`
+    <h3>📝 ${T('submit.signTitle')}</h3>
+    <div class="fg"><label>${T('submit.signHint')}</label>
+      <canvas id="sig-canvas" class="sig-pad"></canvas>
+      <div class="sig-acts">
+        <button type="button" class="btn btn-o btn-sm" onclick="clearSig()">🗑️ ${T('submit.signClear')}</button>
+        <div class="sp" style="flex:1;"></div>
+        <button type="button" class="btn btn-o btn-sm" onclick="closeModal()">${T('common.cancel')}</button>
+        <button type="button" class="btn btn-p btn-sm" onclick="saveSig()">✓ ${T('submit.signSave')}</button>
+      </div>
+    </div>
+  `,true);
+  // Init signature canvas after render
+  setTimeout(initSigCanvas,100);
+}
+
+let sigCtx=null,sigDrawing=false,sigLastX=0,sigLastY=0,sigHasInk=false;
+function initSigCanvas(){
+  const c=document.getElementById('sig-canvas');
+  if(!c)return;
+  // Resize for DPR
+  const rect=c.getBoundingClientRect();
+  c.width=rect.width*window.devicePixelRatio;
+  c.height=rect.height*window.devicePixelRatio;
+  sigCtx=c.getContext('2d');
+  sigCtx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  sigCtx.strokeStyle='#0f172a';
+  sigCtx.lineWidth=2.5;
+  sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  // Restore previous if any
+  if(S.sigDataUrl){
+    const img=new Image();
+    img.onload=()=>{sigCtx.drawImage(img,0,0,rect.width,rect.height);sigHasInk=true;};
+    img.src=S.sigDataUrl;
+  }
+  // Mouse events
+  c.onmousedown=sigStart;
+  c.onmousemove=sigMove;
+  c.onmouseup=sigEnd;c.onmouseleave=sigEnd;
+  // Touch events
+  c.ontouchstart=e=>{e.preventDefault();const t=e.touches[0];const r=c.getBoundingClientRect();sigStart({clientX:t.clientX,clientY:t.clientY,target:c});};
+  c.ontouchmove=e=>{e.preventDefault();const t=e.touches[0];sigMove({clientX:t.clientX,clientY:t.clientY});};
+  c.ontouchend=e=>{e.preventDefault();sigEnd();};
+}
+function sigPos(e){
+  const r=e.target.getBoundingClientRect();
+  return {x:e.clientX-r.left,y:e.clientY-r.top};
+}
+function sigStart(e){sigDrawing=true;sigHasInk=true;const p=sigPos(e);sigLastX=p.x;sigLastY=p.y;}
+function sigMove(e){if(!sigDrawing)return;const p=sigPos(e);
+  sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();
+  sigLastX=p.x;sigLastY=p.y;}
+function sigEnd(){sigDrawing=false;}
+function clearSig(){
+  const c=document.getElementById('sig-canvas');if(!c)return;
+  const rect=c.getBoundingClientRect();
+  sigCtx.clearRect(0,0,rect.width,rect.height);sigHasInk=false;S.sigDataUrl='';
+}
+function saveSig(){
+  if(!sigHasInk){toast(L==='zh'?'请先签字':'Please sign first');return;}
+  const c=document.getElementById('sig-canvas');if(!c)return;
+  S.sigDataUrl=c.toDataURL('image/png');
+  document.getElementById('sig-status').style.display='block';
+  document.getElementById('sig-btn').textContent='✏️ '+(L==='zh'?'修改签字':'Edit Signature');
+  closeModal();toast(L==='zh'?'签字已保存':'Signature saved');
+}
+
+function doSubmit(){
+  const date=$('#rq-date').value,time=$('#rq-time').value,pax=parseInt($('#rq-pax').value)||1;
+  const purpose=$('#rq-purpose').value.trim(),purposeEn=$('#rq-purposeEn').value.trim();
+  const notes=$('#rq-notes').value.trim(),notesEn=$('#rq-notesEn').value.trim();
+  const approved=$('#rq-approved').value;
+  if(!date)return toast(L==='zh'?'请选择日期':'Date required');
+  if(!purpose)return toast(L==='zh'?'请填写中文外出事由':'Chinese purpose required');
+  if(!purposeEn)return toast(L==='zh'?'请填写英文外出事由':'English purpose required');
+  if(!approved)return toast(L==='zh'?'请选择是否经部门负责人许可':'Please select approval status');
+  if(approved==='yes'&&!S.sigDataUrl)return toast(L==='zh'?'已许可时需签字':'Signature required when approved');
+
+  if(S.editingId){
+    const reqs=DB.requests.get();const r=reqs.find(x=>x.id===S.editingId);
+    if(!r||r.status!=='pending')return toast(T('common.cantEdit'));
+    Object.assign(r,{date,timeSlot:time,passengers:pax,purpose,purposeEn,notes:notes||'',notesEn:notesEn||'',approved,signature:S.sigDataUrl});
+    DB.requests.set(reqs);S.editingId=null;toast(T('common.updated'));
+  }else{
+    const reqs=DB.requests.get();
+    reqs.push({id:uid(),date,timeSlot:time,passengers:pax,purpose,purposeEn,notes:notes||'',notesEn:notesEn||'',approved,signature:S.sigDataUrl,department:S.user.department,submitter:S.user.name,status:'pending',mergedToDispatchId:null,createdAt:now()});
+    DB.requests.set(reqs);toast(T('common.reqSubmitted'));
+  }
+  renderMyReqs();
+  $('#rq-purpose').value='';$('#rq-purposeEn').value='';$('#rq-notes').value='';$('#rq-notesEn').value='';$('#rq-pax').value='1';
+  $('#rq-approved').value='';S.sigDataUrl='';S.approved='';
+  const sb=document.getElementById('sig-status');if(sb)sb.style.display='none';
+  const sbtn=document.getElementById('sig-btn');if(sbtn)sbtn.textContent=T('submit.signBtn');
+}
+
+function renderMyReqs(){
+  const el=$('#my-reqs');if(!el)return;
+  let reqs;
+  if(isAdmin())reqs=DB.requests.get().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  else reqs=DB.requests.get().filter(r=>r.department===S.user.department).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  if(!reqs.length){el.innerHTML='<div class="empty"><p>'+T('submit.noreqs')+'</p></div>';return;}
+  el.innerHTML=reqs.slice(0,30).map(r=>{
+    const sl=r.status==='pending'?T('status.pending'):r.status==='merged'?T('status.merged'):T('status.dispatched');
+    const tc=r.status==='pending'?'tg-p':r.status==='merged'?'tg-m':'tg-d';
+    const canEdit=r.status==='pending'&&r.department===S.user.department;
+    const canDel=isAdmin()&&r.status==='pending';
+    const showL=L==='zh'?r.purpose:(r.purposeEn||r.purpose);
+    const showL2=(L==='en'&&r.purpose)?r.purpose:((L==='zh'&&r.purposeEn)?r.purposeEn:'');
+    const sigImg=r.signature?`<img src="${r.signature}" style="max-width:80px;max-height:32px;border:1px solid var(--border);border-radius:4px;margin-top:4px;">`:'';
+    const approvedTag=r.approved?`<span class="tag" style="background:${r.approved==='yes'?'var(--success-bg)':'var(--danger-bg)'};color:${r.approved==='yes'?'var(--success)':'var(--danger)'};font-size:.7em;padding:1px 6px;">${r.approved==='yes'?'✓ Approved':'✗ Not Approved'}</span>`:'';
+    return `<div class="rr" style="pointer-events:auto;cursor:default;">
+      <div class="rr-b">
+        <div class="rr-t">${showL} <span class="tag ${tc}">${sl}</span> ${approvedTag}
+          ${canEdit?`<button class="ed-b" onclick="editMyReq('${r.id}')">✏️ ${T('submit.edit')}</button>`:''}
+          ${canDel?`<button class="ed-b" style="color:var(--danger);" onclick="delMyReq('${r.id}')">🗑️</button>`:''}
+        </div>
+        ${showL2?`<div class="rr-e">${showL2}</div>`:''}
+        <div class="rr-m"><span>📅 ${fmtDateLoc(r.date)} ${r.timeSlot}</span><span>👥 ${r.passengers}人</span><span class="rr-d">${deptName(r.department)}</span><span>👤 ${r.submitter}</span></div>
+        ${r.notes||r.notesEn?`<div style="font-size:.85em;color:var(--text3);margin-top:3px;">💬 ${L==='zh'?(r.notes||r.notesEn):(r.notesEn||r.notes)}</div>`:''}
+        ${sigImg}
+      </div></div>`;
+  }).join('');
+}
+function editMyReq(id){
+  const r=DB.requests.get().find(x=>x.id===id);
+  if(!r||r.status!=='pending')return toast(T('common.cantEdit'));
+  S.editingId=id;S.sigDataUrl=r.signature||'';S.approved=r.approved||'';
+  renderSubmit();window.scrollTo({top:0,behavior:'smooth'});
+}
+function delMyReq(id){if(!isAdmin())return;if(!confirm(T('common.delConfirm')))return;
+  let reqs=DB.requests.get();reqs=reqs.filter(r=>r.id!==id);DB.requests.set(reqs);toast(T('common.deleted'));renderMyReqs();}
+
+// ================ DISPATCH ================
+function renderDispatch(){
+  const pg=$('#pg-dispatch');const _today=today();
+  const dispatches=DB.dispatches.get().filter(d=>d.date===_today);
+  let html='';
+  if(isAdmin()){
+    html+=`<div class="acb"><span style="font-size:.95em;color:var(--text2);">📅 ${fmtDateLoc(_today)} ${T('dispatch.title')}</span>
+      <div class="sp"></div>
+      <button class="btn btn-p btn-sm" onclick="exportImage()">📸 ${T('dispatch.exportImg')}</button>
+      <button class="btn btn-o btn-sm" onclick="exportCSV()">📥 ${T('dispatch.exportCsv')}</button></div>`;
+  }else{
+    html+=`<div class="acb"><span style="font-size:.95em;color:var(--text2);">📅 ${fmtDateLoc(_today)} ${T('dispatch.title')}</span></div>`;
+  }
+  if(!dispatches.length){
+    html+='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><p>'+T('dispatch.none')+'</p></div>';
+  }else{
+    html+=dispatches.map(d=>buildDCard(d)).join('');
+  }
+  pg.innerHTML=html;
+}
+function buildDCard(dd){
+  const reqs=DB.requests.get().filter(r=>dd.requestIds.includes(r.id));
+  const pax=reqs.reduce((s,r)=>s+r.passengers,0);
+  const depts=[...new Set(reqs.map(r=>deptName(r.department)))].join('、');
+  const purposes=L==='zh'?[...new Set(reqs.map(r=>r.purpose))].join('；'):[...new Set(reqs.map(r=>r.purposeEn||r.purpose))].join('; ');
+  const purposes2=L==='en'?[...new Set(reqs.map(r=>r.purpose))].join('; '):'';
+  const names=reqs.map(r=>r.submitter+'（'+deptName(r.department)+'）').join('、');
+  const sigImg=dd.signature?`<img src="${dd.signature}" style="max-width:120px;max-height:50px;border:1px solid var(--border);border-radius:4px;background:rgba(255,255,255,.5);">`:'—';
+  return `<div class="dc">
+    <div class="dc-hd"><div><h4>${T('dispatch.title')}</h4><div style="font-size:.78em;opacity:.65;">${fmtDateLoc(dd.date)} · ${dd.departureTime||'TBD'}</div></div>
+    <div class="dc-p">${dd.vehicle}</div></div>
+    <div class="dc-bd">
+      <div class="dc-row"><span class="dc-l">${T('dispatch.driver')}</span><span class="dc-v"><strong>${dd.driver}</strong></span></div>
+      <div class="dc-row"><span class="dc-l">${T('dispatch.point')}</span><span class="dc-v">${dd.meetingPoint||'—'}</span></div>
+      <div class="dc-row"><span class="dc-l">${T('dispatch.pax')}</span><span class="dc-v">${pax} ${T('pool.people')}</span></div>
+      <div class="dc-row"><span class="dc-l">${T('dispatch.dept')}</span><span class="dc-v">${depts}</span></div>
+      <div class="dc-row"><span class="dc-l">${T('dispatch.purpose')}</span><span class="dc-v">${purposes}${purposes2?' <small>'+purposes2+'</small>':''}</span></div>
+      <div class="dc-row"><span class="dc-l">${T('dispatch.passengers')}</span><span class="dc-v">${names}</span></div>
+      ${sigImg!=='—'?`<div class="dc-row"><span class="dc-l">${T('dispatch.signed')}</span><span class="dc-v">${sigImg}</span></div>`:''}
+    </div></div>`;
+}
+
+// ================ EXPORT ================
+function exportImage(){
+  if(!isAdmin())return toast(T('common.noPerm'));
+  const _today=today();const dispatches=DB.dispatches.get().filter(d=>d.date===_today);
+  if(!dispatches.length)return toast(T('dispatch.none'));
+  const canvas=$('#export-canvas');canvas.style.display='block';
+  canvas.width=420;canvas.height=Math.max(120+dispatches.length*170,200);
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#0f172a';ctx.font='bold 20px -apple-system,sans-serif';ctx.textAlign='center';
+  ctx.fillText('KMC Vehicle Dispatch',210,38);
+  ctx.fillStyle='#64748b';ctx.font='13px -apple-system,sans-serif';
+  ctx.fillText(fmtDateLoc(_today)+' · '+fmtD(_today),210,58);
+  ctx.strokeStyle='#e5e7eb';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(20,70);ctx.lineTo(400,70);ctx.stroke();
+  let y=90;
+  dispatches.forEach(dd=>{
+    const reqs=DB.requests.get().filter(r=>dd.requestIds.includes(r.id));
+    const pax=reqs.reduce((s,r)=>s+r.passengers,0);
+    const purposes=[...new Set(reqs.map(r=>r.purpose+' / '+r.purposeEn))].join('; ');
+    const depts=[...new Set(reqs.map(r=>r.department))].join(', ');
+    ctx.fillStyle='#f8fafc';rrect(ctx,10,y,400,150,10);ctx.fill();
+    ctx.strokeStyle='#d1d5db';rrect(ctx,10,y,400,150,10);ctx.stroke();
+    ctx.fillStyle='#2563eb';ctx.font='bold 28px -apple-system,sans-serif';ctx.textAlign='right';ctx.fillText(dd.vehicle,395,y+38);
+    ctx.fillStyle='#1e293b';ctx.font='bold 15px -apple-system,sans-serif';ctx.textAlign='left';
+    ctx.fillText('Driver: '+dd.driver+'   Depart: '+(dd.departureTime||'TBD'),22,y+26);
+    ctx.fillStyle='#334155';ctx.font='13px -apple-system,sans-serif';
+    ctx.fillText('Point: '+(dd.meetingPoint||'—')+'   Pax: '+pax+'   Dept: '+depts,22,y+52);
+    ctx.fillText('Purpose: '+purposes,22,y+76);
+    if(dd.notes){ctx.fillStyle='#64748b';ctx.font='12px -apple-system,sans-serif';ctx.fillText('Notes: '+dd.notes,22,y+98);}
+    y+=165;
+  });
+  ctx.fillStyle='#94a3b8';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';
+  ctx.fillText('Dispatcher: '+S.user.name+' · KMC Dispatcher',210,y+16);
+  canvas.toBlob(b=>{
+    const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;
+    a.download='KMC_Dispatch_'+_today+'.png';a.click();URL.revokeObjectURL(u);toast(T('common.exported'));
+  },'image/png');canvas.style.display='none';
+}
+function exportCSV(){
+  if(!isAdmin())return toast(T('common.noPerm'));
+  const dd=DB.dispatches.get();const rr=DB.requests.get();
+  let csv='\uFEFFDate,Vehicle,Driver,Departure,Meeting Point,Pax,Department,Purpose(CN),Purpose(EN),Passengers,Notes\n';
+  dd.forEach(d=>{
+    const rl=rr.filter(r=>d.requestIds.includes(r.id));
+    const pax=rl.reduce((s,r)=>s+r.passengers,0);
+    csv+=`${d.date},${d.vehicle},${d.driver},${d.departureTime||''},${d.meetingPoint||''},${pax},${[...new Set(rl.map(r=>r.department))].join('/')},"${[...new Set(rl.map(r=>r.purpose))].join('; ')}","${[...new Set(rl.map(r=>r.purposeEn||''))].join('; ')}","${rl.map(r=>r.submitter+'('+r.department+')').join('/')}","${d.notes||''}"\n`;
+  });
+  const b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Records.csv';a.click();URL.revokeObjectURL(u);toast(T('common.csvExported'));
+}
+
+// ================ POOL ================
+function renderPool(){
+  if(!isAdmin())return;
+  const pg=$('#pg-pool');const activeDate=S.selDate||tmrw();S.selReqs.clear();
+  const reqs=DB.requests.get().filter(r=>r.date===activeDate&&r.status==='pending');
+  const dispatched=DB.requests.get().filter(r=>r.date===activeDate&&r.status==='dispatched');
+
+  let html=`<div class="acb">
+    <input type="date" value="${activeDate}" id="pool-date" onchange="S.selDate=this.value;renderPool()" style="padding:9px 13px;border:1.5px solid rgba(0,0,0,.08);border-radius:8px;font-size:.92em;background:rgba(255,255,255,.7);">
+    <div class="sp"></div><button class="btn btn-o btn-sm" onclick="window.print()">🖨️ ${T('common.print')}</button></div>`;
+
+  html+=`<div class="nt"><div><div class="nt-t">📋 ${fmtDateLoc(activeDate)} ${T('pool.pending')}</div>
+    <div style="font-size:.78em;color:#854d0e;">${T('pool.dispatched')}: ${dispatched.length} | ${T('pool.dailyCutoff')}</div></div>
+    <div class="nt-n">${reqs.length}</div></div>`;
+
+  if(reqs.length){
+    html+=`<div style="font-weight:700;margin-bottom:8px;color:var(--text2);">⏳ ${T('pool.pending')}</div>`;
+    html+=reqs.map(r=>{
+      const pText=L==='zh'?r.purpose:(r.purposeEn||r.purpose);
+      const pText2=(L==='en'&&r.purpose)?r.purpose:((L==='zh'&&r.purposeEn)?r.purposeEn:'');
+      const apv=r.approved?`<span class="tag" style="background:${r.approved==='yes'?'var(--success-bg)':'var(--danger-bg)'};color:${r.approved==='yes'?'var(--success)':'var(--danger)'};font-size:.7em;padding:1px 6px;">${r.approved==='yes'?'✓':'✗'}</span>`:'';
+      return `<div class="rr" id="rr-${r.id}" onclick="toggleSR('${r.id}')"><div class="rr-c"></div>
+      <div class="rr-b"><div class="rr-t">${pText} ${apv}</div>
+      ${pText2?`<div class="rr-e">${pText2}</div>`:''}
+      <div class="rr-m"><span>📅 ${r.timeSlot}</span><span>👥 ${r.passengers}人</span><span class="rr-d">${deptName(r.department)}</span><span>👤 ${r.submitter}</span></div>
+      ${r.notes||r.notesEn?`<div style="font-size:.85em;color:var(--text3);margin-top:3px;">💬 ${L==='zh'?(r.notes||r.notesEn):(r.notesEn||r.notes)}</div>`:''}</div></div>`;
+    }).join('');
+    html+=`<div style="margin:12px 0;display:flex;gap:6px;">
+      <button class="btn btn-p" id="btn-disp" disabled onclick="showDispModal()">🚗 ${T('pool.merge')}</button>
+      <button class="btn btn-o btn-sm" onclick="selAllP('${activeDate}')">${T('pool.selAll')}</button></div>`;
+  }
+
+  if(dispatched.length){
+    html+=`<div style="font-weight:700;margin:20px 0 8px;color:var(--success);">✅ ${T('pool.dispatched')}</div>`;
+    const groups={};
+    dispatched.forEach(r=>{const g=r.mergedToDispatchId||'?';if(!groups[g])groups[g]=[];groups[g].push(r);});
+    Object.entries(groups).forEach(([gid,grp])=>{
+      const dd=DB.dispatches.get().find(d=>d.id===gid);
+      html+=`<div class="card"><div class="card-bd">
+        <div class="card-h"><h3>🚗 ${dd?dd.vehicle:'?'} · ${dd?dd.driver:'?'} · ${dd?dd.departureTime||'TBD':'?'}</h3>
+          <div class="ch-b">
+            ${dd?`<button class="btn btn-o btn-sm" onclick="editDisp('${gid}')">✏️ ${T('pool.editDisp')}</button>`:''}
+            <button class="btn btn-sm btn-d" onclick="cancelDisp('${gid}')">↩️ ${T('pool.cancelDisp')}</button></div></div>
+        ${grp.map(r=>`<div style="font-size:.85em;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05);"><strong>${deptName(r.department)} ${r.submitter}</strong>: ${L==='zh'?r.purpose:r.purposeEn||r.purpose} (${r.timeSlot}, ${r.passengers}pax)</div>`).join('')}
+        ${dd?.meetingPoint?`<div style="font-size:.85em;color:var(--text3);margin-top:6px;">📍 ${dd.meetingPoint}</div>`:''}
+        ${dd?.notes?`<div style="font-size:.85em;color:var(--text3);">💬 ${dd.notes}</div>`:''}
+      </div></div>`;
+    });
+  }
+  if(!reqs.length&&!dispatched.length) html+='<div class="empty"><p>'+T('pool.noreqs')+'</p></div>';
+  pg.innerHTML=html;
+}
+
+function toggleSR(id){const el=$('#rr-'+id);if(!el)return;
+  if(S.selReqs.has(id)){S.selReqs.delete(id);el.classList.remove('sel');}
+  else{S.selReqs.add(id);el.classList.add('sel');}
+  const btn=$('#btn-disp');if(btn)btn.disabled=S.selReqs.size===0;}
+function selAllP(date){const reqs=DB.requests.get().filter(r=>r.date===date&&r.status==='pending');
+  reqs.forEach(r=>{S.selReqs.add(r.id);const el=$('#rr-'+r.id);if(el)el.classList.add('sel');});
+  const btn=$('#btn-disp');if(btn)btn.disabled=false;}
+
+function showDispModal(){
+  if(S.selReqs.size===0)return;
+  const vs=DB.vehicles.get(),ds=DB.drivers.get();
+  const rl=DB.requests.get().filter(r=>S.selReqs.has(r.id));
+  const pax=rl.reduce((s,r)=>s+r.passengers,0);
+  showModal(`
+    <h3>🚗 ${T('pool.dispatchModal')}</h3>
+    <p style="font-size:.85em;color:var(--text3);margin-bottom:14px;">${T('pool.selReq')} ${S.selReqs.size} ${T('pool.reqs')}，${T('pool.totalPax')} ${pax} ${T('pool.people')}</p>
+    <div class="fg"><label>${T('pool.vehicle')}</label><select id="md-v">${vs.map(v=>'<option value="'+v.plate+'">'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')}</select></div>
+    <div class="fg"><label>${T('pool.driver')}</label><select id="md-d">${ds.map(d=>'<option>'+d.name+'</option>').join('')}</select></div>
+    <div class="fg"><label>${T('dispatch.time2')}</label><input type="text" id="md-t" placeholder="07:00"></div>
+    <div class="fg"><label>${T('dispatch.point')}</label><input type="text" id="md-p" placeholder="Meeting point"></div>
+    <div class="fg"><label>${T('dispatch.notes')}</label><input type="text" id="md-nt" placeholder="Notes"></div>
+    <div style="text-align:right;margin-top:14px;display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeModal()">${T('common.cancel')}</button>
+      <button class="btn btn-p" onclick="confirmDisp()">${T('pool.confirm')}</button></div>`,true);
+}
+function confirmDisp(){
+  const v=$('#md-v').value,d=$('#md-d').value,t2=$('#md-t').value.trim(),p=$('#md-p').value.trim(),n=$('#md-nt').value.trim();
+  if(!v||!d)return toast('Vehicle & driver required');
+  const rIds=[...S.selReqs];const firstR=DB.requests.get().find(r=>r.id===rIds[0]);
+  const did=uid();const ds=DB.dispatches.get();
+  ds.push({id:did,date:firstR.date,vehicle:v,driver:d,departureTime:t2||null,meetingPoint:p||null,notes:n||'',notesEn:'',signature:'',requestIds:rIds,createdAt:now()});
+  DB.dispatches.set(ds);
+  const rs=DB.requests.get();
+  rs.forEach(r=>{if(rIds.includes(r.id)){r.status='dispatched';r.mergedToDispatchId=did;}});
+  DB.requests.set(rs);S.selReqs.clear();closeModal();toast(T('common.dispatched'));renderPool();
+}
+function editDisp(did){
+  const dd=DB.dispatches.get().find(d=>d.id===did);if(!dd)return;
+  const vs=DB.vehicles.get(),ds=DB.drivers.get();
+  showModal(`
+    <h3>✏️ ${T('pool.editDisp')}</h3>
+    <div class="fg"><label>${T('pool.vehicle')}</label><select id="me-v">${vs.map(v=>'<option value="'+v.plate+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')}</select></div>
+    <div class="fg"><label>${T('pool.driver')}</label><select id="me-d">${ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+d.name+'</option>').join('')}</select></div>
+    <div class="fg"><label>${T('dispatch.time2')}</label><input type="text" id="me-t" value="${dd.departureTime||''}"></div>
+    <div class="fg"><label>${T('dispatch.point')}</label><input type="text" id="me-p" value="${dd.meetingPoint||''}"></div>
+    <div class="fg"><label>${T('dispatch.notes')}</label><input type="text" id="me-nt" value="${dd.notes||''}"></div>
+    <div style="text-align:right;margin-top:14px;display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeModal()">${T('common.cancel')}</button>
+      <button class="btn btn-p" onclick="saveEditDisp('${did}')">${T('common.save')}</button></div>`,true);
+}
+function saveEditDisp(did){
+  const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did);if(!dd)return;
+  dd.vehicle=$('#me-v').value;dd.driver=$('#me-d').value;
+  dd.departureTime=$('#me-t').value.trim()||null;dd.meetingPoint=$('#me-p').value.trim()||null;
+  dd.notes=$('#me-nt').value.trim()||null;DB.dispatches.set(ds);
+  closeModal();toast(T('common.updated'));renderPool();
+}
+function cancelDisp(did){
+  if(!confirm(T('pool.cancelConfirm')))return;
+  const ds=DB.dispatches.get();const idx=ds.findIndex(d=>d.id===did);
+  if(idx===-1)return;const dd=ds[idx];ds.splice(idx,1);DB.dispatches.set(ds);
+  const rs=DB.requests.get();
+  rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});
+  DB.requests.set(rs);toast(T('common.reverted'));renderPool();
+}
+
+// ================ RECORDS ================
+function renderRecords(){
+  if(!isAdmin())return;
+  const pg=$('#pg-records');
+  const ds=DB.dispatches.get().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
+  const rs=DB.requests.get();const vs=DB.vehicles.get().map(v=>v.plate);
+  const ad=new Set();rs.forEach(r=>ad.add(r.department));
+  if(!ds.length){pg.innerHTML='<div class="empty"><p>'+T('records.noMatch')+'</p></div>';return;}
+
+  let html=`<div class="stats"><div class="st"><div class="st-n">${ds.length}</div><div class="st-l">${T('records.totalTrips')}</div></div>`;
+  const vc={};vs.forEach(v=>vc[v]=0);ds.forEach(d=>{if(vc[d.vehicle]!==undefined)vc[d.vehicle]++;});
+  const top=Object.entries(vc).sort((a,b)=>b[1]-a[1])[0];
+  if(top)html+=`<div class="st"><div class="st-n">${top[0]}</div><div class="st-l">${T('records.mostUsed')}</div></div>`;
+  html+=`</div>`;
+
+  html+=`<div class="ftb">
+    <input type="date" id="ft-from" placeholder="From" onchange="renderRecords()" style="font-size:.85em;">
+    <input type="date" id="ft-to" placeholder="To" onchange="renderRecords()" style="font-size:.85em;">
+    <select id="ft-veh" onchange="renderRecords()"><option value="">${T('records.allVeh')}</option>${vs.map(v=>'<option>'+v+'</option>').join('')}</select>
+    <select id="ft-dept" onchange="renderRecords()"><option value="">${T('records.allDept')}</option>${[...ad].map(d=>'<option>'+d+'</option>').join('')}</select>
+    <div class="sp"></div>
+    <button class="btn btn-o btn-sm" onclick="exportCSV()">📥 CSV</button>
+  </div>`;
+
+  let fd=ds;
+  const ff=$('#ft-from')?.value,ft=$('#ft-to')?.value,vf=$('#ft-veh')?.value,df=$('#ft-dept')?.value;
+  if(ff)fd=fd.filter(d=>d.date>=ff);if(ft)fd=fd.filter(d=>d.date<=ft);
+  if(vf)fd=fd.filter(d=>d.vehicle===vf);
+  if(df)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.department===df);});
+  if(!fd.length){html+='<div class="empty"><p>'+T('records.noMatch')+'</p></div>';}
+  else{
+    html+=fd.map(d=>{
+      const rl=rs.filter(r=>d.requestIds.includes(r.id));
+      const pax=rl.reduce((s,r)=>s+r.passengers,0);
+      const depts=[...new Set(rl.map(r=>r.department))].join('、');
+      const purposes=[...new Set(rl.map(r=>r.purpose))].join('；');
+      const purposesEn=[...new Set(rl.map(r=>r.purposeEn||''))].join('; ');
+      return `<div class="card"><div class="card-bd">
+        <div class="card-h"><h3>📅 ${fmtDateLoc(d.date)} · 🚗 ${d.vehicle} · 👤 ${d.driver}</h3>
+          <button class="btn btn-o btn-sm" onclick="editDisp('${d.id}')">✏️ ${T('records.edit')}</button></div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.88em;color:var(--text2);margin-bottom:4px;">
+          <span>${T('dispatch.time2')}: ${d.departureTime||'—'}</span><span>${T('dispatch.point')}: ${d.meetingPoint||'—'}</span><span>${pax}pax</span><span>${depts}</span></div>
+        <div style="font-size:.95em;">${purposes}</div>
+        ${purposesEn?`<div style="font-size:.88em;color:var(--text3);">${purposesEn}</div>`:''}
+        ${d.notes?`<div style="font-size:.85em;color:var(--text3);margin-top:3px;">💬 ${d.notes}</div>`:''}
+      </div></div>`;
+    }).join('');
+  }
+  pg.innerHTML=html;
+}
+
+// ================ SETTINGS ================
+function renderSettings(){
+  const pg=$('#pg-settings');
+  const vs=DB.vehicles.get(),ds=DB.drivers.get(),us=DB.users.get(),inv=DB.invite.get();
+  let html='';
+
+  if(isAdmin()){
+    html+=`<div class="card"><div class="card-bd">
+      <div class="card-h"><h3>🔑 ${T('settings.invite')}</h3></div>
+      <div class="fg"><input type="text" id="st-invite" value="${inv}"></div>
+      <button class="btn btn-p btn-sm" onclick="saveInvite()">${T('settings.save')}</button></div></div>`;
+
+    html+=`<div class="card"><div class="card-bd">
+      <div class="card-h"><h3>🚗 ${T('settings.vehicles')} (${vs.length})</h3></div>
+      ${vs.map((v,i)=>`<div class="sr"><div class="sr-i"><div class="sr-l">${v.plate}</div><div class="sr-s">${L==='zh'?v.type:v.typeEn} · ${v.seats} ${T('settings.seats')}</div></div>
+        <div class="sr-a"><button class="btn btn-o btn-sm" onclick="editVeh(${i})">✏️</button><button class="btn btn-sm btn-d" onclick="delVeh(${i})">🗑️</button></div></div>`).join('')}
+      <div class="si">
+        <input id="nv-plate" placeholder="${T('settings.plate')}"><input id="nv-type" placeholder="${T('settings.vehType')} (CN)">
+        <input id="nv-typeEn" placeholder="${T('settings.vehType')} (EN)"><input id="nv-seats" type="number" value="5" style="width:55px;">
+        <button class="btn btn-p btn-sm" onclick="addVeh()">+ ${T('settings.add')}</button></div></div></div>`;
+
+    html+=`<div class="card"><div class="card-bd">
+      <div class="card-h"><h3>👤 ${T('settings.drivers')} (${ds.length})</h3></div>
+      ${ds.map((d,i)=>`<div class="sr"><div class="sr-i"><div class="sr-l">${d.name}</div></div>
+        <div class="sr-a"><button class="btn btn-o btn-sm" onclick="editDrv(${i})">✏️</button><button class="btn btn-sm btn-d" onclick="delDrv(${i})">🗑️</button></div></div>`).join('')}
+      <div class="si"><input id="nd-name" placeholder="${T('settings.drvName')}"><button class="btn btn-p btn-sm" onclick="addDrv()">+ ${T('settings.add')}</button></div></div></div>`;
+
+    html+=`<div class="card"><div class="card-bd">
+      <div class="card-h"><h3>👥 ${T('settings.users')} (${us.length})</h3></div>
+      ${us.length?us.map((u,i)=>`<div class="sr"><div class="sr-i"><div class="sr-l">${u.name} ${u.role==='admin'?'<span style="color:var(--primary);font-size:.78em;">[ADMIN]</span>':''}</div><div class="sr-s">${deptName(u.department)} · ${u.lastLogin?fmtDateLoc(u.lastLogin.slice(0,10)):''}</div></div>
+        <div class="sr-a"><button class="btn btn-o btn-sm" onclick="editUser(${i})">✏️</button><button class="btn btn-sm btn-d" onclick="delUser(${i})">🗑️</button></div></div>`).join(''):'<div class="empty" style="padding:20px;"><p>'+T('settings.noUsers')+'</p></div>'}
+    </div></div>`;
+  }
+
+  html+=`<div class="card"><div class="card-bd">
+    <div class="card-h"><h3>💾 ${T('settings.backup')}</h3></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-o btn-sm" onclick="expData()">📥 ${T('settings.exportJson')}</button>
+      ${isAdmin()?`<button class="btn btn-o btn-sm" onclick="$('#ifile').click()">📤 ${T('settings.importJson')}</button>
+      <input type="file" id="ifile" accept=".json" onchange="impData(this)" style="display:none;">
+      <button class="btn btn-sm btn-d" onclick="wipeData()">⚠️ ${T('settings.clear')}</button>`:''}</div>
+    <p style="font-size:.78em;color:var(--text3);margin-top:6px;">${T('settings.backupHint')}</p></div></div>`;
+
+  html+=`<div style="text-align:center;margin-top:16px;"><button class="btn btn-gh" onclick="doLogout()">${T('settings.logout')}</button></div>`;
+  pg.innerHTML=html;
+}
+
+function saveInvite(){const v=$('#st-invite')?.value.trim();if(v){DB.invite.set(v);toast(T('common.inviteUpdated'));}}
+function addVeh(){
+  const p=$('#nv-plate').value.trim(),t=$('#nv-type').value.trim(),te=$('#nv-typeEn').value.trim(),s=parseInt($('#nv-seats').value)||5;
+  if(!p||!t)return toast('Plate and type required');
+  const vs=DB.vehicles.get();vs.push({plate:p,type:t,typeEn:te||t,seats:s});DB.vehicles.set(vs);toast(T('common.success'));renderSettings();
+}
+function editVeh(i){const v=DB.vehicles.get()[i];
+  showModal(`<h3>${T('settings.edit')} ${T('settings.vehicles')}</h3>
+    <div class="fg"><label>${T('settings.plate')}</label><input id="ev-p" value="${v.plate}"></div>
+    <div class="fg"><label>${T('settings.vehType')} (CN)</label><input id="ev-t" value="${v.type}"></div>
+    <div class="fg"><label>${T('settings.vehType')} (EN)</label><input id="ev-te" value="${v.typeEn||''}"></div>
+    <div class="fg"><label>${T('settings.seats')}</label><input id="ev-s" type="number" value="${v.seats}"></div>
+    <div style="text-align:right;display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeModal()">${T('common.cancel')}</button>
+      <button class="btn btn-p" onclick="saveVeh(${i})">${T('common.save')}</button></div>`,true);
+}
+function saveVeh(i){const vs=DB.vehicles.get();vs[i].plate=$('#ev-p').value.trim();vs[i].type=$('#ev-t').value.trim();
+  vs[i].typeEn=$('#ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt($('#ev-s').value)||5;
+  DB.vehicles.set(vs);closeModal();toast(T('common.updated'));renderSettings();}
+function delVeh(i){if(!confirm(T('common.delConfirm')))return;const vs=DB.vehicles.get();vs.splice(i,1);DB.vehicles.set(vs);toast(T('common.deleted'));renderSettings();}
+function addDrv(){const n=$('#nd-name').value.trim();if(!n)return toast('Name required');const ds=DB.drivers.get();ds.push({name:n});DB.drivers.set(ds);toast(T('common.success'));renderSettings();}
+function editDrv(i){const d=DB.drivers.get()[i];
+  showModal(`<h3>${T('settings.edit')} ${T('settings.drivers')}</h3>
+    <div class="fg"><label>${T('settings.drvName')}</label><input id="ed-n" value="${d.name}"></div>
+    <div style="text-align:right;display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeModal()">${T('common.cancel')}</button>
+      <button class="btn btn-p" onclick="saveDrv(${i})">${T('common.save')}</button></div>`,true);
+}
+function saveDrv(i){const ds=DB.drivers.get();ds[i].name=$('#ed-n').value.trim();DB.drivers.set(ds);closeModal();toast(T('common.updated'));renderSettings();}
+function delDrv(i){if(!confirm(T('common.delConfirm')))return;const ds=DB.drivers.get();ds.splice(i,1);DB.drivers.set(ds);toast(T('common.deleted'));renderSettings();}
+
+function editUser(i){const u=DB.users.get()[i];
+  showModal(`<h3>${T('settings.edit')} ${T('settings.users')}</h3>
+    <div class="fg"><label>${T('settings.userName')}</label><input id="eu-n" value="${u.name}"></div>
+    <div class="fg"><label>${T('settings.userDept')}</label><select id="eu-d">${DEPTS.map(d=>'<option value="'+d.cn+'" '+(d.cn===u.department?'selected':'')+'>'+d.cn+' / '+d.en+'</option>').join('')}</select></div>
+    <div style="text-align:right;display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeModal()">${T('common.cancel')}</button>
+      <button class="btn btn-p" onclick="saveUser(${i})">${T('common.save')}</button></div>`,true);
+}
+function saveUser(i){const us=DB.users.get();const old=us[i];const oldName=old.name,oldDept=old.department;
+  us[i].name=$('#eu-n').value.trim();us[i].department=$('#eu-d').value;DB.users.set(us);
+  const rs=DB.requests.get();
+  rs.forEach(r=>{if(r.submitter===oldName&&r.department===oldDept){r.submitter=us[i].name;r.department=us[i].department;}});
+  DB.requests.set(rs);closeModal();toast(T('common.updated'));renderSettings();}
+function delUser(i){if(!confirm(T('common.delConfirm')))return;const us=DB.users.get();us.splice(i,1);DB.users.set(us);toast(T('common.deleted'));renderSettings();}
+
+function expData(){const data={vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),users:DB.users.get(),invite:DB.invite.get(),exportedAt:now()};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Data_'+today()+'.json';a.click();URL.revokeObjectURL(u);toast(T('common.exported'));}
+function impData(inp){if(!isAdmin())return toast(T('common.noPerm'));
+  const f=inp.files[0];if(!f)return;if(!confirm(T('common.importWarn'))){inp.value='';return;}
+  const r=new FileReader();r.onload=e=>{
+    try{const d=JSON.parse(e.target.result);if(d.vehicles)DB.vehicles.set(d.vehicles);if(d.drivers)DB.drivers.set(d.drivers);if(d.requests)DB.requests.set(d.requests);if(d.dispatches)DB.dispatches.set(d.dispatches);if(d.users)DB.users.set(d.users);if(d.invite)DB.invite.set(d.invite);toast(T('common.success'));renderSettings();}catch{toast('Invalid file');}
+  };r.readAsText(f);inp.value='';}
+function wipeData(){if(!isAdmin())return toast(T('common.noPerm'));
+  if(!confirm(T('common.clearWarn')))return;if(!confirm(T('common.clearWarn2')))return;
+  ['vehicles','drivers','requests','dispatches','users','imported'].forEach(k=>LS(k).set(k==='imported'?true:[]));
+  DB.init();toast(T('common.deleted'));renderSettings();}
+</script>
+</body>
+</html>

@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>KMC 车辆调度</title>
+<style>
+:root{
+  --bg:#0b1014;--bg-soft:#11161d;--bg-elevated:#1a2029;
+  --bd:rgba(255,255,255,0.06);--bd-hi:rgba(255,255,255,0.12);
+  --tx:#e6edf3;--tx-dim:#8b949e;--tx-muted:#586069;
+  --ac:#5b8af5;--ac-g:linear-gradient(135deg,#5b8af5,#7c5bf5);
+  --gn:#34c77b;--gn-g:linear-gradient(135deg,#34c77b,#2db88a);
+  --rd:#f5555d;--rd-g:linear-gradient(135deg,#f5555d,#e04050);
+  --or:#f5a623;
+  --rx:12px;--rx-lg:16px;--rx-sm:8px;
+  --sh:0 4px 16px rgba(0,0,0,0.25);
+  --sh-lg:0 12px 40px rgba(0,0,0,0.5);
+  --tr:0.2s ease;
+  --font:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,sans-serif;
+}
+html[data-theme="light"]{
+  --bg:#f5f7fa;--bg-soft:#fff;--bg-elevated:#fff;
+  --bd:rgba(0,0,0,0.06);--bd-hi:rgba(0,0,0,0.12);
+  --tx:#1f2937;--tx-dim:#6b7280;--tx-muted:#9ca3af;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-size:14px;line-height:1.55;font-family:var(--font);
+  background:var(--bg);color:var(--tx);min-height:100vh;
+  background-image:radial-gradient(at 0% 0%,rgba(91,138,245,0.05) 0%,transparent 50%),
+    radial-gradient(at 100% 100%,rgba(124,91,245,0.03) 0%,transparent 50%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased}
+.hide{display:none!important}
+
+.shell{min-height:100vh;padding-bottom:80px;background:transparent}
+.shell-pc{min-height:100vh;display:flex;background:transparent}
+.shell-pc aside{width:240px;background:var(--bg-soft);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;flex-shrink:0;backdrop-filter:blur(20px)}
+.shell-pc main{flex:1;padding:32px 40px;overflow-y:auto;background:transparent}
+.shell-pc .pcnav{padding:8px 12px;flex:1;overflow-y:auto}
+.shell-pc .pcnav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;
+  font-size:14px;color:var(--tx-dim);background:transparent;border:none;text-align:left;cursor:pointer;
+  border-radius:10px;transition:var(--tr);margin-bottom:2px;font-weight:500}
+.shell-pc .pcnav button .nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shell-pc .pcnav button:hover{background:rgba(91,138,245,0.08);color:var(--tx)}
+.shell-pc .pcnav button.active{background:rgba(91,138,245,0.15);color:var(--ac);font-weight:600}
+.shell-pc .pcnav button.active::before{content:'';width:3px;height:18px;background:var(--ac);
+  border-radius:2px;margin-right:-13px}
+
+/* Top mobile bar - WhatsApp style */
+.mt{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 18px;display:flex;
+  justify-content:space-between;align-items:center;
+  background:rgba(11,16,20,0.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,0.2)}
+.mt h2{font-size:16px;font-weight:600;color:var(--tx);letter-spacing:-0.3px}
+.mt p{font-size:11px;color:var(--tx-muted);margin-top:1px}
+.mt .ti{font-size:11px;color:var(--tx-dim);margin-right:8px;white-space:nowrap}
+
+/* Card - WhatsApp style */
+.card{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
+  padding:20px;margin-bottom:14px;box-shadow:var(--sh);transition:var(--tr);}
+.card:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+  backdrop-filter:blur(12px)}
+.card-h{font-weight:600;font-size:14px;color:var(--tx);margin-bottom:14px;
+  padding-bottom:12px;border-bottom:1px solid var(--bd);
+  display:flex;justify-content:space-between;align-items:center;letter-spacing:-0.2px}
+
+/* Form fields */
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:12px;font-weight:500;color:var(--tx-dim);margin-bottom:6px}
+.fld input,.fld select,.fld textarea{width:100%;padding:11px 14px;border:1px solid var(--bd);
+  border-radius:var(--rx-sm);font-size:14px;background:var(--bg-soft);
+  color:var(--tx);outline:none;font-family:inherit;transition:var(--tr)}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--tx-muted)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--ac);
+  box-shadow:0 0 0 3px rgba(91,138,245,0.1)}
+.fld textarea{resize:vertical;min-height:70px}
+
+/* Buttons - modern */
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 20px;
+  height:40px;border-radius:var(--rx-sm);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;transition:var(--tr);font-family:inherit;letter-spacing:0.1px}
+.bt:active{transform:scale(0.97)}
+.bt-p{background:var(--gn-g);color:#fff;box-shadow:0 4px 12px rgba(52,199,123,0.25)}
+.bt-p:hover{box-shadow:0 6px 20px rgba(52,199,123,0.35);transform:translateY(-1px)}
+.bt-b{width:100%;height:48px;font-size:14px}
+.bt-sm{padding:0 14px;height:32px;font-size:12px;border-radius:6px}
+.bt-o{background:transparent;border:1px solid var(--bd);color:var(--tx-dim)}
+.bt-o:hover{border-color:var(--bd-hi);color:var(--tx);background:rgba(255,255,255,0.02)}
+.bt-d{background:rgba(245,85,93,0.12);color:var(--rd);border:1px solid rgba(245,85,93,0.2)}
+.bt-d:hover{background:var(--rd-g);color:#fff}
+
+.bt-exit{background:rgba(255,255,255,0.04);color:var(--tx-dim);
+  border:1px solid var(--bd);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer}
+.bt-exit:hover{background:rgba(245,85,93,0.15);color:var(--rd);border-color:rgba(245,85,93,0.3)}
+.bt-exit-mob{background:rgba(255,255,255,0.05);color:var(--tx-dim);border:none;
+  padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+
+.emp{padding:40px;text-align:center;color:var(--tx-muted);font-size:13px}
+
+/* Lang toggle - WhatsApp style */
+.lt-btn{display:inline-flex;border-radius:6px;overflow:hidden;border:1px solid var(--bd);
+  background:var(--bg-soft)}
+.lt-btn button{padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;
+  background:transparent;color:var(--tx-dim);transition:var(--tr);min-width:36px}
+.lt-btn button.active{background:var(--ac);color:#fff}
+.lt-btn button:not(:last-child){border-right:1px solid var(--bd)}
+
+.tag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.tg-p{background:rgba(245,165,35,0.15);color:var(--or)}
+.tg-d{background:rgba(52,199,123,0.15);color:var(--gn)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
+.st{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
+  padding:16px;text-align:center;transition:var(--tr)}
+.st:hover{border-color:var(--bd-hi);transform:translateY(-1px)}
+.st-n{font-size:26px;font-weight:700;color:var(--tx);font-family:var(--mono)}
+.st-l{font-size:10px;color:var(--tx-dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px}
+
+.edb{font-size:11px;margin-left:4px;cursor:pointer;color:var(--ac);text-decoration:none}
+.edb:hover{text-decoration:underline}
+
+.dc{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
+  padding:18px;margin-bottom:12px;transition:var(--tr)}
+.dc:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.dc-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.dc-h h4{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-0.2px}
+.dc-p{font-size:12px;font-weight:600;color:var(--ac);padding:4px 12px;
+  background:rgba(91,138,245,0.1);border-radius:6px}
+.dc-b .dc-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;
+  border-bottom:1px solid var(--bd)}
+.dc-b .dc-row:last-child{border:none}
+.dc-l{color:var(--tx-dim)}
+.dc-v{color:var(--tx);font-weight:500}
+
+.rr{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx-sm);
+  padding:12px 14px;margin-bottom:6px;font-size:13px;transition:var(--tr)}
+.rr:hover{border-color:var(--bd-hi)}
+.rr-b{display:flex;justify-content:space-between;align-items:center}
+.rr-t{font-weight:600;color:var(--tx)}
+.rr-e{font-size:11px;color:var(--tx-dim);margin:3px 0;font-style:italic}
+.rr-m{display:flex;gap:14px;font-size:11px;color:var(--tx-dim);margin-top:4px;flex-wrap:wrap}
+
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:4000;
+  display:flex;justify-content:center;align-items:center;
+  background-image:radial-gradient(at 30% 50%,rgba(91,138,245,0.08) 0%,transparent 50%),
+    radial-gradient(at 70% 50%,rgba(124,91,245,0.04) 0%,transparent 50%)}
+.login-box{background:var(--bg-elevated);padding:40px 32px;width:360px;
+  border-radius:var(--rx-lg);text-align:center;box-shadow:var(--sh-lg);
+  border:1px solid var(--bd);backdrop-filter:blur(20px);
+  animation:fadeSlideUp 0.4s ease}
+.login-box::before{content:'';position:absolute;top:0;left:30%;right:30%;height:2px;
+  background:var(--ac-g);border-radius:0 0 4px 4px;display:none}
+@keyframes spin{100%{transform:rotate(360deg)}}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+  z-index:5000;display:flex;justify-content:center;align-items:center}
+.modal-bg.hide{display:none}
+.modal-box{background:var(--bg-elevated);border:1px solid var(--bd-hi);
+  border-radius:var(--rx-lg);padding:24px;max-width:500px;width:95%;margin:20px;
+  box-shadow:var(--sh-lg);max-height:90vh;overflow-y:auto;animation:fadeSlideUp 0.3s ease}
+.sig-canvas{width:100%;height:200px;background:#fff;border-radius:var(--rx-sm);
+  cursor:crosshair;border:2px solid var(--bd-hi)}
+
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--gn);color:#fff;padding:12px 28px;border-radius:var(--rx);
+  font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  z-index:7000;opacity:0;transition:0.3s ease;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+.pcuinfo{padding:14px;border-top:1px solid var(--bd);cursor:default;font-size:12px}
+.pcu-row{display:flex;align-items:center;gap:10px}
+.pcu-avatar{width:36px;height:36px;border-radius:50%;
+  background:var(--ac-g);display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:#fff;font-size:13px}
+.pcu-name{font-weight:600;color:var(--tx)}
+.pcu-dept{font-size:10px;color:var(--tx-dim);margin-top:1px}
+.pcu-badge{font-size:9px;font-weight:700;padding:3px 10px;border-radius:6px;
+  margin-top:6px;display:inline-block;background:var(--ac-g);color:#fff}
+.pcu-locked{font-size:10px;color:var(--tx-muted);margin-top:4px}
+
+@media(max-width:768px){.shell-pc{display:none}.shell{display:block}}
+@media(min-width:769px){.shell{display:none}.shell-pc{display:flex}}
+
+[data-lang="en"] .lang-cn{display:none!important}
+[data-lang="zh"] .lang-en{display:none!important}
+</style></style>
+
+
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-bg" id="login-screen">
+<div class="login-box">
+  <h1 id="lt">KMC <span id="lt-cn">车辆调度</span><span id="lt-en" style="display:none">Dispatcher</span></h1>
+  <p class="lsu" id="lsub"><span class="lang-cn">车辆调度系统</span><span class="lang-en" style="display:none">Vehicle Dispatch System</span></p>
+
+  <div class="fld"><label>部门 / Department</label>
+    <select id="ld">
+      <option value="">请选择 / Select</option>
+      <option value="总经理办">总经理办 / GM Office</option>
+      <option value="财务部">财务部 / Finance</option>
+      <option value="综合部">综合部 / General Affairs</option>
+      <option value="安全生产部">安全生产部 / Safety Production</option>
+      <option value="质量技术部">质量技术部 / Quality Tech</option>
+      <option value="仓储部">仓储部 / Warehouse</option>
+      <option value="后勤部">后勤部 / Logistics</option>
+      <option value="业务部">业务部 / Business</option>
+      <option value="采矿部">采矿部 / Mining</option>
+      <option value="选厂">选厂 / Processing Plant</option>
+      <option value="机电工程部">机电工程部 / Mech & Elec</option>
+    </select></div>
+
+  <div class="fld"><label>姓名 / Name</label>
+    <input type="text" id="ln" placeholder="Your name"></div>
+
+  <button class="bt bt-p bt-b" onclick="doLogin()">进入系统 / ENTER</button>
+
+  <div style="text-align:center;margin-top:12px"><div class="ls" id="ls-login"></div></div>
+</div>
+</div>
+
+<!-- APP MOBILE -->
+<div class="shell hide" id="app-mob">
+  <div class="mob-top">
+    <h2 id="sysname-mob"></h2>
+    <div style="display:flex;align-items:center;gap:8px"><div id="sync-icon-mob" onclick="manualSync()" title="云同步" style="width:32px;height:32px;border-radius:50%;background:rgba(91,138,245,0.15);border:1px solid rgba(91,138,245,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">☁️</div><button onclick="openTokenSettings()" title="GitHub Token 设置" style="background:none;border:1px solid rgba(91,138,245,0.3);border-radius:6px;color:#fff;font-size:13px;padding:5px 7px;cursor:pointer">⚙</button><div class="lt-btn"><button id="lang-zh-btn" onclick="L='zh';S.lang='zh';localStorage.setItem('kmc2_lang','zh');document.documentElement.setAttribute('data-lang','zh');renderPage()">中</button><button id="lang-en-btn" onclick="L='en';S.lang='en';localStorage.setItem('kmc2_lang','en');document.documentElement.setAttribute('data-lang','en');renderPage()">EN</button></div><span class="ti" id="mt-info"></span>
+      <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
+  </div>
+  <div class="main" id="main-mob"></div>
+  <nav class="mob-nav" id="mn"></nav>
+</div>
+
+<!-- APP PC -->
+<div class="shell-pc hide" id="app-pc">
+  <aside>
+    <div style="padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <h2 style="font-size:16px;font-weight:700" id="sysname-pc"></h2>
+        <p style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">Vehicle Dispatch System</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="sync-icon" onclick="manualSync()" title="云同步状态 / Cloud Sync Status" style="width:36px;height:36px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .3s">☁️</div>
+        <button onclick="openTokenSettings()" title="GitHub Token 设置" style="background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx-sm);color:var(--tx-dim);font-size:13px;padding:7px 9px;cursor:pointer">⚙</button>
+      </div>
+    </div>
+    <div style="padding:8px 12px"><div class="ls ls-dark" id="ls-pc"></div></div>
+    <nav class="pcnav" id="pcnav"></nav>
+    <div class="pcuinfo" id="pcuinfo"></div>
+  </aside>
+  <main><div id="main-pc"></div></main>
+</div>
+
+<div class="tst" id="toast"></div>
+<div id="modal-root"></div>
+
+<script>
+'use strict';
+
+// ==================== DATA ====================
+const LS=(k,opts)=>{
+  const key='kmc2_'+k;
+  return{get(){try{const v=JSON.parse(localStorage.getItem(key));return(v===null||v===undefined)&&opts&&opts.onGet?opts.onGet(v):v}catch{return opts&&opts.onGet?opts.onGet(null):null}},
+    set(v){localStorage.setItem(key,JSON.stringify(v))}};
+};
+(function(){const v=localStorage.getItem('kmc2_ver');
+  if(v!=='v9'){['vehicles','drivers','requests','dispatches','users','user','lang'].forEach(k=>localStorage.removeItem('kmc2_'+k));
+    localStorage.setItem('kmc2_ver','v12');}})();
+
+let L='zh';
+const loadL=()=>{const v=localStorage.getItem('kmc2_lang');if(v==='en'||v==='zh'){L=v;document.documentElement.setAttribute('data-lang',v);}else{document.documentElement.setAttribute('data-lang','zh');}};loadL();
+
+const T=key=>{
+  const m={
+    zh:{nav_submit:'提交需求',nav_dispatch:'派车单',nav_pool:'需求池',nav_records:'台账',nav_settings:'设置',
+      dept:'后勤部',admin:'石秋迅',
+      submit_title:'提交用车需求',submit_date:'用车日期',submit_time:'时间段',submit_pax:'人数',
+      submit_purposeCn:'中文外出事由',submit_purposeEn:'英文外出事由 (English)',
+      submit_notesCn:'中文备注',submit_notesEn:'英文备注 (English)',
+      submit_approved:'是否经部门负责人许可',submit_yes:'是',submit_no:'否',
+      submit_sign:'点击展开签字面板',submit_signTitle:'部门负责人签字',submit_btn:'提交需求',
+      dispatch_title:'派车计划',pool_merge:'合并派车',
+      records_title:'历史台账',settings_title:'设置',
+      stat_pending:'待处理',stat_dispatched:'已派车',sig_done:'已签字',
+      common_success:'成功',common_cancel:'取消',common_save:'保存',common_no:'暂无数据',
+      del:'删除',edit:'编辑',cancel:'取消',confirm:'确认',
+      common_locked:'LOCKED',common_unlockTitle:'解锁管理员模式',common_unlockHint:'连续点击 7 次可进入管理员功能',
+      common_password:'管理员密码',common_unlock:'解锁',common_unlocked:'管理员模式已启用',
+      common_lockedMsg:'已退出管理员模式',
+      changePw:'修改管理员密码',newPw:'新密码',pwSaved:'密码已更新',
+      backup:'数据备份',export_json:'导出 JSON',import_json:'导入 JSON',clear_data:'清空数据',
+      vehicles:'车辆管理',drivers:'司机管理',users:'人员管理',
+      invite_code:'邀请码',plate:'车牌',vehicle_type:'车型',seats:'座位数',
+      driver_name:'司机姓名',user_name:'姓名',user_dept:'所属部门',user_role:'角色',
+      add_user:'新增人员',no_users:'暂无人员记录',
+      all_vehicles:'全部车辆',all_depts:'全部部门',select_depts:'选择部门（多选）',
+      date_from:'起始日期',date_to:'结束日期',date_range:'日期范围',
+      total_trips:'总派车次数',most_used:'最常用车辆',no_records:'暂无派车记录',no_match:'无匹配记录',
+      filter_date_range:'日期范围筛选',filter_dept:'部门筛选',filter_veh:'车辆筛选',
+      click_to_filter:'点击切换筛选',selected:'已选',reset:'重置',
+      driver_label:'司机',meeting_point:'集合点',passengers:'乘车人',pax:'人数',notes:'备注',departure:'出发时间',
+      purpose:'事由',dept:'部门',date:'日期',time:'时间',
+      back:'返回',next:'下一步',add:'新增',save:'保存',delete:'删除',
+      cn_en:'中英'},
+    en:{nav_submit:'Submit Request',nav_dispatch:'Dispatch Plan',nav_pool:'Request Pool',nav_records:'Records',nav_settings:'Settings',
+      dept:'Logistics',admin:'Shi Qiuxun',
+      submit_title:'Submit Vehicle Request',submit_date:'Date',submit_time:'Time Slot',submit_pax:'Passengers',
+      submit_purposeCn:'Purpose (Chinese)',submit_purposeEn:'Purpose (English)',
+      submit_notesCn:'Notes (Chinese)',submit_notesEn:'Notes (English)',
+      submit_approved:'Approved by Dept Head?',submit_yes:'Yes',submit_no:'No',
+      submit_sign:'Open Signature Panel',submit_signTitle:'Signature',submit_btn:'Submit',
+      dispatch_title:'Dispatch Plan',pool_merge:'Merge & Dispatch',
+      records_title:'History Records',settings_title:'Settings',
+      stat_pending:'Pending',stat_dispatched:'Dispatched',sig_done:'Signed',
+      common_success:'Success',common_cancel:'Cancel',common_save:'Save',common_no:'No data',
+      del:'Delete',edit:'Edit',cancel:'Cancel',confirm:'Confirm',
+      common_locked:'LOCKED',common_unlockTitle:'Unlock Admin Mode',common_unlockHint:'Tap 7 times to enter admin mode',
+      common_password:'Admin Password',common_unlock:'Unlock',common_unlocked:'Admin mode enabled',
+      common_lockedMsg:'Exited admin mode',
+      changePw:'Change Admin Password',newPw:'New Password',pwSaved:'Password updated',
+      backup:'Data Backup',export_json:'Export JSON',import_json:'Import JSON',clear_data:'Clear All Data',
+      vehicles:'Vehicle Management',drivers:'Driver Management',users:'User Management',
+      invite_code:'Invite Code',plate:'Plate',vehicle_type:'Vehicle Type',seats:'Seats',
+      driver_name:'Driver Name',user_name:'Name',user_dept:'Department',user_role:'Role',
+      add_user:'Add User',no_users:'No users recorded',
+      all_vehicles:'All Vehicles',all_depts:'All Departments',select_depts:'Select Departments',
+      date_from:'From',date_to:'To',date_range:'Date Range',
+      total_trips:'Total Trips',most_used:'Most Used',no_records:'No records',no_match:'No matching records',
+      filter_date_range:'Date Range Filter',filter_dept:'Department Filter',filter_veh:'Vehicle Filter',
+      click_to_filter:'Click to filter',selected:'Selected',reset:'Reset',
+      driver_label:'Driver',meeting_point:'Meeting Point',passengers:'Passengers',pax:'Pax',notes:'Notes',departure:'Departure',
+      purpose:'Purpose',dept:'Department',date:'Date',time:'Time',
+      back:'Back',next:'Next',add:'Add',save:'Save',delete:'Delete',
+      cn_en:'Bilingual'}
+  };
+  return (m[L]&&m[L][key])||key;
+};
+
+// Helper for bilingual display in current language
+function bi(cn,en){return L==='zh'?(cn||en):(en||cn);}
+
+// Dynamic department list (admin-managed, synced to cloud)
+const DEFAULT_DEPTS=[
+  {cn:'总经理办',en:'GM Office'},{cn:'财务部',en:'Finance'},{cn:'综合部',en:'General Affairs'},
+  {cn:'安全生产部',en:'Safety Production'},{cn:'质量技术部',en:'Quality Tech'},{cn:'仓储部',en:'Warehouse'},
+  {cn:'后勤部',en:'Logistics'},{cn:'业务部',en:'Business'},{cn:'采矿部',en:'Mining'},
+  {cn:'选厂',en:'Processing Plant'},{cn:'机电工程部',en:'Mech & Elec'}
+];
+function getDepts(){
+  const d=DB.depts.get();
+  if(!d||!d.length)return DEFAULT_DEPTS;
+  return d;
+}
+const DEPTS_CN=getDepts().map(x=>x.cn);
+const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
+function dShow(d){
+  if(!d)return '';
+  const dept=getDepts().find(x=>x.cn===d||x.en===d);
+  if(!dept)return d;
+  return L==='zh'?dept.cn:dept.cn+' / '+dept.en;
+}
+
+function renderLT(){
+  const m=(v,p)=>'<button class="'+(L===v?'active':'')+'" onclick="switchL(\''+v+'\')">'+p+'</button>';
+  const t=m('zh','中')+m('en','EN');
+  ['ls-login','ls-mt','ls-pc'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=t;});
+}
+function switchL(l){L=l;localStorage.setItem('kmc2_lang',l);document.documentElement.setAttribute('data-lang',l);renderLT();
+  if(S.user){renderNav();renderPage();}}
+
+// ==================== INIT ====================
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const fmtD=d=>{const t=new Date(d);return t.getFullYear()+'-'+(t.getMonth()+1).toString().padStart(2,'0')+'-'+t.getDate().toString().padStart(2,'0');};
+const today=()=>fmtD(new Date());
+const tmrw=()=>{const d=new Date();d.setDate(d.getDate()+1);return fmtD(d);};
+const fmtCn=d=>{const t=new Date(d);return(t.getMonth()+1)+'月'+t.getDate()+'日';};
+const fmtEn=d=>{const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const t=new Date(d);return m[t.getMonth()]+' '+t.getDate();};
+const fmtL=d=>L==='zh'?fmtCn(d):fmtEn(d);
+const isAdmin=()=>S.user&&S.user.role==='admin';
+function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2000);}
+function showModal(h,ctr){const r=document.getElementById('modal-root');r.innerHTML='';
+  const m=document.createElement('div');m.className='mask'+(ctr?' ctr':'');
+  m.innerHTML='<div class="modal">'+h+'</div>';
+  m.onclick=e=>{if(e.target===m)closeModal();};
+  r.appendChild(m);}
+function closeModal(){document.getElementById('modal-root').innerHTML='';}
+
+
+
+const REPO_OWNER='qiuxunshi-png';
+const REPO_NAME='kmc----'; // GitHub Repo 单一可信源（原 Gist 后端迁移）
+const DATA_FILE='kmc-data.json';
+let gistToken=localStorage.getItem('kmc_gist_token')||'';
+
+async function repoRead(){
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/'+REPO_OWNER+'/'+REPO_NAME+'/main/'+DATA_FILE);
+    if(!r.ok)return null;
+    const text=await r.text();
+    if(!text||text.trim()==='')return null;
+    return JSON.parse(text);
+  }catch(e){return null;}
+}
+
+async function repoWrite(data){
+  if(!gistToken)return false;
+  try{
+    // First get current SHA
+    const getR=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+      headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json'}
+    });
+    let sha=null;
+    if(getR.ok){
+      const j=await getR.json();
+      sha=j.sha;
+    }
+    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+      method:'PUT',
+      headers:{
+        'Authorization':'token '+gistToken,
+        'Accept':'application/vnd.github+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        message:'Sync from KMC Dispatcher',
+        content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
+        sha:sha
+      })
+    });
+    return r.ok;
+  }catch(e){return false;}
+}
+
+// Trigger GitHub Actions workflow (sync.yml) — 可选：同步后触发云端动作
+async function triggerRunner(action,payload){
+  try{
+    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/actions/workflows/sync.yml/dispatches',{
+      method:'POST',
+      headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({ref:'main',inputs:{action:action,payload:payload}})
+    });
+    return r.ok;
+  }catch(e){return false;}
+}
+
+async function sbInit(){return null;}
+async function sbUpsert(t,d){return false;}
+async function sbLoad(t){return null;}
+async function sbDel(t,i){return false;}
+
+
+// Initialize cloud database tables (kept for back-compat)
+async function sbCreateTables(){
+  return gistToken !== '';
+}
+
+// Sync icon update
+let syncStatus='idle';
+function updateSyncIcon(){
+  const els=[document.getElementById('sync-icon'),document.getElementById('sync-icon-mob')];
+  els.forEach(el=>{
+    if(!el)return;
+    const colors={
+      idle:{bg:'rgba(91,138,245,0.15)',bd:'rgba(91,138,245,0.3)',shadow:'0 0 12px rgba(91,138,245,0.2)',text:'☁️'},
+      syncing:{bg:'rgba(91,138,245,0.25)',bd:'#5b8af5',shadow:'0 0 16px rgba(91,138,245,0.4)',text:'🔄'},
+      ok:{bg:'rgba(52,199,123,0.2)',bd:'rgba(52,199,123,0.4)',shadow:'0 0 12px rgba(52,199,123,0.3)',text:'☁️'},
+      error:{bg:'rgba(245,85,93,0.2)',bd:'rgba(245,85,93,0.4)',shadow:'0 0 12px rgba(245,85,93,0.3)',text:'⚠️'}
+    };
+    colors.success=colors.ok;
+    const c=colors[syncStatus]||colors.idle;
+    el.style.background=c.bg;
+    el.style.borderColor=c.bd;
+    el.style.boxShadow=c.shadow;
+    el.textContent=c.text;
+    if(syncStatus==='syncing'){el.style.animation='spin 1s linear infinite';el.textContent='🔄';}
+    else{el.style.animation='none';}
+  });
+}
+
+// Single-table quick sync (used after data mutations)
+async function sbSyncOne(table,data){
+  if(!syncAvailable)return;
+  await repoWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),depts:DB.depts.get()||DEFAULT_DEPTS});
+}
+
+async function manualSync(){
+  if(syncStatus==='syncing')return;
+  syncStatus='syncing';
+  updateSyncIcon();
+  const timeout=new Promise((_,r)=>setTimeout(()=>r('timeout'),10000));
+  try{
+    await Promise.race([syncAll(),timeout]);
+    syncStatus='ok';
+    toast('✅ 已同步 / Synced');
+  }catch(e){
+    syncStatus='error';
+    toast('⚠ 同步失败 / Sync failed');
+  }
+  updateSyncIcon();
+  setTimeout(()=>{if(syncStatus==='ok'||syncStatus==='error'){syncStatus='idle';updateSyncIcon();}},3000);
+}
+
+function openTokenSettings(){
+  const cur=gistToken||localStorage.getItem('kmc_gist_token')||'';
+  showModal(
+    '<div class="modal-head" style="padding:14px 18px;border-bottom:1px solid var(--bd);font-weight:600;color:var(--tx)">GitHub Token 设置</div>'+
+    '<div style="padding:16px 18px">'+
+      '<p style="font-size:12px;color:var(--tx-dim);margin:0 0 10px;line-height:1.7">用于读写仓库 <b style="color:var(--tx)">'+REPO_OWNER+'/'+REPO_NAME+'</b> 的 <code>'+DATA_FILE+'</code>（GitHub Contents API）。创建方式：GitHub → Settings → Developer settings → Fine-grained personal access tokens，权限勾选 <b style="color:var(--tx)">Contents: Read and write</b>。</p>'+
+      '<input id="st-gist-token" type="password" placeholder="粘贴 GitHub Fine-grained Token" value="'+(cur||'')+'" style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid var(--bd);border-radius:var(--rx-sm);font-size:13px;background:var(--bg-soft);color:var(--tx);outline:none;font-family:inherit"/>'+
+      '<p id="st-token-hint" style="font-size:11px;color:var(--tx-muted);margin:8px 0 0">'+(cur?('已保存 '+cur.slice(0,6)+'…'+cur.slice(-4)+'，可修改后重新保存'):'未保存 Token，同步前必须先保存')+'</p>'+
+      '<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'+
+        '<button onclick="closeModal()" class="bt-o">取消</button>'+
+        '<button onclick="saveGistToken()" style="padding:8px 16px;border-radius:6px;border:none;background:#5b8af5;color:#fff;font-size:13px;cursor:pointer">保存并同步</button>'+
+      '</div>'+
+    '</div>'
+  );
+  const input=document.getElementById('st-gist-token');
+  if(input)setTimeout(()=>input.focus(),50);
+}
+
+function saveGistToken(){
+  const input=document.getElementById('st-gist-token');
+  if(!input)return;
+  const t=input.value.trim();
+  if(!t){toast('请输入 Token / Enter token first');return;}
+  gistToken=t;localStorage.setItem('kmc_gist_token',t);
+  closeModal();
+  toast('Token 已保存 / Token saved');
+  syncStatus='syncing';updateSyncIcon();
+  setTimeout(()=>manualSync(),300);
+}
+
+
+let syncAvailable=false;
+async function syncAll(){
+  try{
+    if(!gistToken){
+      gistToken=localStorage.getItem('kmc_gist_token')||'';
+      if(!gistToken){syncAvailable=false;return;}
+    }
+    const remote=await repoRead();
+    if(remote){
+      syncAvailable=true;
+      if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles||[]);
+      if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers||[]);
+      if(remote.users&&remote.users.length)DB.users.set(remote.users||[]);
+      if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests||[]);
+      if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches||[]);
+      if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
+    }else{
+      // 首次同步：远端无数据或文件尚未创建 → 以本地为基准推送（repoWrite 内 PUT 时 sha=null 会自动创建文件）
+      // 若是网络故障导致读取失败，后续 repoWrite 同样会失败，syncAvailable 最终仍为 false，不会造成数据丢失
+      syncAvailable=true;
+    }
+    const data={
+      vehicles:DB.vehicles.get()||[],
+      drivers:DB.drivers.get()||[],
+      users:DB.users.get()||[],
+      requests:DB.requests.get()||[],
+      dispatches:DB.dispatches.get()||[],
+      depts:DB.depts.get()||DEFAULT_DEPTS,
+    };
+    const ok=await repoWrite(data);
+    if(!ok)syncAvailable=false;
+  }catch(e){console.error('syncAll',e);syncAvailable=false;}
+}
+//@deprecated_sbDelOne
+async function sbDelOne(table,id){
+  await sbDel('kmc_'+table,id);
+}
+
+const DB={
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),
+  invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
+  cutoff:LS('cutoff'),
+  wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
+  init(){
+    if(!this.vehicles.get())this.vehicles.set([
+      {plate:'AGE 2915',type:'黑色丰田普拉多（7座）',typeEn:'Black Prado (7-seater)',seats:7},
+      {plate:'AGA 5395',type:'白色丰田海拉克斯（双排）',typeEn:'White Hilux (Double Cab)',seats:5},
+      {plate:'AGN 4371',type:'白色丰田海拉克斯（双排）',typeEn:'White Hilux (Double Cab)',seats:5},
+      {plate:'AGN 9991',type:'黑色丰田海拉克斯（双排）',typeEn:'Black Hilux (Double Cab)',seats:5},
+      {plate:'AEC 2489',type:'白色丰田海拉克斯（手动）',typeEn:'White Hilux (Manual)',seats:5},
+      {plate:'AFX 6895',type:'白色丰田海拉克斯（巡逻）',typeEn:'White Hilux (Patrol)',seats:5},
+    ]);
+    if(!this.drivers.get())this.drivers.set([
+      {name:'Nkala'},{name:'Reginald'},{name:'Samuel'},{name:'Ishmael'},{name:'Kuda'},{name:'Opharn Chuma'}
+    ]);
+    if(!this.invite.get())this.invite.set('KMC2024');
+    if(!this.requests.get())this.requests.set([]);
+    if(!this.dispatches.get())this.dispatches.set([]);
+    if(!this.users.get())this.users.set([]);
+    if(!this.cutoff.get())this.cutoff.set('19:00');
+    if(!this.imported.get()){importHistData();this.imported.set(true);}
+    // Always merge org users
+    importOrgUsers();
+  }
+};
+DB.init();
+
+// Cutoff time helper
+function getCutoff(){return DB.cutoff.get()||'19:00';}
+function setCutoff(t){DB.cutoff.set(t);}
+
+function importHistData(){
+  const H=[
+{D:'2025-10-08',V:'Nkala',P:'AGE 2915',C:'陪同谢总、姜部长矿山出发至布拉瓦约公办，预计留宿一晚，上午8点出发，10号下午返回，旅途中需注意行车安全及接待礼仪',E:'Accompanying General Manager Xie and Minister Jiang on their departure from the mine to Bravayo Public Office, expected to stay overnight. They will depart at 8am and return on the afternoon of the 10th. During the journey, it is important to pay attention to driving safety and reception etiquette',X:1},
+{D:'2025-10-09',V:'Reginald',P:'AGN 4371',C:'飞机故障、空车返回，形成修改次日',E:'"Aircraft malfunction, returning without a passenger, travel schedule revised for the next day"',X:1},
+{D:'2025-10-09',V:'Samuel',P:'AGA 5395',C:'陪同moyo先生去万基参与活动，同时与程先生沟通是否采购后勤物资等事宜，需上午有8点以前出发',E:'Accompany Mr. Moyo to participate in the event at Wanji, and communicate with Mr. Cheng on whether to purchase logistics materials and other matters. Departure before 8am in the morning is required',X:1},
+{D:'2025-10-10',V:'Reginald',P:'AGN 4371',C:'瀑布成机场接一共3人，哈拉雷返回2人，飞机抵达时间中午13点25分，中国返回1人，到达时间中午12点10分，行程中注意行车安全，注意接待礼仪。',E:'Pick up a total of 3 people at Victoria Falls Airport: 2 returning from Harare (flight arrival time: 1:25 PM) and 1 returning from China (arrival time: 12:10 PM). Please drive safely and observe proper etiquette during the trip.',X:3},
+{D:'2025-10-11',V:'Samuel',P:'AGA 5395',C:'瀑布成机场接回中国返回员工王中平先生，飞机到达时间中午12点10分，自行计划出发时间，不可延误',E:'"The waterfall airport will receive Mr. Wang Zhongping, a Chinese employee returning from abroad. The arrival time of the plane is 12:10 in the afternoon. Please plan your departure time accordingly and do not delay."',X:1},
+{D:'2025-10-11',V:'Reginald',P:'AGN 4371',C:'财务部四人、外出瀑布城团建，当日返回',E:'Four members of the Finance Department went to a waterfall city for a team-building activity and returned on the same day.',X:1},
+{D:'2025-10-13',V:'Nkala',P:'AGE 2915',C:'瀑布城到达，谢澜谊，袁老师（女），JASON黄老师(男)  12点10   ，瀑布城到达南非的男老师2人，10点45   ，（共5人，机场汇合共同返回）',E:'Waterfall City arrival, Xie Lanyi, Teacher Yuan (female), Teacher Jason Huang (male), 12:10 PM.   Waterfall City arrival, two male teachers from South Africa, 10:45 AM.  (Total of 5 people, meet at the airport and return together).',X:5},
+{D:'2025-10-14',V:'Nkala',P:'AGE 2915',C:'西二号瀑布城机场到达，廖辉瀑布城机场到达 （共2人）',E:'Arrived at West No.2 Waterfall City Airport at 12:55, and arrived at Liaohui Waterfall City Airport at 12:10 (2 people in total)',X:2},
+{D:'2025-10-16',V:'Nkala',P:'AGE 2915',C:'杨晓松、彭恩明、单俊男、苏楠瀑布城机场到达（共4人)',E:'Yang Xiaosong, Peng Enming, Shan Junnan, and Su Nan arrived at Waterfall City Airport at 12:10, totaling 4 people.',X:4},
+{D:'2025-10-17',V:'Redinald',P:'AGA 5395',C:'RCS审计黄先生瀑布城出发（1人）',E:'Audit Mr. Huang departs from Waterfall City (1 person)',X:1},
+{D:'2025-10-18',V:'Nkala',P:'AGE 2915',C:'RCS审计老师瀑布城机场2人出发，2人瀑布城景区，次日1人机场出发，送达后返回1人同行返回（需住宿一晚，次日返回）',E:'RCS audit teacher, 2 people depart from Waterfall City Airport, 2 people to Waterfall City Scenic Area, next day 1 person departs from the airport, after drop-off return with 1 person together (requires one night of accommodation, return the next day).',X:1},
+{D:'2025-10-19',V:'Samuel',P:'AGN 9991',C:'瑞龙公司胡国书、、徐福、杨毓品瀑布城出发（3人）',E:'Ruilong Company Hu Guoshu, Xu Fu, and Yang Yupin depart from Waterfall City (3 people).',X:3},
+{D:'2025-10-20',V:'Samuel',P:'AGN 9991',C:'朱成涛瀑布城到达（1人）',E:'Zhu Chengtao arrived at Waterfall City (1 person)',X:1},
+{D:'2025-10-21',V:'Samuel',P:'AGN 9991',C:'张林瀑布城出发、梁得喜同行外出万基（2人）',E:'Zhang Lin departs from Pubu City, accompanied by Liang Dexi, heading to Wankei (2 people).',X:2},
+{D:'2025-10-22',V:'瑞龙司机',P:'AGN 4163',C:'西二号、黄卓文、姜宏佳瀑布城出发（3人）',E:'West No. 2, Huang Zhuowen, and Jiang Hongjia departed from Waterfall City (3 people)',X:3},
+{D:'2025-10-23',V:'Samuel',P:'AGN 9991',C:'陆海晶、王鹏翔瀑布城出发（2人）',E:'Lu Haijing and Wang Pengxiang departing from Waterfall City (2 people)',X:2},
+{D:'2025-10-25',V:'Redinald',P:'AGA 5395',C:'马稚宇瀑布城到达（1人）',E:'Ma Zhiyu arrives at Waterfall City (1 person)',X:1},
+{D:'2025-10-27',V:'Nkala',P:'AGE 2915',C:'唐佳华、古文瀑布城到达（2人）',E:'Tang Jiahua and Ancient Waterfall City arrival (2 people)',X:2},
+{D:'2025-10-28',V:'Redinald',P:'AGA 5395',C:'余洪川、贾帅辉、常磊坡、薛建瀑布城到达（4人） 何铭瀑布城出发（1人）',E:'Yu Hongchuan, Jia Shuaihui, Chang Leipo, Xue Jian arrived at Waterfall City (4 people)   He Ming departed from Waterfall City (1 person)',X:1},
+{D:'2025-10-29',V:'Redinald',P:'AGN 9991',C:'外出万基采购日用品',E:'Outing Wanjī Purchase Daily Necessities',X:1},
+{D:'2025-10-30',V:'Nkala',P:'AGE 2915',C:'叶建国瀑布城到达（1人）',E:'Ye Jianguo arrived at Waterfall City (1 person)',X:1},
+{D:'2025-10-31',V:'Nkala',P:'AGE 2915',C:'梁得喜瀑布城到达（1人）',E:'Liang Dexi arrives at Waterfall City (1 person)',X:1},
+{D:'2025-11-01',V:'Redinald',P:'AGN 9991',C:'出发奎奎，下午两点到达，接金鹏检修人员当日返回（1人）',E:'Depart from Kuikui, arrive at two o\'clock in the afternoon, pick up Jinpeng maintenance personnel and return on the same day (1 person)',X:1},
+{D:'2025-11-01',V:'Samuel',P:'AGA 5395',C:'唐总、古文、谢澜谊、薛建万基动物园（4人）',E:'Mr. Tang, Gu Wen, Xie Lanyi, Xue Jianwanji Zoo (4 people)',X:4},
+{D:'2025-11-03',V:'Unknown',P:'AGN 9991',C:'安全生产部借车9991（张如伟）',E:'Safety Production Department borrowed vehicle 9991 (Zhang Ruwei)',X:1},
+{D:'2025-11-04',V:'Nkala',P:'AGE 2915',C:'MOYO先生瀑布城到达，送往Hwange Safari Lodge入住休息，送达后返回（总统到访期间接待）',E:'Mr. MOYO arrives in Victoria Falls, transported to Hwange Safari Lodge for rest and accommodation, returned after delivery, during which various 接待 were provided (reception during the President\'s visit)',X:1},
+{D:'2025-11-04',V:'Redinald',P:'AGN 9991',C:'协助接送公司援助病人万基医院拆线（1人）',E:'Assisting a patient from a transportation company to have stitches removed at Wan Kee Hospital (1 person)',X:1},
+{D:'2025-11-05',V:'Nkala',P:'AGE 2915',C:'上午7.30点接Moyo先生到Kamativi矿山，全程待命，下午16.30送回Safari Lodge；',E:'Pick up Mr. Moyo at 9:00 AM and take him to the Kamatiti mine. Be on standby the whole time. Return him to the Safari Lodge at 4:30 PM.',X:1},
+{D:'2025-11-06',V:'Nkala',P:'AGE 2915',C:'从Safari Lodge接上送往机场，MOYO先生瀑布城机场出发',E:'Pick-up from Safari Lodge and transfer to the airport, departing from Fallstown Airport.',X:1},
+{D:'2025-11-08',V:'Samuel',P:'AGA 5395',C:'王鹏翔、王飞瀑布城达到（2人）',E:'Wang Pengxiang and Wang Fei reached the Waterfall City (2 people).',X:2},
+{D:'2025-11-09',V:'Redinald',P:'AGN 9991',C:'美卓设备供应商，瀑布城机场出发（2人）',E:'Metso equipment supplier, departing from Niagara Falls Airport (2 people)',X:2},
+{D:'2025-11-10',V:'Samuel',P:'AGN 9991',C:'南昌矿机供应商，刘磊瀑布城出发（1人）',E:'Nanchang mining machinery supplier, Liu Lei departs from Waterfall City (1 person)',X:1},
+{D:'2025-11-11',V:'Unknown',P:'AGN 9991',C:'已预约修理厂检查刹车系统',E:'',X:1},
+{D:'2025-11-12',V:'ishmae',P:'2816',C:'孟先生瀑布城机场出发，上午8点离开公司（1人）',E:'Mr. Meng departed from Waterfall City Airport, leaving the company at 8 a.m. (1 person)',X:1},
+{D:'2025-11-13',V:'Redinald',P:'AGA 5395',C:'吴爽瀑布城出发（1人） 中南大学选矿专家瀑布城到达（2人）',E:'Wu Shuang starts from Waterfall City (1 person) Central South University mineral processing experts arrived in the Waterfall City (2 people). 1 person departed, 2 people returned.',X:2},
+{D:'2025-11-14',V:'Nkala',P:'AGE 2915',C:'张峻、李蒙、姜宏佳瀑布城机场到达（3人）',E:'Zhang Jun, Li Meng, Jiang Hongjia arrived at Waterfall City Airport (3 people)',X:3},
+{D:'2025-11-15',V:'Samuel',P:'AGN 9991',C:'财务部员工Billy，瀑布城机场到达（1人）',E:'Finance department local employee Billy arrived at Waterfall City Airport (1 person)',X:1},
+{D:'2025-11-16',V:'Redinald',P:'AGN 9991',C:'上午7点，中方食堂出发，哈拉雷办理签证，预计周二返回。（4人）',E:'Departing from the Chinese canteen at 7:00 AM, we will go to Harare to process visas and are expected to return on Tuesday. (4 people)',X:4},
+{D:'2025-11-17',V:'Nkala',P:'AGE 2915',C:'梁得喜、谢澜谊瀑布城机场出发，上午10点出发（2人） 何铭、杜建兵、兰庚、梁建中 、马新宇瀑布城机场到达（5人）',E:'Liang Dexi and Xie Lanyi depart from Waterfall City Airport at 10:00 AM (2 people). Heming Du Jianbing, Lan Geng, Liang Jianzhong, and Ma Xinyu arrived at Waterfall City (5 people).',X:5},
+{D:'2025-11-18',V:'ishmae',P:'4371',C:'一二期选厂万基动物园团建（8人）',E:'Phase 1 & 2 Factory Selection Wanjī Zoo Team Building (8 people)',X:8},
+{D:'2025-11-19',V:'Samuel',P:'AGN 9991',C:'预约修理厂，里程到期保养',E:'Appointment made with the repair shop, mileage maintenance due',X:1},
+{D:'2025-11-20',V:'Samuel',P:'AGN 9991',C:'郭瀚文、吴志林瀑布城机场出发（2人）',E:'Guo Hanwen, Wu Zhilin departing from Waterfall City Airport (2 people)',X:2},
+{D:'2025-11-21',V:'Samuel',P:'AGA 5395',C:'Tshuma、Billy-瀑布城机场出发，上午10.00出发（2人）',E:'From Tshuma and Billy, departure from Niagara Falls City Airport at 10:00 AM (for two people)',X:2},
+{D:'2025-11-22',V:'Samuel',P:'AGN 9991',C:'张洳伟-瀑布城机场出发（1人）',E:'Departure from Zhangruwei Waterfall City Airport (1 person)',X:1},
+{D:'2025-11-23',V:'Redinald',P:'AGN 9991',C:'万义、瀑布城机场到达，Tshuma哈拉雷-瀑布城到达（共2人）',E:'Arrival at Wanyi/Fall City Airport, Tshuma Harare-Fall City (2 people total)',X:2},
+{D:'2025-11-24',V:'Samuel',P:'AGA 5395',C:'梁得喜、谢澜谊瀑布城机场到达（2人）',E:'Liang Dexi, Xie Lanyi Waterfall City Airport arrival (2 people)',X:2},
+{D:'2025-11-25',V:'Samuel',P:'AGN 9991',C:'左淼瀑布城机场到达（1人）',E:'Zuo Miao Waterfall City Airport Arrival (1 people)',X:1},
+{D:'2025-11-26',V:'Redinald',P:'AGA 5395',C:'外出采购羊肉，预约供应商牛肉定价',E:'Going out to purchase mutton and making an appointment with the supplier for beef pricing.',X:1},
+{D:'2025-11-27',V:'Samuel',P:'AGN 9991',C:'陆海晶瀑布城机场到达（1人）',E:'Arrival at Lu Haijing Waterfall City (1 person)',X:1},
+{D:'2025-11-28',V:'Samuel',P:'AGN 9991',C:'上午7.00出发哈拉雷参加篮球比赛（4人）',E:'Depart at 7:00 AM for a basketball game in Harare (4 players).',X:4},
+{D:'2025-11-29',V:'Redinald',P:'AGA 5395',C:'薛旭强瀑布城机场到达（1人）',E:'Xue Xuqiang arrived at Waterfall City Airport (1 person)',X:1},
+{D:'2025-11-30',V:'Redinald',P:'AGA 5395',C:'立孚2位工程师到瀑布城机场、王朝明瀑布城机场到达。（出发2人、到达1人）',E:'Two engineers from Lifu went to Fallstown Airport (2 people)',X:2},
+{D:'2025-12-01',V:'Nkala',P:'AGE 2915',C:'姜宏佳、李蒙瀑布城机场出发（2人）',E:'Jiang Hongjia and Li Meng depart from Fallstown Airport (2 people)',X:2},
+{D:'2025-12-02',V:'Redinald',P:'AGA 5395',C:'梁沉出发万基参加（IRMA）会议（3人）',E:'Liang Chen departs for Wan Kee to attend the (IRMA) conference (3 people).',X:3},
+{D:'2025-12-03',V:'Redinald',P:'AGA 5395',C:'外出采购后厨食材、预约供应商现场牛肉议价',E:'Purchasing kitchen ingredients outside the home and negotiating prices with suppliers on-site for beef.',X:1},
+{D:'2025-12-04',V:'Redinald',P:'AGN 9991',C:'叶建国、胡代文，瀑布城机场出发、上午8.30出发（2人）',E:'Ye Jianguo and Hu Daiwen depart from Niagara Falls Airport at 8:30 AM (2 people)',X:2},
+{D:'2025-12-05',V:'Redinald',P:'AGN 9991',C:'机电部预约万基Baobabe酒店接2人返回，上午7点出发，返回公司后外出采购牛肉（2人）',E:'The Mechanical and Electrical Department booked a pickup for two people from the Wanji Baobabe Hotel. They departed at 7:00 AM and went out to purchase beef (for the two people) after returning to the company.',X:2},
+{D:'2025-12-06',V:'Redinald',P:'AGN 9991',C:'预约牛肉屠宰、运输，食材保障',E:'Pre-order beef slaughtering and transportation to ensure food supply.',X:1},
+{D:'2025-12-07',V:'Nkala',P:'AGN 9991',C:'机电部预约海王旋流器供应商、梁总访客（共3人）瀑布城机场出发，上午6.30出发',E:'The Mechanical and Electrical Department has scheduled a meeting with the Neptune hydrocyclone supplier and General Manager Liang (a total of 3 people) to depart from Niagara Falls Airport at 6:30 AM.',X:3},
+{D:'2025-12-08',V:'Samuel',P:'AGA 5395',C:'综合部预约万基接人，随行人员Joseph，上午7.30出发（3人），返回后处理左后轮异响，清理后座异味',E:'The General Affairs Department arranged for Wanji to pick up the group, accompanied by Joseph. They departed at 7:30 AM (3 people). Upon return, they addressed the rattling noise from the left rear wheel and cleaned the odor from the back seat.',X:3},
+{D:'2025-12-09',V:'Nkala',P:'AGE 2915',C:'谢澜宜、王磊-瀑布城机场出发、财务部员工Billy 瀑布城机场到达（出发2人、到达1人）',E:'Xie Lanyi and Wang Lei departed from Fallstown Airport; Billy, a finance department employee, arrived at Fallstown Airport (2 departing, 1 arriving).',X:2},
+{D:'2025-12-10',V:'Nkala',P:'AGE 2915',C:'何力、瑞龙公司黄帝、夏辉林、瀑布城机场出发，午饭后11.40办公区外集合出发（3人）',E:'He Li, Huangdi of Rui Long Company, Xia Hui Lin, departing from Waterfall City Airport. After lunch, gather outside the office area at 11:40 for departure (3 people).',X:3},
+{D:'2025-12-11',V:'Nkala',P:'AGE 2915',C:'工信部摄制组、柴思茂瀑布城机场到达，粱得喜、秦志均同行出发机场接机；上午8点30分办公室外集合出发；重要接待，注意行车安全，接待礼仪。（出发2人、返回9人、三辆车同行返回）',E:'The Ministry of Industry and Information Technology film crew and Chai Simao (7 people arriving) arrived at Waterfall City Airport; Liang Dexi and Qin Zhijun accompanied them to the airport to pick them up; they met outside the office at 8:30 am for departure; this is an important reception, please pay attention to driving safety and reception etiquette. (2 people departing, 9 people returning, three vehicles returning together)',X:9},
+{D:'2025-12-12',V:'Nkala',P:'AGE 2915',C:'接待工信部摄制组，未返程',E:'They received a film crew from the Ministry of Industry and Information Technology but did not return.',X:1},
+{D:'2025-12-13',V:'Unknown',P:'AGE 2915',C:'工信部摄制组：上午拍摄社区贡献；下午拍摄文化融合；晚上拍摄矿区夜景航拍',E:'The Ministry of Industry and Information Technology\'s film crew: Morning shoot focused on community contributions; afternoon shoot focused on cultural integration; evening shoot focused on aerial nighttime views of the mining area.',X:1},
+{D:'2025-12-14',V:'Nkala',P:'AGE 2915',C:'工信部摄制组接待、动物园观光，回营地住宿（4人）午饭后出发，具体时间待定',E:'The Ministry of Industry and Information Technology film crew will be received, and the group will visit the zoo. After returning to the camp for overnight stay (4 people), they will depart after lunch. The specific time is to be determined.',X:4},
+{D:'2025-12-15',V:'Nkala',P:'AGE 2915',C:'工信部摄制组拍摄任务及接待使用车辆（6人）',E:'The Ministry of Industry and Information Technology\'s filming crew and the vehicles used for their reception (6 people)',X:6},
+{D:'2025-12-16',V:'Nkala',P:'AGE 2915',C:'王磊、瀑布城机场到达，取回机场存放包裹（1人）',E:'Wang Lei arrived at Waterfall City Airport (1 person).',X:1},
+{D:'2025-12-17',V:'Nkala',P:'AGE 2915',C:'工信部摄制组：瀑布城机场出发；（6人）；上午7.30中方食堂外集合，两台车共同出发前往机场，送达后5395先行返程前往万基gain超市办理换货；2915返程时瀑布城医院取回医疗证明；',E:'Ministry of Industry and Information Technology film crew: Departure from Falls City Airport; (6 people); Meet at 7:30 am outside the Chinese canteen, two vehicles depart together to the airport, after which 5395 will return first to Wan Kee Gain Supermarket to exchange goods; 2915 will pick up the medical certificate from Falls City Hospital on the return trip;',X:6},
+{D:'2025-12-18',V:'Samuel',P:'AGA 5395',C:'梁沉预约万基圣诞节日拜访（3人）',E:'Liang Chen has arranged to visit Wan Ji during the Christmas holiday (3 people).',X:3},
+{D:'2025-12-19',V:'Unknown',P:'AGA 5395',C:'安生部-外出万基圣诞节拜访（5人）',E:'An Sheng Department - Christmas visit to Wanji (5 people)',X:5},
+{D:'2025-12-21',V:'Nkala',P:'AGA 5395',C:'业务部瀑布城团建，当日返程（7人）',E:'Business Department team building trip to Falls City, return trip on the same day (7 people)',X:7},
+{D:'2025-12-22',V:'Nkala',P:'AGA 5395',C:'程传贵-外出采购生活物资、食材',E:'Cheng Chuangui - Going out to purchase daily necessities and food ingredients',X:1},
+{D:'2025-12-23',V:'Samuel',P:'AGA 5395',C:'梁沉预约社区和周边慰问',E:'Liang Chen made an appointment to visit and offer condolences to the community and surrounding areas.',X:1},
+{D:'2025-12-24',V:'Samuel',P:'AGE 2915',C:'粱德喜、瀑布城机场出发-哈拉雷，上午6.30出发（1人）',E:'Liang Dexi, de la Flughaveno Niagara Falls al Harareo, forirante je la 6:30 a.m. (1 persono)',X:1},
+{D:'2025-12-25',V:'Nkala',P:'AGE 2915',C:'张峻、瀑布城机场出发，上午8点，瑞龙餐厅外路边汇合后出发；郭汉文、吴志林瀑布城机场到达（出发1人，到达2人）',E:'Zhang Jun departed from Waterfall City Airport and met at the roadside outside Ruilong Restaurant at 8:00 AM before departing; Guo Hanwen and Wu Zhilin arrived at Waterfall City Airport (1 person departed, 2 people arrived).',X:2},
+{D:'2025-12-27',V:'Redinald',P:'AGN 9991',C:'余炳均瀑布城机场出发，上午8点中方食堂外集合出发（1人）',E:'Yu Bingjun departs from Niagara Falls Airport. Meet outside the Chinese canteen at 8:00 AM for departure (1 person).',X:1},
+{D:'2025-12-28',V:'Unknown',P:'AGA 5395',C:'修理厂借用，顶替0693外出哈拉雷维修',E:'The repair shop borrowed it to replace 0693 for repairs in Harare.',X:1},
+{D:'2025-12-29',V:'Nkala',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）',E:'Vehicle repair services scheduled for Harare (2 people) at the mechanics workshop.',X:2},
+{D:'2025-12-30',V:'Nkala',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
+{D:'2025-12-31',V:'Redinald',P:'AGN 9991',C:'万基采购2915车辆一年期限包含三证保险',E:'Wanji purchased vehicle 2915 for a one-year term, including three certificates and insurance.',X:1},
+{D:'2026-01-01',V:'Redinald',P:'AGN 9991',C:'文志军、易文斌瀑布城机场出发，上午8点中国餐厅外集合出发（2人）',E:'Wen Zhijun and Yi Wenbin will depart from Fallstown Airport. They will meet outside the Chinese restaurant at 8:00 AM (2 people).',X:2},
+{D:'2026-01-03',V:'Redinald',P:'AGN 9991',C:'陈文康、瀑布城机场出发（1人）；上午7.30点中国餐厅外集合出发。',E:'Chen Wenkang, departing from Niagara Falls Airport (1 person); meet outside the Chinese restaurant at 7:30 am for departure.',X:1},
+{D:'2026-01-04',V:'Samuel',P:'AGN 9991',C:'李庆、王磊瀑布城机场出发（2人）',E:'Li Qing and Wang Lei depart from Waterfall City Airport (2 people)',X:2},
+{D:'2026-01-06',V:'Nkala',P:'AGE 2915',C:'贺永玲瀑布城机场出发（15.00）；叶建国（14：35）、胡国龙（12：10）、瀑布城机场到达（出发1人、到达2人）',E:'He Yongling departs from Waterfall City Airport (15:00); Ye Jianguo (14:35), Hu Guolong (12:10), arrives at Waterfall City Airport (1 departing person, 2 arriving people)',X:2},
+{D:'2026-01-07',V:'Unknown',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
+{D:'2026-01-08',V:'ishmae',P:'AGN 9991',C:'余刚、哈拉雷办理签证、金鹏皮带检修人员返程（合计2人）',E:'Yu Gang, who departed for Harare to process visas, and Jinpeng belt maintenance personnel, who returned home (total of 2 people).',X:2},
+{D:'2026-01-10',V:'Redinald',P:'AGN 9991',C:'叶建国、瀑布城机场出发；王朝明、瀑布城机场到达（出发1人、到达1人）',E:'Ye Jianguo departs from Waterfall City Airport; Wang Chaoming arrives at Waterfall City Airport (1 person departing, 1 person arriving).',X:1},
+{D:'2026-01-12',V:'Unknown',P:'',C:'粱德喜、瀑布城机场到达（1人）',E:'Liang Dexi, arriving at Waterfall City Airport (1 person)',X:1},
+{D:'2026-01-14',V:'ishmae',P:'AGA 5395',C:'余刚、李浩出发哈拉雷办理签证，预计周四返程（2人）',E:'Yu Gang and Li Hao departed for Harare to apply for visas and are expected to return on Thursday (2 people).',X:2},
+{D:'2026-01-15',V:'ishmae',P:'AGA 5395',C:'余刚、李浩出发哈拉雷办理签证，未返程（2人）',E:'Yu Gang and Li Hao departed for Harare to apply for visas and did not return (2 people).',X:2},
+{D:'2026-01-16',V:'ishmae',P:'AGA 5395',C:'余刚、李浩出发哈拉雷办理签证，未返程（2人）',E:'Yu Gang and Li Hao departed for Harare to apply for visas and did not return (2 people).',X:2},
+{D:'2026-01-18',V:'Redinald',P:'AGA 5395',C:'叶建国、梁德喜、西二号、谢书林、贺永玲及本地审计团队；合计（11人）',E:'Ye Jianguo, Liang Dexi, Xi Erhao, He Yongling, and the local audit team; total (10 people).',X:10},
+{D:'2026-01-20',V:'Nkala',P:'AGA 5395',C:'MUTUMWA/MODERNMR瀑布城至哈拉雷；朱磊、杨杰、瀑布城机场出发（3人）上午8.30中方食堂外集合出发',E:'MUTUMWA/MODERNMR Falls to Harare; Zhu Lei, Yang Jie, Falls Airport (3 people) Departure: Meet outside the Chinese canteen at 8:30 AM.',X:3},
+{D:'2026-01-21',V:'Nkala',P:'AGE 2915',C:'叶建国、谢书林瀑布城机场出发（2人）上午11.00办公室外集合出发',E:'Ye Jianguo and Xie Shulin will depart from Waterfall City Airport (2 people). Meet outside the office at 11:00 AM for departure.',X:2},
+{D:'2026-01-22',V:'Redinald',P:'AGA 5395',C:'文志军、易文斌、刘思龙瀑布城机场到达；刘凯凯、瀑布城机场，上午8点中国餐厅外集合出发；（出发1人，到达3人）',E:'Wen Zhijun, Yi Wenbin, and Liu Silong arrived at Fallstown Airport; Liu Kaikai arrived at Fallstown Airport. We will meet outside the Chinese restaurant at 8:00 AM for departure; (1 person departs, 3 people arrive).',X:3},
+{D:'2026-01-23',V:'Samuel',P:'AGA 5395',C:'朱成涛、黄卓文外出瀑布城办事（2人）',E:'Zhu Chengtao and Huang Zhuowen went to Waterfall City on business (2 people)',X:2},
+{D:'2026-01-24',V:'Samuel',P:'AGA 5395',C:'高德强、李庆瀑布城机场到达，上午8.30出发（2人）',E:'Gao Deqiang and Li Qing arrived at Waterfall City Airport and departed at 8:30 AM (2 people).',X:2},
+{D:'2026-01-26',V:'Redinald',P:'AGE 2915',C:'张峻、瀑布城机场到达（1人）',E:'Zhang Jun arrived at Waterfall City Airport (1 person).',X:1},
+{D:'2026-01-27',V:'Samuel',P:'AGA 5395',C:'业务部预约-万基办理业务（1人）',E:'Business Department Appointment - Wanji Business Processing (1 people)',X:1},
+{D:'2026-01-28',V:'Samuel',P:'AGA 5395',C:'机电部预约外出沿途电路巡线（3人）',E:'The Mechanical and Electrical Department has scheduled a field inspection of power lines along the route (3 people).',X:3},
+{D:'2026-01-29',V:'Samuel',P:'AGA 5395',C:'业务部预约万基办理业务、具体时间待通知（3人）',E:'The business department has scheduled appointments for Wanji to handle some business; the specific time will be notified later (3 people).',X:3},
+{D:'2026-01-30',V:'Samuel',P:'AGA 5395',C:'Billy、本地审计团队，瀑布城机场出发,上午11点办公室外集合出发（5人）',E:'Billy and the local audit team will depart from Niagara Falls Airport. Meet outside the office at 11:00 AM for departure (5 people).',X:5},
+{D:'2026-01-31',V:'Redinald',P:'AGN 9991',C:'余炳均、光伏项目组人员瀑布城机场到达（共计3人）',E:'Yu Bingjun and members of the photovoltaic project team arrived at Waterfall City Airport (a total of 3 people).',X:3},
+{D:'2026-02-02',V:'Samuel',P:'AGA 5395',C:'业务部3人、机电部1人-预约上午8点办公室外集合出发出发万基办理业务（4人）',E:'Three people from the Business Department and one person from the Mechanical and Electrical Department - scheduled to meet outside the office at 8:00 AM to depart for Wanji to handle business (4 people).',X:4},
+{D:'2026-02-03',V:'Redinald',P:'AGA 5395',C:'程传贵-食堂食材采购（蔬菜、羊肉以及供应商确定牛肉价格确认）',E:'Cheng Chuangui - Procurement of canteen ingredients (vegetables, mutton, supplier confirmation, and beef price confirmation)',X:1},
+{D:'2026-02-04',V:'Nkala',P:'AGA 5395',C:'贺永玲、朱成涛-瀑布城机场出发；上午11.00办公室外集合出发（2人）',E:'He Yongling and Zhu Chengtong will depart from Niagara Falls Airport; meet outside the office at 11:00 AM (2 people).',X:2},
+{D:'2026-02-05',V:'Nkala',P:'AGA 5395',C:'贾立、赵泽奎、夏海斌、孙云飞瀑布城机场出发（4人）',E:'Jia Li, Zhao Zekui, Xia Haibin, and Sun Yunfei depart from Waterfall City Airport (4 people)',X:4},
+{D:'2026-02-07',V:'Samuel',P:'AGA 5395',C:'临时接任务送医瀑布城（车间中方员工突发肾结石）',E:'A Chinese employee in a workshop was temporarily assigned to be taken to the hospital in Falls City (he suddenly developed kidney stones).',X:1},
+{D:'2026-02-08',V:'ishmae',P:'AFU 9345',C:'运送精矿样品至哈拉雷，共计600公斤，',E:'Two bags of concentrate samples, totaling 600 kg, were transported to Harare.',X:1},
+{D:'2026-02-10',V:'Reggie',P:'AGA 5395',C:'高玉莹、朱元波、姚树友、瀑布城机场出发；李蒙、瀑布成机场到达。上午8.30中方食堂外集合出发；（出发3人，到达1人）',E:'Gao Yuying, Zhu Yuanbo, Yao Shuyou, depart from Waterfall City Airport; Li Meng, arrive at Waterfall City Airport. Meet at 8:30 AM outside the Chinese canteen; (3 depart, 1 arrives)',X:3},
+{D:'2026-02-12',V:'Nkala',P:'AGN 9991',C:'罗发元、李丽、杨启帆、曹杰瀑布城机场出发，上午7.30中方食堂外集合；（4人）',E:'Luo Fayuan, Li Li, Yang Qifan, and Cao Jie will depart from Fallstown Airport and meet outside the Chinese canteen at 7:30 AM; (4 people)',X:4},
+{D:'2026-02-13',V:'Samuel',P:'AGN 9991',C:'刘思龙-中午13点30出发前往学校Maanziasiya',E:'Liu Silong - Departed for school Maanziasiya at 1:30 PM',X:1},
+{D:'2026-02-14',V:'Nkala',P:'AGE 2915',C:'梁德喜、贺永玲，瀑布城机场到达；白宗山、瀑布城机场出发、上午7.30中方食堂外集合出发。（出发1人、到达2人）',E:'Liang Dexi and He Yongling will arrive at Niagara Falls Airport; Bai Zongshan will depart from Niagara Falls Airport. Meet outside the Chinese canteen at 7:30 AM for departure. (1 person departing, 2 people arriving)',X:2},
+{D:'2026-02-15',V:'Redinald',P:'AGE 2915',C:'财务部瀑布城景区团建，中午12点，中方食堂外集合出发；预计16号返回（6人）',E:'The Finance Department is having a team-building event at Waterfall City. We will meet at 12:00 noon outside the Chinese canteen and depart. We expect to return on the 16th (6 people).',X:6},
+{D:'2026-02-17',V:'Nkala',P:'AGA 5395',C:'余学福-瀑布城机场，上午8点中方食堂外集合出发(1人)',E:'Yu Xuefu - Niagara Falls Airport, meet at 8:00 AM outside the Chinese canteen for departure (1 person).',X:1},
+{D:'2026-02-18',V:'ishmae',P:'AGA 5395',C:'综合部-布拉瓦约相关业务、次日返程（2人）',E:'General Affairs Department - Bulawayo related business, return trip the next day (2 people)',X:2},
+{D:'2026-02-19',V:'Samuel',P:'AGN 9991',C:'业务部-万基办理相关业务，上午8.00点办公室外集合出发；（2人）',E:'Business Department - Wanji handles related business. Meet outside the office at 8:00 AM to depart; (2 people)',X:2},
+{D:'2026-02-20',V:'Nkala',P:'AGN 9991',C:'业务部-瀑布城移民局相关业务，上午8点办公室外集合出发（2人）',E:'Business Department - Niagara Falls Immigration Office related business, meet outside the office at 8:00 AM for departure (2 people).',X:2},
+{D:'2026-02-22',V:'Nkala',P:'AGN 9991',C:'王钟平、廖辉-哈拉雷办理签证，上午7点中方食堂外集合出发，预计24日返程（2人）',E:'Wang Zhongping and Liao Hui will apply for visas in Harare. They will meet outside the Chinese canteen at 7:00 AM and depart, with a planned return trip on the 24th (2 people).',X:2},
+{D:'2026-02-24',V:'Samuel',P:'AGA 5395',C:'朱磊、杨杰、瀑布城机场到达，上午8.30办公室出发（2人）',E:'Zhu Lei, Yang Jie, and others arrived at Waterfall City Airport and departed from the office at 8:30 AM (2 people).',X:2},
+{D:'2026-02-25',V:'ishmae',P:'AFU 9345',C:'出发哈拉雷运输采购物资。',E:'Departure from Harare to transport procured supplies.',X:1},
+{D:'2026-02-26',V:'Reggie',P:'AGE 2915',C:'刘军、何铭、杨波-瀑布城机场出发；高玉莹、刘凯凯、夏海斌、孙云飞瀑布城机场到达。上午8.30中方食堂外集合出发。（出发3人、到达4人）',E:'Liu Jun, He Ming, and Yang Bo depart from Fallstown Airport; Gao Yuying, Liu Kaikai, Xia Haibin, and Sun Yunfei arrive at Fallstown Airport. Meet at 8:30 AM outside the Chinese canteen for departure. (3 departing, 4 arriving)',X:4},
+{D:'2026-02-28',V:'Nkala',P:'AGE 2915',C:'贾立、李丽、罗浩楠、胥骏原、杨鹏飞、徐福-瀑布城机场到达，两台车上午8点办公室外集合出发（6人）',E:'Jia Li, Li Li, Luo Haonan, Xu Junyuan, Yang Pengfei, and Xu Fu arrived at Waterfall City Airport. Two cars will meet outside the office at 8:00 AM to depart (6 people).',X:6},
+{D:'2026-03-03',V:'Nkala',P:'AGA 5395',C:'曹杰、瀑布城机场到达，返程途中采购食材，上午8点办公室停车场出发（1人）',E:'Cao Jie arrived at Waterfall City Airport. On the way back, he purchased groceries and departed from the office parking lot at 8:00 AM (1 person).',X:1},
+{D:'2026-03-04',V:'Samuel',P:'AGA 5395',C:'综合部-MOYO出发万基参加会议、根据指令取回礼物，上午10点办公室汇合出发，返程时购买餐厅食材（1人）',E:'General Affairs Department - MOYO departs for Wanji to attend a meeting, retrieves gifts as instructed, meets at the office at 10:00 AM to depart, and purchases restaurant ingredients on the return trip (1 person).',X:1},
+{D:'2026-03-05',V:'Nkala',P:'AGA 5395',C:'尹恒、罗发元、洪一寒瀑布城机场到达，上午8点出发，返程途中采购打草机使用汽油（3人）',E:'Yin Heng, Luo Fayuan, and Hong Yihan arrived at Waterfall City Airport and departed at 8:00 AM. On the return trip, they purchased gasoline for a lawnmower (3 people).',X:3},
+{D:'2026-03-06',V:'Reggie',P:'AGN 9991',C:'陆海晶-瀑布城机场出发、余炳均-瀑布城机场到达，上午8点30办公室出发（出发1人、到达1人）',E:'Lu Haijing departs from Waterfall City Airport, and Yu Bingjun arrives at Waterfall City Airport. They will depart from the office at 8:30 AM (1 person departing, 1 person arriving).',X:1},
+{D:'2026-03-07',V:'4164',P:'',C:'单俊男-瀑布城机场到达，整合瑞龙车辆顺路接回（1人）',E:'Shan Junnan arrived at Waterfall City Airport and was picked up by Ruilong vehicles along the way (1 person).',X:1},
+{D:'2026-03-08',V:'Nkala',P:'AGA 5395',C:'唐情轩-瀑布城机场出发、梁德喜、高玉莹同行万基电力局，上午7.30中方食堂外集合出发（出发3人，返程2人）',E:'Tang Qingxuan - Departing from Waterfall City Airport, Liang Dexi and Gao Yuying will accompany Wanji Power Bureau. Meet outside the Chinese canteen at 7:30 AM for departure (3 people departing, 2 people returning).',X:2},
+{D:'2026-03-10',V:'Nkala',P:'AGE 2915',C:'刘铭洋、李波、白宗山、瀑布城机场到达；李蒙-瀑布城业务办理，贺永玲-瀑布城机场出发哈拉雷；上午8.30中方食堂外集合出发（出发2人、返程4人）',E:'Liu Mingyang, Li Bo, Bai Zongshan, and others arrived at Fallstown Airport; Li Meng handled business in Fallstown; He Yongling departed from Fallstown Airport for Harare; 8:30 AM, meet outside the Chinese canteen for departure (2 people departing, 4 people returning).',X:4},
+{D:'2026-03-11',V:'Samuel',P:'AGA 5395',C:'高玉莹-选厂相关88KV、33KV线路巡线万基方向，上午8.30办公室外集合出发、（2人）',E:'Gao Yuying - Patrol of 88KV and 33KV power lines related to the ore dressing plant in the Wanji direction. Meet outside the office at 8:30 AM and depart; (2 people)',X:2},
+{D:'2026-03-12',V:'Nkala',P:'AGN 9991',C:'赵泽奎、瀑布城机场到达，上午8点出发（1人）',E:'Zhao Zekui, arrival at Waterfall City Airport, departure at 8:00 a.m. (1 homo sapiens)',X:1},
+{D:'2026-03-13',V:'Samuel',P:'AGN 9991',C:'李晓磊-万基环保局办理业务，上午8.30办公室外集合出发；（3人）',E:'prunus salicina Xiaolei - Wanji Environmental Protection Bureau to handle business, gather outside the office at 8:30 a.m. and depart; (3 homo sapiens)',X:3},
+{D:'2026-03-14',V:'Samuel',P:'AGA 5395',C:'购买生日会蛋糕',E:'Purchase birthday party cake',X:1},
+{D:'2026-03-17',V:'Redinald',P:'AGN 9991',C:'朱元波、瀑布城机场到达、返程时采购生活物资（1人）',E:'Zhu Yuanbo, arrival at Waterfall City Airport, purchasing daily necessities on the return trip (1 homo sapiens)',X:1},
+{D:'2026-03-18',V:'Samuel',P:'AGA 5395',C:'薛旭强-中午13.00点办公室汇合出发布拉瓦约办理业务，19日返程。（出发1人，返程2人）',E:'Xue Xuqiang - Meet at the office at 13:00 noon to depart for Bulawayo to handle business, return on the 19th. (Departure: 1 homo sapiens, Return: 2 homo sapiens)',X:2},
+{D:'2026-03-19',V:'Reggie',P:'AGN 9991',C:'刘军、杨启帆、瀑布城机场到达、返程时采购后勤物资（2人）',E:'Liu Jun, Yang Qifan, Waterfall City Airport arrival, procurement of logistical supplies for the return trip (2 Homo sapiens)',X:2},
+{D:'2026-03-20',V:'Unknown',P:'0964',C:'刘思龙-上午10点-11点，本地路政相关人员、省道维修检查验收',E:'Liu Silong - 10:00 AM to 11:00 AM, local road administration-related Homo sapiens personnel, provincial highway maintenance inspection and acceptance',X:1},
+{D:'2026-03-21',V:'Reggie',P:'AGN 9991',C:'贺永玲-瀑布城机场到达（1人）',E:'He Yongling - Arrival at Waterfall City Airport (1 Homo sapiens)',X:1},
+{D:'2026-03-22',V:'Nkala',P:'AGA 5395',C:'曹资瑞、卢天伟、瀑布城机场出发，上午8.30，中方食堂外集合出发（2人）',E:'Cao Zirui, Lu Tianwei, departure from Waterfall City Airport, assemble and depart outside the Chinese canteen at 8:30 a.m. (2 Homo sapiens)',X:2},
+{D:'2026-03-24',V:'Reggie',P:'AGN 9991',C:'唐情轩-瀑布城机场到达，上午8.30办公室出发，返程途中采购食材（1人）',E:'Tang Qingxuan - Maes Awyr Ddŵr-y-Bach yn dod, 8.30am o\'r swyddfa i\'w ddechrau, yn brynhawn oedd yn brynhawn yn cael cynnyrch bwyd (1 person)',X:1},
+{D:'2026-03-25',V:'Samuel',P:'AGA 5395',C:'安全生产部-现场取样，上午8.30办公室外集合，（2人）',E:'Safety Production Department - On-site sampling, meet outside the office at 8:30 AM (2 people)',X:2},
+{D:'2026-03-26',V:'Nkala',P:'AGA 5395',C:'吴双勇、杨光跃，瀑布城机场出发。返程接回机电部分包商-曹威（出发2人，返程1人）上午8点30分中方食堂外集合出发',E:'Wu Shuangyong, Yang Guangyue, depart from Waterfall City Airport. Return trip to pick up electromechanical subcontractor - Cao Wei (2 people departing, 1 person returning) Gather outside the Chinese canteen at 8:30 AM for departure.',X:1},
+{D:'2026-03-27',V:'Reggie',P:'AGA 5395',C:'曹威-瀑布城机场出发（1人）',E:'Cao Wei - Departure from Niagara Falls Airport (1 person)',X:1},
+{D:'2026-03-28',V:'Samuel',P:'AGN 9991',C:'黄卓文、瑞龙1人、瀑布城机场出发（2人）',E:'Huang Zhuowen, Ruilong (1 person), departing from Waterfall City Airport (2 people)',X:2},
+{D:'2026-03-29',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场到达（5人）',E:'General Yi and accompanying homo sapiens members, arrival at Waterfall City Airport (5 homo sapiens)',X:5},
+{D:'2026-03-30',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场出发，上午11.00办公室外集合出发（4人）',E:'General Yi and accompanying homo sapiens members, departing from Waterfall City Airport (4 homo sapiens)',X:4},
+{D:'2026-03-31',V:'Samuel',P:'AGA 5395',C:'陈文康、瀑布城机场到达（1人）',E:'Liu Silong - Community round-trip shuttle service, gather outside the office at 8:20 a.m.',X:1},
+{D:'2026-04-01',V:'Samuel',P:'AGA 5395',C:'机电部-外出万基建材调研业务，上午9点办公室集合出发（3人）',E:'Mechanical and Electrical Department - Business trip to Wanji Building Materials. Meet at the office at 9:00 AM to depart (3 people).',X:3},
+{D:'2026-04-02',V:'Samuel',P:'AGA 5395',C:'杨亚、陈佳豪-瀑布城机场出发；杨波、张祥、瀑布城机场到达（出发2人、到达2人）',E:'Yang Ya and Chen Jiahao depart from Waterfall City Airport; Yang Bo and Zhang Xiang arrive at Waterfall City Airport (2 departing, 2 arriving).',X:2},
+{D:'2026-04-07',V:'Nkala',P:'AFK 0693',C:'薛旭强-哈拉雷办理签证，陈文康随行返程哈拉雷，上午7.00中方食堂外集合出发。同行0693车辆汇达修理厂返修（2人）',E:'Xue Xuqiang will process his visa in Harare, and Chen Wenkang will accompany him on the return trip to Harare. We will meet at 7:00 AM outside the Chinese canteen and depart. Vehicle 0693 will be returned to Huida Repair Shop for repairs (2 people).',X:2},
+{D:'2026-04-08',V:'ishmae',P:'New car',C:'乘坐大巴车出发哈拉雷，业务部协调本地汽修专业人员完成技术验收、薛旭强-同行押车，Nkala、ishmae、Reggie三台车同行安全行驶返回矿山现场（4人）',E:'We departed for Harare by bus. The business department coordinated with local auto repair professionals to complete the technical inspection. Xue Xuqiang accompanied the team, and Nkala, Ishmae, and Reggie drove safely back to the mine site (4 people).',X:4},
+{D:'2026-04-09',V:'Samuel',P:'AGA 5395',C:'陆海晶-瀑布城机场到达；(1人)',E:'Lu Haijing arrived at Waterfall City Airport. (1 person)',X:1},
+{D:'2026-04-11',V:'Samuel',P:'AGA 5395',C:'曹资瑞、瀑布城机场到达，返程时购买食材。（1人）',E:'Cao Zirui arrived at Niagara Falls Airport and purchased groceries on his return trip. (1 person)',X:1},
+{D:'2026-04-12',V:'Samuel',P:'AGA 5395',C:'苟小勇、阮胤-瀑布城机场出发；罗发元-预约3人到达（出发2人，到达3人）',E:'Gou Xiaoyong and Ruan Yin - departing from Waterfall City Airport; Luo Fayuan - 3 people scheduled to arrive (2 departing, 3 arriving).',X:3},
+{D:'2026-04-13',V:'Nkala',P:'AGN 9991',C:'罗发元-预约，瀑布城机场到达（3人）返程途中采购食材。上午8点出发',E:'Luo Fayuan - by appointment, arriving at Niagara Falls Airport (3 people), purchasing groceries on the return trip. Departing at 8:00 AM.',X:3},
+{D:'2026-04-14',V:'Samuel',P:'AGA 5395',C:'廖辉-瀑布城机场出发，上午8.00食堂外出发（1人）',E:'Liao Hui - Departing from Waterfall City Airport, departing outside the canteen at 8.00 am (1 person)',X:1},
+{D:'2026-04-15',V:'Nkala',P:'AGE 2915',C:'常磊坡、贾帅辉、余洪川、罗从兵、柴思冒出发哈拉雷办理签证录入指纹，ishmae同行返程时驾驶0693委外维修车辆共同返回；上午7.00中方食堂外集合出发；',E:'Chang Leipo, Jia Shuaihui, Yu Hongchuan, Luo Congbing, and Chai Simao departed for Harare to process visas and have their fingerprints taken. Ishmae accompanied them on the return trip, driving the outsourced maintenance vehicle 0693. They met outside the Chinese canteen at 7:00 AM to depart.',X:1},
+{D:'2026-04-16',V:'Samuel',P:'3102',C:'王世伟、张腾达-瀑布城机场出发，上午8.30，中方食堂集合出发；返程时取回机场滞留行李箱；（2人）',E:'Wang Shiwei and Zhang Tengda will depart from Niagara Falls Airport at 8:30 AM, meeting at the Chinese canteen; they will retrieve their luggage left at the airport on their return trip. (2 people)',X:2},
+{D:'2026-04-17',V:'Samuel',P:'AGA 5395',C:'罗发元-三方厂家现场技术指导人员瀑布城机场出发，上午8.30中方食堂外集合出发（3人）',E:'Luo Fayuan – Technical advisors from the third-party manufacturer will depart from Waterfall City Airport; meet outside the Chinese canteen at 8.30 am to set off (3 people)',X:3},
+{D:'2026-04-18',V:'Samuel',P:'3102',C:'卢天伟、瀑布城机场到达，上午8.30办公室集合出发（1人）',E:'Lu Tianwei, arriving at Waterfall City Airport; meet at the office at 8.30 am to set off (1 person)',X:1},
+{D:'2026-04-19',V:'Nkala',P:'3102',C:'柴思茂、苏澜-瀑布城机场出发，上午8.30中方食堂外集合出发；（2人）',E:'Chai Simao and Su Lan – departing from Waterfall City Airport; meet outside the Chinese canteen at 8.30 am; (2 people)',X:2},
+{D:'2026-04-20',V:'Reggie',P:'AEC 2489',C:'食堂食材、生活物资采购，牛肉议价',E:'Procurement of food and daily necessities for the canteen; negotiating the price of beef',X:1},
+{D:'2026-04-21',V:'Samuel',P:'3102',C:'周意人、赵迎磊、杨亚、陈佳豪-瀑布城机场到达。上午8.30办公室集合出发（4人）',E:'Zhou Yiren, Zhao Yinglei, Yang Ya and Chen Jiahao – arriving at Waterfall City Airport. Meet at the office at 8.30 am to set off (4 people)',X:4},
+{D:'2026-04-23',V:'Nkala',P:'AGE 2915',C:'石秋迅、贺永玲瀑布城机场出发，上午8.30中方食堂外集合出发；叶建国、谢书林及自投集团矿山考察团队，瀑布城机场到达同行带领返程；（出发2人）',E:'Shi Qiuxun and He Yongling will depart from Waterfall City Airport; they are to assemble outside the Chinese canteen at 8.30 am before setting off. Ye Jianguo, Xie Shulin and the mining inspection team from the Zitou Group will arrive at Waterfall City Airport and be escorted back by a local guide; (2 people departing)',X:2},
+{D:'2026-04-25',V:'Unknown',P:'',C:'黄卓文-瀑布城机场到达，徐晓-瀑布城机场出发；',E:'',X:1},
+{D:'2026-04-27',V:'Unknown',P:'',C:'苟小勇-瀑布城机场到达',E:'',X:1},
+{D:'2026-04-30',V:'Unknown',P:'',C:'吴双勇、杨光跃、阮胤，瀑布城机场到达（3人）薛旭强、徐权生、彭恩明-瀑布城机场出发（2人）',E:'',X:3},
+{D:'2026-05-07',V:'Unknown',P:'',C:'罗胜清-瀑布城机场出发',E:'Luo Shengqing - Waterfall City Airport Departure',X:1},
+{D:'2026-05-09',V:'Unknown',P:'',C:'谢澜宜、瀑布城机场到达；',E:'',X:1},
+{D:'2026-05-12',V:'Unknown',P:'',C:'柴思茂-瀑布城机场到达',E:'',X:1},
+{D:'2026-05-14',V:'Unknown',P:'',C:'廖辉-瀑布城机场到达',E:'',X:1},
+{D:'2026-05-17',V:'Unknown',P:'',C:'周涛建-瀑布城机场出发',E:'Zhou Taojian – Departing from Waterfall City Airport',X:1},
+{D:'2026-05-18',V:'Unknown',P:'',C:'石秋迅-瀑布城机场到达',E:'Shi Qiuxun – Arrival at Waterfall City Airport',X:1},
+{D:'2026-05-21',V:'Unknown',P:'',C:'WENBIN YI-瀑布城机场出发',E:'WENBIN YI - Waterfall City Airport Departure',X:1},
+{D:'2026-05-22',V:'Samuel',P:'3102',C:'安生部-外出万基参加防火安全会议；上午8点办公室外集合出发（2人）',E:'Safety Department – Attend the fire safety meeting at Wanji; assemble outside the office at 8:00 AM and depart (2 participants).',X:2},
+{D:'2026-05-23',V:'Nkala',P:'3103',C:'王林-瀑布城机场出发；贺永玲-瀑布城机场到达，出发1人，到达1人，上午8.30中方餐厅外集合出发；',E:'Departure from Wanglin-Watertown Airport; arrival at He Yongling Waterfall City Airport; assembly outside the Chinese restaurant at 8:00 AM and departure.',X:1},
+{D:'2026-05-25',V:'Reggie',P:'3101',C:'徐晓、薛旭强-瀑布城机场到达,上午8.30办公室出发,(2人)',E:'Xu Xiao and Xue Xuqiang – Arrived at Falls City Airport; Departed from the office at 8:30 AM (2 people)',X:2},
+{D:'2026-05-28',V:'Reggie',P:'3101',C:'谢澜宜-瀑布城机场到达；上午8点办公室出发；（1人）',E:'Xie Lanyi-Arrived at Falls City Airport; Departed from the office at 8:00 AM; (1 person)',X:1},
+{D:'2026-06-02',V:'Nkala',P:'AGE 2915',C:'张峻、杨云鹏-瀑布城机场到达，上午8.30办公室出发；（2人）',E:'Zhang Jun and Yang Yunpeng – Arrived at Waterfall City Airport; Departing from the office at 8:30 AM (2 person).',X:2},
+{D:'2026-06-05',V:'Reggie',P:'3103',C:'布拉瓦约矿业部接待任务执行中，未返程；',E:'The delegation from the Bravayo Mining Department was on a mission and did not return.',X:1},
+{D:'2026-06-06',V:'Samuel',P:'3101',C:'罗从斌-瀑布城机场出发，上午8.30中餐厅外集合出发；（1人）',E:'Lu Congbin – Departing from Waterfall City Airport; meeting point outside the Chinese restaurant at 8:30 AM; (1 person)',X:1},
+{D:'2026-06-07',V:'Nkala',P:'AGE 2915',C:'叶建国、MPOFU-瀑布城机场出发，上午8.30办公室集合出发，飞机起飞时间12.15；（2人）',E:'Ye Jianguo will depart from MPOFU Waterfall City Airport, gathering at the office at 8:30 AM for departure; flight departure time is 12:15 (for 2 people).',X:2},
+{D:'2026-06-08',V:'Samuel',P:'3101',C:'贺永玲-瀑布城机场出发，上午11.00办公室集合出发，返程采购食材；（1人）',E:'He Yongling – Departing from Waterfall City Airport; meeting at the office at 11:00 AM before departure (1 person).',X:1},
+{D:'2026-06-09',V:'Nkala',P:'3101',C:'殷永珠、程传贵-瀑布城机场出发，上午8.30中餐厅外集合出发；（2人）',E:'He Yongling – Departing from Waterfall City Airport; meeting at the office at 11:00 AM before departure; returning to purchase food ingredients (1 person).',X:1},
+{D:'2026-06-10',V:'Samuel',P:'3103',C:'薛旭强、Tshuma-上午8点办公室集合出发万基ZHRC拜访（2人）',E:'Xue Xuqiang and Tshuma – meet at the office at 8 am to visit Wanji ZHRC (2 people)',X:2},
+{D:'2026-06-11',V:'Nkala',P:'AGE 2915',C:'文志军、赵迎磊-瀑布城机场出发，易文斌、崔茂培、潘雨阳、罗胜清、瀑布城机场到达，上午8.00中餐厅外集合出发；（2人出发，4人到达）',E:'Wen Zhijun and Zhao Yinglei – departing from Waterfall City Airport; Yi Wenbin, Cui Maopei, Pan Yuyang and Luo Shengqing – arriving at Waterfall City Airport; meet outside the Chinese restaurant at 08:00 and depart; (2 departing, 4 arriving)',X:4},
+{D:'2026-06-12',V:'Nkala',P:'AGE 2915',C:'崔总-瀑布城移民局办理签证，指纹录入；上午6.00点办公室外集合出发，返程途中万基汽修店做车辆四轮定位；（1人）',E:'Mr.Cui – Visas will be processed at the Waterfall City Immigration Bureau with fingerprint collection; assembly and departure outside the office at 6:00 AM (1 person).',X:1},
+{D:'2026-06-13',V:'Nkala',P:'AGE 2915',C:'刘清云、瀑布城机场出发；梁德喜、潘雨阳-维多利亚办事；上午9.30办公室集合出发；（出发1人、返程2人）',E:'Liu Qingyun departs from Waterfall City Airport; Liang Dexi and Pan Yuyang handle matters related to Victoria. The group will assemble at the office at 9:30 AM and depart (one person departing, two returning).',X:2},
+{D:'2026-06-15',V:'Nkala',P:'3101',C:'刘思龙-国家博物馆与纪念碑管理中心NMMZ办事，采购食堂蔬菜、预约委外汽修店车辆四轮定位；（1人）',E:'Liu Silong – Works at the National Museum and Monument Management Center (NMMZ), responsible for purchasing vegetables for the cafeteria and scheduling four-wheel alignment services at an outsourced auto repair shop; (1 person)',X:1},
+{D:'2026-06-16',V:'Nkala',P:'AGE 2915',C:'刘林田-瀑布城机场出发；徐晓、郭瀚文-瀑布城移民局办理签证录入指纹；上午8.30中方餐厅外集合出发；（出发3人、返程2人）',E:'Liu Lintian – departing from Falls City Airport; Xu Xiao and Guo Hanwen – attending the Falls City Immigration Office to have their visas processed and fingerprints taken; meet outside the Chinese restaurant at 8.30 am to depart; (3 departing, 2 returning)',X:3},
+{D:'2026-06-17',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，次日返回；上午10.30办公室出发（2人）',E:'Jiali – Travel to Bravayo to conduct a survey of the transportation route for finished lithium sulfate products; return the following day; depart from the office at 10:30 AM (2 personnel).',X:2},
+{D:'2026-06-18',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，未返程；',E:'Jia Li – traveled to Bravayo to conduct a survey of the transportation route for finished lithium sulfate products; did not return.',X:1},
+{D:'2026-06-19',V:'Reggie',P:'3102',C:'贺永玲-瀑布城机场到达，上午7点30出发；返程采购餐厅食材；（1人）',E:'He Yongling – Arrival at Waterfall City Airport, departing at 7.30 am; purchasing ingredients for the restaurant on the return journey; (1 person)',X:1},
+{D:'2026-06-22',V:'Nkala',P:'3101',C:'周涛建-瀑布城机场到达；上午8.30办公室出发；返程采购食堂食材；（1人）',E:'Zhou Tianjian – Arrived at Waterfall City Airport; Departed from the office at 8:30 AM (1 person).',X:1},
+{D:'2026-06-23',V:'Reggie',P:'3101',C:'财务部Billy瀑布城机场到达，上午8.00办公室出发；到达时间11.40；（1人）',E:'Financial Department: Billy arrives at Buffalo Airport; departs from the office at 8:00 AM; arrival time: 11:40 AM (1 person).',X:1},
+{D:'2026-06-24',V:'Unknown',P:'3102',C:'前挡玻璃裂纹打孔，补胶修复；',E:'Crack and hole in the front windshield; repaired with adhesive patching.',X:1},
+{D:'2026-06-25',V:'Nkala',P:'AGE 2915',C:'沈士宇、罗从兵、程传贵-瀑布城机场到达；谢澜谊-瀑布城办理工作签证录入指纹；王飞-瀑布城机场出发；上午8.30中餐厅外集合出发；（出发2人，返程3人）',E:'Shen Shiyu, Luo Congbing, and Cheng Chuangui arrived at Waterfall City Airport; Xie Lanyi processed the work visa and had their fingerprints taken at Waterfall City Airport; Wang Fei departed from Waterfall City Airport; they gathered outside the Chinese restaurant at 8:30 AM for departure (two departing travelers and three returning travelers).',X:3},
+{D:'2026-06-27',V:'Reggie',P:'3101',C:'王林、文志军-瀑布城机场到达，返程采购食材、生活物资。上午8.30办公室出发；（2人）',E:'Wang Lin and Wen Zhijun arrived at Waterfall City Airport and returned to purchase food ingredients and daily necessities. They departed from the office at 8:30 AM (2 people).',X:2},
+{D:'2026-06-28',V:'Reggie',P:'3103',C:'宋雨峰-瀑布城机场出发；返程接回业务部对接承运商人员1人，上午8.30中餐厅外出发;(出发2人、返程1人)',E:'Song Yufeng – Departing from Waterfall City Airport; picking up one representative from the Business Department to coordinate with the carrier during the return trip, departing outside the Chinese restaurant at 8:30 AM (two people for departure, one person for return).',X:2},
+{D:'2026-06-29',V:'Nkala',P:'AGE 2915',C:'Tapiwa、billy 瀑布城机场出发；邓全凤、陈和平、黄淦、殷永珠、曾艺娟-瀑布城机场到达；（出发2人，返程5人）',E:'Departed from Tapiwa Waterfall City Airport; arrived at Deng Quanfeng, Chen Heping, Huang Gan, Yin Yongzhu, and Zeng Yijuan – Waterfall City Airport (2 person departing, 5 people returning).',X:5},
+{D:'2026-06-30',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
+{D:'2026-07-01',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
+{D:'2026-07-02',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
+{D:'2026-07-03',V:'Nkala',P:'AGE 2915',C:'梁德喜、夏海斌-瀑布城机场出发上午8.30中方食堂外集合出发；（出发2人）',E:'Liang Dexi and Xia Haibin – Departure from Waterfall City Airport: Meet outside the Chinese canteen at 8.30 am; (2 people travelling)',X:2},
+{D:'2026-07-04',V:'Nkala',P:'AGE 2915',C:'崔总、姜宏佳、马稚雨-瀑布城机场出发；上午7.30中餐厅外集合出发；（出发3人）',E:'Mr Cui, Jiang Hongjia and Ma Zhiyu – departing from Waterfall City Airport; meet outside the Chinese restaurant at 7.30 am to set off; (3 people travelling)',X:3},
+{D:'2026-07-05',V:'Nkala',P:'AGE 2915',C:'业务部-承运商1人出发瀑布城机场；财务部-集团信息化领导瀑布城景区（5人）；上午8点办公室出发；（6人）',E:'Business Department – 1 carrier representative departing from Waterfall City Airport; Finance Department – Group IT leadership team (5 members) for the Waterfall City scenic area; Departing from the office at 8:00 AM (total: 6 members).',X:6},
+{D:'2026-07-07',V:'Nkala',P:'AGE 2915',C:'张峻、刘凯凯-瀑布城机场出发，上午11点办公室集合出发；（2人）',E:'Zhang Jun – Departing from Waterfall City Airport; meet at the office at 11.00 am to set off; (1 person)',X:1},
+{D:'2026-07-08',V:'Samuel',P:'AGE 8267',C:'安全生产部-综合部人员一同逐户调研受生产影响区域的居民，社区周边（2人）',E:'Staff from the Safety Production Department and the General Affairs Department conducted door-to-door surveys among residents in areas affected by production activities, as well as in the surrounding community (two personnel).',X:2},
+{D:'2026-07-09',V:'Nkala',P:'AGE 2915',C:'张峻、刘凯凯-瀑布城机场到达；刘凯凯、李懿展、高德强-瀑布城移民局办理工签指纹录入；上午8点中方食堂集合出发；（出发2人、返程4人）',E:'Zhang Jun and Liu Kaikai arrived at Waterfall City Airport; Liu Kaikai, Li Yizhan, and Gao Deqiang went to the Waterfall City Immigration Bureau to complete fingerprint registration for their work visas. They gathered at the Chinese cafeteria at 8:00 AM for departure (two people departing, four returning).',X:4},
+{D:'2026-07-10',V:'Samuel',P:'3102',C:'机电部-下午13.30办公室出发binga砖厂走访；（3人）',E:'Mechanical and Electrical Department – Departure from the office at 13.30 this afternoon for a visit to the Binga Brickworks; (3 people)',X:3},
+{D:'2026-07-11',V:'Nkala',P:'AGE 2915',C:'财务部-万基动物园团建分两次出发，上午9.00办公室集合出发；中午11.00办公室集合出发；返程时间视实际情况待定，等待通知；（12人）',E:'Finance Department – The Wanji Zoo team-building activity will be conducted in two sessions: departure from the office at 9:00 AM and again at 11:00 AM; the return time will be determined based on actual circumstances and subject to further notification (for a group of 12 participants).',X:12},
+{D:'2026-07-12',V:'Samuel',P:'3102',C:'业务部-承运商矿山外派人员瀑布城机场出发1人，到达1人；机电部-四川明宇供应商瀑布城机场到达1人；上午9.00招待所出发。（出发1人、返程2人）',E:'Business Department - 1 person departing from Falls City Airport for a mine assignment with the carrier, 1 person arriving; Mechanical & Electrical Department - 1 person arriving at Falls City Airport from Sichuan Mingyu supplier; departing from the guesthouse at 9:00 a.m. (1 person departing, 2 returning).',X:1},
+{D:'2026-07-14',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
+{D:'2026-07-15',V:'Nkala',P:'AGE 2915',C:'单俊男-瀑布城机场出发，叶总-瀑布城机场到达，飞机落地时间（14.55），上午8.30中方餐厅外集合出发；（出发1人，返程1人）',E:'Shan Junnan – Departing from Waterfall City Airport; meet outside the Chinese restaurant at 8.30 am to set off; Mr Ye – Arriving at Waterfall City Airport; flight landing time (14.55) (1 person departing, 1 person returning)',X:1},
+{D:'2026-07-16',V:'Nkala',P:'AGE 2915',C:'王朝明、高玉莹、杨毓品、朱元波、余炳均、罗发元、吴志林，瀑布城移民局签证办理；高文、机电部预约1人瀑布城机场出发；上午8.00中方食堂外集合出发；（出发9人，返程7人）',E:'Wang Chaoming, Gao Yuying, Yang Yupin, Zhu Yuanbo, Yu Bingjun, Luo Fayuan and Wu Zhilin: visa processing at the Waterfall City Immigration Bureau; Gao Wen: one person to be booked by the Mechanical and Electrical Department for departure from Waterfall City Airport; meet outside the Chinese canteen at 08:00 for departure; (9 people departing, 7 returning)',X:9},
+{D:'2026-07-17',V:'Nkala',P:'AGE 2915',C:'崔总-瀑布城机场到达；贺永玲-瀑布城机场出发；上午8.30办公室集合出发；（出发1人，返程1人）',E:'Mr.Cui – Arrives at Waterfall City Airport; Ms.He Yongling – Departs from Waterfall City Airport; Meets at the office at 8:30 AM and departs (one person departing, one person returning).',X:1},
+{D:'2026-07-18',V:'Nkala',P:'AGE 2915',C:'刘军、高德强-瀑布城机场出发，李庆-瀑布城机场到达；上午8.30中餐厅外集合出发；（出发2人、到达1人）',E:'Liu Jun and Gao Deqiang depart from Falls City Airport; Li Qing arrives at Falls City Airport. The group will assemble outside the Chinese restaurant at 8:30 AM and proceed together (two departing members, one arriving member).',X:2},
+{D:'2026-07-19',V:'Nkala',P:'AGE 2915',C:'选厂共5人出发瀑布成景区，上午8.30中方食堂集合出发，当日返程；',E:'A total of 10 Homo sapiens from the concentrator will depart for the waterfall scenic area for team building. Gather at the Chinese canteen at 8:30 a.m. and return on the same day;',X:5},
+{D:'2026-07-20',V:'Nkala',P:'AGE 2915',C:'选厂共5人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；',E:'A total of five staff members from the processing plant participated in a team-building activity at Waterfall City Scenic Area. They gathered at the Chinese cafeteria at 8:30 AM and departed; they returned on the same day.',X:5},
+{D:'2026-07-21',V:'Nkala',P:'AGE 2915',C:'预约汽修厂车辆里程到期保养；',E:'The maintenance schedule for your vehicle at the appointed auto repair shop has expired due to reaching the required mileage limit.',X:1},
+{D:'2026-07-22',V:'Reggie',P:'AGE 2915',C:'选厂共6人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；',E:'A total of 6 people from the beneficiation plant will set off for a team building activity at the Waterfall City Scenic Area. Gather at the Chinese canteen at 8:30 a.m. for departure, and return on the same day.',X:6},
+{D:'2026-07-23',V:'Nkala',P:'AGE 2915',C:'宋雨峰、津方获奖员工4人-瀑布城机场到达；梁德喜、李懿展-瀑布城机场出发；曾艺娟-瀑布城机场出发下午15.00起飞；上午8.30中方食堂外集合出发；双车共同出发，返程时根据实际情况灵活调整；（出发3人、到达5人）',E:'Song Yufeng and four award-winning employees from Tianjin will arrive at Fallstown Airport; Liang Dexi and Li Yizhan will depart from Fallstown Airport; Zeng Yijuan will depart from Fallstown Airport at 3:00 PM; the group will meet outside the Chinese canteen at 8:30 AM and depart together in two vehicles, with adjustments made flexibly based on actual circumstances on the return trip; (3 departing, 5 arriving)',X:5},
+{D:'2026-07-24',V:'Reggie',P:'3103',C:'张一、瀑布城机场到达；上午7.30出发；（1人）',E:'Arrive at Waterfall City Airport; Depart at 7:30 AM (for 1 passenger)',X:1},
+{D:'2026-07-25',V:'Reggie',P:'AGE 2915',C:'叶建国、张一-瀑布城机场出发，上午11.15起飞；梁德喜瀑布城机场出发，13.05起飞；上午7.00办公室出发；（3人）',E:'Ye Jianguo and Zhang Yi depart from Waterfall City Airport at 11:15 AM; Liang Dexi departs from Waterfall City Airport at 1:05 PM; departure from the office is at 7:00 AM; (3 people)',X:3},
+{D:'2026-07-27',V:'Tshuma',P:'3102',C:'刘思龙-布拉瓦约参加相关会议，次日返程，上午9点办公室出发；（3人）',E:'Liu Silong attended a related meeting in Bulawayo and returned the next day, departing from the office at 9:00 AM; (3 people)',X:3},
+{D:'2026/7/28',V:'Samuel',P:'3103',C:'李丽-瀑布城机场出发，（13.05起飞）；赵迎磊-瀑布城机场出发；（15.00起飞）；上午8.30中方食堂外集合出发；2人',E:'Li Li – departing from Falls City Airport (departure at 13.05); Zhao Yinglei – departing from Falls City Airport (departure at 15.00); meet outside the Chinese canteen at 8.30 am to depart (2 people );',X:2},
+{D:'2026-07-29',V:'Reggie',P:'3102',C:'预约汽修厂，车辆底盘、减震检查，车辆整备；',E:'Book an appointment at a garage for an inspection of the vehicle’s chassis and suspension, and general servicing;',X:1},
+{D:'2026-07-30',V:'Reggie',P:'3103',C:'曹杰-瀑布城机场到达，上午8.30办公室出发（1人）；',E:'Cao Jie – Arrival at Wushuicheng Airport; departure from the office at 8:30 AM (1 person).',X:1},
+{D:'2026-07-31',V:'Samuel',P:'3102',C:'薛建-调研走访碎石场和万基水泥厂，上午7.30办公室出发（3人）',E:'Xue Jian – Site visit to the gravel pit and Wanji Cement Works; departure from the office at 7.30 am (3 people)',X:3},
+{D:'2026-08-01',V:'Reggie',P:'AGE 2915',C:'李晓磊-瀑布城机场出发，安生部医院办事4人；（出发5人，万基医院下车4人，业务完成后电话预约kuda电话号码：07749653358）上午8.00点办公室出发；硫酸锂项目重庆安装公司人员瀑布城机场到达；（返程4人）；返程途中购买三台新车道路通行三证；',E:'Li Xiaolei - Departed from Waterfall City Airport, 4 people went to Anshengbu Hospital for business; (5 people departed, 4 people got off at Wanji Hospital, after the business was completed, make an appointment by phone at Kuda phone number: 07749653358) Departed from the office at 8:00 am; Lithium sulfate project Chongqing installation company personnel arrived at Waterfall City Airport; (4 people returned); Purchased three new vehicle road permits on the return trip.',X:4},
+{D:'2026-08-03',V:'Nkala',P:'AGE 2915',C:'选厂共4人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；（4人）',E:'A group of four people from the plant went on a team-building trip to the Falls City scenic area. They met at the Chinese canteen at 8:30 am and departed on the same day. (4 people)',X:4},
+{D:'2026-08-04',V:'Nkala',P:'AGE 2915',C:'硫酸锂项目人员合计6人瀑布城机场到达；业务部-承运商1人瀑布城机场出发；综合部-本地矿山经理瀑布城机场到达11.45分到达（+258 879006186）；高玉营-瀑布城移民局办理签证录入指纹；（上午8.30办公室出发）',E:'A total of 6 personnel for the lithium sulfate project will arrive at Victoria Falls Airport; 1 person from the Business Department - Carrier will depart from Victoria Falls Airport; the Local Mine Manager from the General Administration Department will arrive at Victoria Falls Airport at 11:45 (+258 879006186); Gao Yuying will go to the Victoria Falls Immigration Office to handle visa application and fingerprint entry; (Depart from the office at 8:30 a.m.',X:1},
+{D:'2026-08-05',V:'Nkala',P:'AGE 2915',C:'陈永康、李朝茂、刘健、王文洪、徐强、杨朝-瀑布城机场到达，综合部-矿山经理1人接机；业务部-承运商1人送机；',E:'Chen Yongkang, Li Chaomao, Liu Jian, Wang Wenhong, Xu Qiang, and Yang Chao – arriving at Wushuicheng Airport; the General Department\'s Mine Manager will greet the passengers; the Business Department\'s Carrier representative will see the passengers off.',X:1},
+{D:'2026-08-06',V:'Reggie',P:'3103',C:'王鹏翔-瀑布城机场出发（13.05起飞）；陈和平-瀑布城机场出发（13.05起飞）；高德强-瀑布城机场到达（12.10到达）；上午8:00中方食堂外集合出发；出发2人到达1人；',E:'Wang Pengxiang departing from Falls City Airport (13.05); Chen Heping departing from Falls City Airport (13.05); Gao Deqiang arriving at Falls City Airport (12.10); meet outside Chinese canteen at 8:00 AM, depart together (2 departing, 1 arriving);',X:2},
+{D:'2026-08-07',V:'Nkala',P:'AGE 2915',C:'叶总、张一  -瀑布城机场到达，飞机10.40落地，上午7.00办公室出发；（2人）',E:'Mr.Ye and Zhang Yi – Arrived at Wushuicheng Airport; aircraft landed at 10:40 AM; departure from the office at 7:00 AM; (2 people)',X:2},
+{D:'2026-08-08',V:'Nkala',P:'3103',C:'夏海斌、刘军-瀑布城机场到达（12.10到达）；罗发元-瀑布城机场出发（13.05起飞）；上午8:30中方食堂外集合出发；到达2人出发1人；',E:'Xia Haibin and Liu Jun – Arrival at Waterfall City Airport (arrived on 12.10); Luo Fayuan – Departure from Waterfall City Airport (took off at 13:05); Assembly outside the Chinese restaurant at 8:30 AM; 2 people arriving, 1 person departing.',X:1},
+{D:'2026-08-09',V:'Samuel',P:'AGE 2915',C:'叶总-瀑布城机场出发，起飞时间11.00、上午8.00办公室集合出发；（1人）',E:'Mr./Ms.Ye – Departure from Wushuicheng Airport; departure time: 11:00 AM; departure from office at 8:00 AM; (1 person)',X:1},
+{D:'2026-08-12',V:'Nkala',P:'AGE 2915',C:'王益友、叶帅-瀑布城机场到达；',E:'',X:1},
+{D:'2026-08-13',V:'Unknown',P:'',C:'刘思龙、崔总-瀑布城机场出发（13.05起飞）；王钟平-瀑布城机场到达（12.10到达），上午8.30中方食堂外集合出发；（出发2人，返程1人）；',E:'Liu Silong and Mr.Cui – Departing from Waterfall City Airport (takeoff at 13:05); Wang Zhongping – Arriving at Waterfall City Airport (arrival at 12:10); Meeting outside the Chinese restaurant at 08:30 AM for departure; (2 departing participants, 1 returning participant)',X:2},
+{D:'2026-08-15',V:'Reggie',P:'AGE 2915',C:'梁德喜-瀑布城机场到达（12.10 ET823到达）；',E:'',X:1},
+{D:'2026-08-16',V:'Unknown',P:'',C:'选厂外出瀑布城景区团建，当日返程，上午8.30中方食堂外集合出发（5人）',E:'',X:5},
+{D:'2026-08-20',V:'Unknown',P:'',C:'高文-瀑布城机场到达；',E:'',X:1},
+{D:'2026-08-22',V:'Samuel',P:'3103',C:'李丽-瀑布城机场到达（12.10 ET823到达）；',E:'',X:1},
+{D:'2026-08-25',V:'Reggie',P:'AGE 2915',C:'李晓磊-瀑布城机场到达（12.10 ET823到达）；',E:'',X:1},
+{D:'2026-08-29',V:'Unknown',P:'',C:'罗发元-瀑布城机场到达；',E:'',X:1},
+{D:'2026-09-01',V:'Unknown',P:'',C:'李懿展-瀑布城机场到达；',E:'',X:1},
+{D:'2026-09-03',V:'Unknown',P:'',C:'刘思龙-瀑布城机场到达；',E:'',X:1},
+{D:'2026-09-10',V:'Unknown',P:'',C:'王鹏翔-瀑布城机场到达；',E:'',X:1}
+  ];
+  const rs=DB.requests.get(),ds=DB.dispatches.get();
+  H.forEach(h=>{const rid=uid();rs.push({id:rid,date:h.D,timeSlot:'08:00-12:00',passengers:h.X,purpose:h.C,purposeEn:h.E,notes:'',notesEn:'',department:'后勤部',submitter:h.V,approved:'yes',signature:'',status:'dispatched',mergedToDispatchId:null,createdAt:h.D});ds.push({id:uid(),date:h.D,vehicle:h.P,driver:h.V,departureTime:'',meetingPoint:'',notes:'',requestIds:[rid],createdAt:h.D});});
+  DB.requests.set(rs);DB.dispatches.set(ds);
+}
+
+// Bulk org users import from DingTalk organizational chart
+function importOrgUsers(){
+  const raw=[
+    ['总经理办','谢书林','总经理助理'],['总经理办','叶建国','总经理'],['总经理办','张峻','副总经理'],
+    ['总经理办','梁德喜','运营总监'],['总经理办','贾立','机电总监'],['总经理办','西二号','财务总监'],
+    ['财务部','陈文康','资金管理'],['财务部','左淼','总账会计'],['财务部','李丽','材料会计'],
+    ['综合部','吴爽','信息化'],['综合部','贺永玲','副部长'],['综合部','刘思龙','副部长'],
+    ['综合部','薛旭强','部长'],['综合部','刘凯凯','综合管理'],['综合部','张一','行政主管'],
+    ['综合部','徐晓','副部长'],
+    ['安全生产部','李晓磊','部长'],['安全生产部','王朝明','物资主管'],['安全生产部','胡国龙','安全经理'],
+    ['安全生产部','钟烜阳','安环员'],['安全生产部','杨鹏飞','安环员'],['安全生产部','罗从兵','安全员'],
+    ['质量技术部','罗发元','部长'],['质量技术部','马稚雨','工艺技术'],['质量技术部','高德强','质量管理'],
+    ['质量技术部','唐情轩','—'],['质量技术部','胥骏原','化验一班班长'],['质量技术部','李庆','化验班班长'],
+    ['仓储部','孙云飞','仓储管理'],['仓储部','杨云鹏','仓储管理'],
+    ['后勤部','石秋迅','后勤主管'],['后勤部','徐全生','厨师'],['后勤部','程传贵','后勤主管'],
+    ['后勤部','赵泽奎','厨师'],['后勤部','卢天伟','厨师'],['后勤部','王益友','部长'],
+    ['业务部','朱成涛','业务经理'],['业务部','李蒙','供应主管'],['业务部','杨启帆','采购员'],
+    ['业务部','李美琪','业务经理'],['业务部','黄卓文','业务员'],['业务部','孙山','业务经理'],
+    ['业务部','姜宏佳','副部长'],['业务部','赵任远','国际物流管理'],
+    ['采矿部','赵迎嘉','地质工程师'],['采矿部','何力','地质工程师'],['采矿部','殷永珠','钻机机长'],
+    ['采矿部','朱元波','副部长'],['采矿部','杨开华','地质工程师'],
+    ['选厂','徐福','设备管理'],['选厂','刘军','选厂厂长'],['选厂','王飞','自动化管理'],['选厂','尹恒','选厂副厂长'],
+    ['机电工程部','白宗山','项目管理'],['机电工程部','薛建','项目管理'],['机电工程部','高玉莹','电气管理'],
+  ];
+  const us=DB.users.get();
+  raw.forEach(([dept,name,role])=>{
+    if(!us.find(u=>u.name===name&&u.department===dept)){
+      us.push({name,department:dept,role:dept==='后勤部'&&name==='石秋迅'?'admin':'user',
+        firstLogin:'2026-08-07',lastLogin:'-'});
+    }
+  });
+  DB.users.set(us);
+}
+
+const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),sigData:'',tapCount:0,unlockUntil:0,
+  fFrom:'',fTo:'',fDepts:[],fVeh:'',fStatus:'all',fSubmitter:'',fPaxMin:0,fPaxMax:99,fKeywordPool:'',pLang:'cn',nLang:'cn',dLang:'cn',
+  recKeyword:'',recDriver:'',recSort:'date-desc'};
+
+// Tap counter for hidden admin unlock
+function setupTapCounter(){
+  const el=document.getElementById('pcuinfo');
+  if(!el)return;
+  // Only stone account can unlock admin mode
+  const isOwner=S.user&&S.user.name==='石秋迅';
+  // Remove old listener if any
+  el.onclick=null;
+  if(!isOwner){
+    // For non-owner, no click handler
+    el.style.cursor='default';
+    return;
+  }
+  el.style.cursor='pointer';
+  el.onclick=()=>{
+    S.tapCount++;
+    if(S.tapCount>=7){
+      S.tapCount=0;
+      showPasswordModal();
+    }else if(S.tapCount>=3){
+      // Subtle hint at 3 taps
+      const hint=document.createElement('div');
+      hint.textContent=S.tapCount+'/7';
+      hint.style.cssText='position:fixed;bottom:80px;right:20px;background:#1e293b;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;z-index:200;opacity:0;transition:opacity .2s';
+      document.body.appendChild(hint);
+      requestAnimationFrame(()=>hint.style.opacity='1');
+      setTimeout(()=>{hint.style.opacity='0';setTimeout(()=>hint.remove(),300);},800);
+    }
+    // Reset after 2s of inactivity
+    clearTimeout(S.tapTimer);
+    S.tapTimer=setTimeout(()=>{S.tapCount=0;},2000);
+  };
+}
+
+function showPasswordModal(){
+  showModal('<h3>🔐 '+T('common_unlockTitle')+'</h3>'
+    +'<p style="font-size:13px;color:#64748b;margin-bottom:14px">'+T('common_unlockHint')+'</p>'
+    +'<div class="fld"><label>'+T('common_password')+'</label>'
+    +'<input type="password" id="pw-input" placeholder="Enter password" autofocus></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'
+    +'<button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
+    +'<button class="bt bt-p bt-sm" onclick="checkPassword()">'+T('common_unlock')+'</button>'
+    +'</div>',true);
+  setTimeout(()=>{const i=document.getElementById('pw-input');if(i)i.focus();},200);
+  // Submit on Enter
+  document.getElementById('pw-input').onkeydown=(e)=>{if(e.key==='Enter')checkPassword();};
+}
+
+function checkPassword(){
+  const pw=document.getElementById('pw-input').value;
+  // Default password: sqx1987923
+  const savedPw=localStorage.getItem('kmc2_admin_pw')||'sqx1987923';
+  if(pw===savedPw){
+    S.unlockUntil=Date.now()+24*60*60*1000;// 24h unlock
+    localStorage.setItem('kmc2_admin_unlock',S.unlockUntil);
+    closeModal();
+    toast(T('common_unlocked'));
+    renderUserInfo();
+    renderPage();
+    // Refresh settings tab if visible to allow password change
+    if(S.tab==='settings')renderPage();
+  }else{
+    toast('Wrong password');
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function lockAdmin(){
+  S.unlockUntil=0;
+  localStorage.removeItem('kmc2_admin_unlock');
+  toast(T('common_lockedMsg'));
+  renderUserInfo();
+  renderPage();
+}
+
+// Restore unlock state
+(function(){
+  const u=localStorage.getItem('kmc2_admin_unlock');
+  if(u)S.unlockUntil=parseInt(u)||0;
+})();
+renderLT();
+
+// ==================== LOGIN ====================
+function doLogin(){
+  const dept=document.getElementById('ld').value;
+  const name=document.getElementById('ln').value.trim();
+  if(!dept)return toast('Select department / 请选择部门');
+  if(!name)return toast('Enter your name / 请输入姓名');
+
+  // Auto-register or login existing user
+  const us=DB.users.get()||[];
+  const existingUser=us.find(u=>u.name===name&&u.department===dept);
+  if(!existingUser){
+    us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:'user',password:''});
+  }else{existingUser.lastLogin=new Date().toISOString();}
+  DB.users.set(us);
+  S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
+  DB.user.set(S.user);
+  showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
+}
+
+function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
+  // Build login screen content
+  document.getElementById('login-screen').innerHTML=
+    '<div class="login-box">'+
+    '<div style="font-size:42px;font-weight:900;letter-spacing:-1px;color:#0f172a;margin-bottom:4px;text-align:center">KMC</div>'+
+    '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:24px;font-weight:500">'+(L==='zh'?'车辆调度系统':'Vehicle Dispatch System')+'</div>'+
+    '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'部门 / Department':'Department')+'</label>'+
+    '<select id="ld" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none">'+
+    '<option value="">'+(L==='zh'?'请选择 / Select':'Select')+'</option>'+
+    getDepts().map(d=>'<option value="'+d.cn+'">'+d.cn+' / '+(d.en||'')+'</option>').join('')+
+    '</select></div>'+
+    '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
+    '<input type="text" id="ln" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
+    '<button class="bt bt-p bt-b" onclick="doLogin()">'+(L==='zh'?'进入系统 / ENTER':'ENTER / Enter')+'</button>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'选择部门并输入姓名即可登录':'Select department & enter your name')+'</div>'+
+    '</div>';
+  document.getElementById('login-screen').classList.remove('hide');
+  document.getElementById('app-mob').classList.add('hide');
+  document.getElementById('app-pc').classList.add('hide');}}
+
+function changeMyPw(){
+  const old=document.getElementById('my-old-pw').value.trim();
+  const newPw=document.getElementById('my-new-pw').value.trim();
+  if(!old)return toast('Enter current password or invite code');
+  if(!newPw||newPw.length<4)return toast('New password must be at least 4 characters');
+  // Verify old
+  const us=DB.users.get();
+  const u=us.find(u=>u.name===S.user.name&&u.department===S.user.department);
+  const expectedOld=(u&&u.password)?u.password:DB.invite.get();
+  if(old!==expectedOld)return toast('Current password incorrect / 当前密码错误');
+  // Save new
+  if(!u){us.push({name:S.user.name,department:S.user.department,password:newPw,
+    firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:S.user.role});}
+  else{u.password=newPw;}
+  DB.users.set(us);
+  document.getElementById('my-old-pw').value='';
+  document.getElementById('my-new-pw').value='';
+  toast('Password updated / 密码已更新 — next login use new password');
+}
+
+function showApp(){
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('app-mob').classList.remove('hide');
+  document.getElementById('app-pc').classList.remove('hide');
+  document.getElementById('mt-info').textContent=S.user.department+' · '+S.user.name;
+  renderUserInfo();
+  renderNav();
+  S.tab='submit';switchTab('submit');
+}
+
+function renderUserInfo(){
+  const unlocked=S.unlockUntil>Date.now();
+  const showAdmin=isAdmin()||unlocked;
+  const isOwner=S.user&&S.user.name==='石秋迅';
+  const avatar=(S.user.name||'?').slice(0,1);
+  document.getElementById('pcuinfo').innerHTML=
+    '<div class="pcu-row">'
+    +'<div class="pcu-avatar">'+avatar+'</div>'
+    +'<div class="pcu-meta">'
+      +'<div class="pcu-name">'+S.user.name+'</div>'
+      +'<div class="pcu-dept">'+dShow(S.user.department)+'</div>'
+    +'</div></div>'
+    +(showAdmin
+      ?'<div class="pcu-badge">'+(isAdmin()?'ADMIN':'UNLOCKED')+'</div>'
+      :'<div class="pcu-locked">🔒 '+T('common_locked')+'</div>')
+    +(isOwner?'<div style="font-size:10px;color:#64748b;margin-top:4px">💡 '+T('common_unlockHint')+'</div>':'');
+}
+
+function renderNav(){
+  const navs=[
+    {id:'submit',label:T('nav_submit'),ico:'<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      ni:'#2563eb',ni2:'#3b82f6',ng:'rgba(37,99,235,.25)'},
+    {id:'dispatch',label:T('nav_dispatch'),ico:'<rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      ni:'#0ea5e9',ni2:'#06b6d4',ng:'rgba(14,165,233,.25)'},
+  ];
+  if(isAdmin())navs.push({id:'pool',label:T('nav_pool'),
+      ico:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 14l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+      ni:'#a855f7',ni2:'#c084fc',ng:'rgba(168,85,247,.25)'});
+  if(isAdmin())navs.push({id:'daily',label:T('nav_daily'),
+      ico:'<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 9h18M9 3v18" stroke="currentColor" stroke-width="2"/><text x="6" y="16" font-size="9" fill="currentColor" font-weight="bold">M</text>',
+      ni:'#ec4899',ni2:'#f472b6',ng:'rgba(236,72,153,.25)'});
+  if(isAdmin())navs.push({id:'records',label:T('nav_records'),
+      ico:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>',
+      ni:'#10b981',ni2:'#34d399',ng:'rgba(16,185,129,.25)'});
+  navs.push({id:'settings',label:T('nav_settings'),
+      ico:'<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2" fill="none"/>',
+      ni:'#f59e0b',ni2:'#fbbf24',ng:'rgba(245,158,11,.25)'});
+
+  // Mobile bottom nav (keep simple)
+  document.getElementById('mn').innerHTML=navs.map(n=>
+    '<button data-bid="'+n.id+'" onclick="switchTab(\''+n.id+'\')"><svg viewBox="0 0 24 24" fill="none">'+n.ico+'</svg>'+n.label+'</button>').join('');
+
+  // PC sidebar with colored icons
+  document.getElementById('pcnav').innerHTML=navs.map(n=>
+    '<button data-sid="'+n.id+'" onclick="switchTab(\''+n.id+'\')" style="--ni:'+n.ni+';--ni2:'+n.ni2+';--ng:'+n.ng+'">'
+    +'<div class="ic"><svg viewBox="0 0 24 24" fill="none">'+n.ico+'</svg></div>'
+    +'<span class="lbl">'+n.label+'</span></button>').join('');
+  renderLT();
+  // Setup user info tap counter (PC only)
+  setupTapCounter();
+}
+
+function switchTab(id){
+  S.tab=id;
+  document.querySelectorAll('[data-sid]').forEach(b=>b.classList.toggle('active',b.dataset.sid===id));
+  document.querySelectorAll('[data-bid]').forEach(b=>b.classList.toggle('active',b.dataset.bid===id));
+  // Clear main areas
+  ['main-mob','main-pc'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='';});
+  renderPage();
+}
+
+function renderPage(){
+  // Update lang toggle buttons
+  const zhBtn=document.getElementById('lang-zh-btn'),enBtn=document.getElementById('lang-en-btn');
+  if(zhBtn&&enBtn){
+    zhBtn.className=L==='zh'?'active':'';enBtn.className=L==='en'?'active':'';
+  }
+  const m1=document.getElementById('main-mob');
+  const m2=document.getElementById('main-pc');
+  let html='';
+  try{
+    switch(S.tab){
+      case'submit':html=renderSubmit();break;
+      case'dispatch':html=renderDispatch();break;
+      case'pool':html=renderPool();break;
+      case'daily':html=renderDaily();break;
+      case'records':html=renderRecords();break;
+      case'settings':html=renderSettings();break;
+    }
+  }catch(e){
+    html='<div style="color:red;padding:20px"><h3>Render Error</h3><pre>'+e.message+'\n'+e.stack+'</pre></div>';
+  }
+  if(m1)m1.innerHTML=html;
+  if(m2)m2.innerHTML=html;
+  // Init passenger fields for submit page
+  if(S.tab==='submit'){setTimeout(updatePurposeStatus,80);}
+}
+
+// ==================== SUBMIT ====================
+function genPassengerFields(){
+  try{
+    const paxEl=document.getElementById('rq-pax');
+    if(!paxEl){toast('错误：请刷新页面重试');return;}
+    const n=parseInt(paxEl.value)||1;
+    let container=document.getElementById('pax-fields');
+    if(!container){
+      // Create container and insert right after rq-pax's parent fld
+      container=document.createElement('div');
+      container.id='pax-fields';
+      container.style.cssText='margin-bottom:14px';
+      const paxFld=paxEl.closest('.fld');
+      if(paxFld&&paxFld.parentNode)paxFld.parentNode.insertBefore(container,paxFld.nextSibling);
+      else document.body.appendChild(container);
+    }
+    let rows='';
+    for(let i=0;i<n;i++){
+      const idx=i+1;
+      const ph=(typeof L!=='undefined'&&L==='en')?('Passenger '+idx+' Name'):('人员 '+idx+' 姓名');
+      rows+='<div class="fld" style="margin-bottom:8px"><input type="text" id="pax-name-'+i+'" placeholder="'+ph+'" style="width:100%;border:1.5px solid #dc2626"></div>';
+    }
+    container.innerHTML='<div class="card" style="padding:14px;background:#f8fafc;border:1px solid #fbbf24">'
+      +'<div style="font-weight:600;font-size:14px;margin-bottom:10px;color:#334155">👥 乘车人员名单 / '+n+' 人</div>'
+      +'<div style="font-size:11px;color:#dc2626;margin-bottom:10px">⚠ 请准确填写每位人员姓名（财务报销管控要求）</div>'
+      +rows+'</div>';
+    toast('✅ 已生成 '+n+' 个姓名编辑框');
+  }catch(e){
+    console.error('genPassengerFields error:',e);
+    toast('错误：'+e.message);
+  }
+}
+
+// Language toggle for merged purpose/notes fields
+function switchPurposeLang(){
+  const cn=document.getElementById('rq-purpose'),en=document.getElementById('rq-purposeEn');
+  if(!cn||!en)return;
+  if(S.pLang==='cn'){
+    // Switching back to CN - save EN value
+    en.style.display='none';cn.style.display='block';cn.placeholder='中文描述外出事由';
+  }else{
+    // Switching to EN - save CN value and show EN
+    cn.style.display='none';en.style.display='block';en.placeholder='Describe purpose in English';
+  }
+  updatePurposeStatus();
+}
+function switchNotesLang(){
+  const cn=document.getElementById('rq-notes'),en=document.getElementById('rq-notesEn');
+  if(!cn||!en)return;
+  if(S.nLang==='cn'){
+    en.style.display='none';cn.style.display='block';cn.placeholder='中文备注（选填）';
+  }else{
+    cn.style.display='none';en.style.display='block';en.placeholder='English notes (optional)';
+  }
+}
+
+function updatePurposeStatus(){
+  const cn=document.getElementById('rq-purpose'),en=document.getElementById('rq-purposeEn');
+  const st=document.getElementById('purpose-status');
+  if(!st||!cn||!en)return;
+  const cnFilled=(cn.value||'').trim(),enFilled=(en.value||'').trim();
+  const cnOk=cnFilled.length>0,enOk=enFilled.length>0;
+  st.innerHTML=(cnOk?'✅':'❌')+' '+bi('中文','CN')+' '+(cnOk?'✓':'<span style=\"color:#dc2626\">'+bi('必填','Required')+'</span>')+' | '
+    +(enOk?'✅':'❌')+' '+bi('英文','EN')+' '+(enOk?'✓':'<span style=\"color:#dc2626\">'+bi('必填','Required')+'</span>');
+}
+
+// Smart translate: copy content from active field to the other language field
+function doTranslate(field){
+  let cnId,enId;
+  if(field==='dest'){cnId='rq-dest';enId='rq-destEn';}
+  else if(field==='purpose'){cnId='rq-purpose';enId='rq-purposeEn';}
+  else{cnId='rq-notes';enId='rq-notesEn';}
+  const cnEl=document.getElementById(cnId),enEl=document.getElementById(enId);
+  if(!cnEl||!enEl)return toast('字段错误 / Field error');
+  let srcId,dstId;
+  if(cnEl.value.trim()){srcId=cnId;dstId=enId;}
+  else if(enEl.value.trim()){srcId=enId;dstId=cnId;}
+  else return toast('请先在当前语言框中输入内容 / Please enter content first');
+  const srcText=document.getElementById(srcId).value.trim();
+  const srcLang=srcId===cnId?'zh-CN':'en-US';
+  const tgtLang=srcLang==='zh-CN'?'en-US':'zh-CN';
+  const dstEl=document.getElementById(dstId);
+  const btn=dstEl.parentElement?dstEl.parentElement.querySelector('[data-tr-btn="'+field+'"]'):null;
+  if(btn){btn.disabled=true;btn.textContent='⏳ 翻译中...';}
+  toast('🔄 正在调用在线翻译...');
+  fetch('https://api.mymemory.translated.net/get?langpair='+srcLang+'|'+tgtLang+'&q='+encodeURIComponent(srcText))
+    .then(r=>r.json())
+    .then(data=>{
+      let translated='';
+      if(data&&data.responseStatus===200&&data.responseData&&data.responseData.translatedText){translated=data.responseData.translatedText;}
+      if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');      /* Auto-show translated field */      cnEl.style.display=srcId===cnId?'none':'block';      enEl.style.display=srcId===cnId?'block':'none';      if(field==='purpose'){S.pLang=srcId===cnId?'en':'cn';updatePurposeStatus();}      else if(field==='dest')S.dLang=srcId===cnId?'en':'cn';      else S.nLang=srcId===cnId?'en':'cn';}
+      else{dstEl.value=srcText;toast('⚠ 翻译失败，已复制原文');}
+    })
+    .catch(e=>{dstEl.value=srcText;toast('⚠ 网络失败，已复制原文');})
+    .finally(()=>{if(btn){btn.disabled=false;btn.textContent='🔄 翻译到 '+(srcLang==='zh-CN'?'EN':'CN');}});
+}
+
+
+// Phrase dictionary helper
+function addPhrase(field,lang,phrase){
+  const id=field==='purpose'?(lang==='cn'?'rq-purpose':'rq-purposeEn'):(lang==='cn'?'rq-notes':'rq-notesEn');
+  const el=document.getElementById(id);
+  if(!el)return;
+  const current=el.value.trim();
+  el.value=current?(current+'；'+phrase):phrase;
+  if(field==='purpose')updatePurposeStatus();
+  toast(bi('已添加','Added')+': '+phrase);
+}
+
+// Destination language toggle
+function switchDestLang(){
+  const cn=document.getElementById('rq-dest'),en=document.getElementById('rq-destEn');
+  if(!cn||!en)return;
+  if(S.dLang==='cn'){en.style.display='none';cn.style.display='block';
+    cn.placeholder='例如：Kamativi 矿区 → 维多利亚瀑布城机场';}
+  else{cn.style.display='none';en.style.display='block';
+    en.placeholder='e.g., Kamativi Mine → Victoria Falls Airport';}
+}
+
+function renderSubmit(){
+  const _t=today(),_tm=tmrw();
+  const ct=getCutoff();
+  let html='<div style="background:linear-gradient(135deg,#fef3c7,#fed7aa);border:2px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:#78350f">'
+    +'<div style="font-weight:800;margin-bottom:6px">⏰ '+bi('今日需求截止 / Daily Cutoff','Daily Cutoff')+': <strong style="font-size:18px;color:#dc2626">'+ct+'</strong></div>'
+    +'<div style="line-height:1.7">'
+    +bi('• 截止时间前未提交的需求视为无需求','• No submission before cutoff = no request')+'<br>'
+    +bi('• 截止后提交的，次日统一调度，紧急用车由申请部门自行解决','• After cutoff, processed next day; emergencies must be self-resolved')+'<br>'
+    +bi('• 因未按时提交造成延误的，相关责任与成本由申请部门承担','• Late-submission delays: responsibility & cost belong to requesting dept')+'<br>'
+    
+    +'</div></div>';
+
+  // Rules
+  html+='<div class="card"><div class="card-h">📝 '+T('submit_title')+'</div>';
+  // Determine date min/max based on admin toggle
+  const dateEnabled=DB.dateRange.get();
+  const dateMin=dateEnabled?_t:(new Date().getHours()>=parseInt(getCutoff().split(':')[0])?_tm:_t);
+  const dateMax=dateEnabled?(new Date(Date.now()+30*86400000)).toISOString().slice(0,10):_tm;
+  html+='<div class="fld"><label>'+T('submit_date')+' * <small style="font-weight:400;color:var(--tx-dim)">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
+    +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'"></div>';
+  // Primary time slot
+  html+='<div class="fld"><label>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></label>'
+    +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
+    +'<input type="time" id="rq-dep" value="08:00" style="font-size:16px;padding:10px">'
+    +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：06:30 / 08:00 / 14:30','Example: 06:30 / 08:00 / 14:30')+'</div></div>'
+    +'<div class="bi-c"><label style="font-size:12px">'+bi('返程 Return','Return')+'</label>'
+    +'<input type="time" id="rq-ret" value="12:00" style="font-size:16px;padding:10px">'
+    +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：12:00 / 18:00 / 22:00','Example: 12:00 / 18:00 / 22:00')+'</div></div></div>'
+    +'<input type="text" id="rq-slot-notes" placeholder="'+bi('备注（选填）例如：同一路线不同时间段','Notes (optional) e.g., same route different time')+'" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)"></div>';
+  // Extra slot groups (when multiSlot enabled)
+  if(DB.multiSlot.get()){
+    [2,3].forEach(n=>{
+      html+='<div class="fld" style="padding:12px;border:1px dashed var(--bd-hi);border-radius:8px;background:var(--bg-soft)">'
+        +'<label style="font-weight:600;font-size:12px;color:var(--tx-dim)">⏰ '+bi('时段 (可选)',('Time Slot '+n+' (Optional)'))+'</label>'
+        +'<div class="bi" style="margin-top:6px"><div class="bi-c"><label style="font-size:11px">'+bi('出发','Departure')+'</label>'
+        +'<input type="time" id="rq-dep'+n+'" style="font-size:15px;padding:9px;border:1px solid var(--bd);border-radius:6px;background:var(--bg-soft);color:var(--tx)">'
+        +'</div><div class="bi-c"><label style="font-size:11px">'+bi('返程','Return')+'</label>'
+        +'<input type="time" id="rq-ret'+n+'" style="font-size:15px;padding:9px;border:1px solid var(--bd);border-radius:6px;background:var(--bg-soft);color:var(--tx)">'
+        +'</div></div>'
+        +'<input type="text" id="rq-notes'+n+'" placeholder="'+bi('备注（选填）','Notes (optional)')+'" style="width:100%;margin-top:6px;padding:8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)"></div>';
+    });
+  }
+
+  // Destination field
+  html+='<div class="fld"><label>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span><br><small style="font-weight:400;color:#64748b">'+bi('明确标注出发地和目的地','Specify origin & destination, e.g., Kamativi → Hwange')+'</small></label>'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
+    +'<div class="lt-btn"><button class="'+(S.dLang=='cn'?'active':'')+'" onclick="S.dLang=\'cn\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
+    +'<button class="'+(S.dLang=='en'?'active':'')+'" onclick="S.dLang=\'en\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
+    +'<button type="button" onclick="doTranslate(\'dest\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.dLang=='cn'?'EN':'CN')+'</button></div>'
+    +'<input type="text" id="rq-dest" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'">'
+    +'<input type="text" id="rq-destEn" style="display:none"></div>';
+
+  html+='<div class="card" style="padding:14px;background:#fefce8;border:1px solid #fbbf24;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#92400e">⚠ '+bi('GPS 管控说明','GPS Compliance Notice')+'</div>'
+    +'<div style="font-size:12px;color:#78350f;line-height:1.6">'
+    +bi('1. 出发/返程时间、外出地点、任务事由将用于 GPS 轨迹比对；','1. Time, destination, task will be cross-referenced with GPS tracking;')+'<br>'
+    +bi('2. 时间地点与 GPS 数据不符将标记异常并上报；','2. Mismatches with GPS data will be flagged and reported;')+'<br>'
+    +bi('3. 请如实填写，配合车辆实时管控要求；','3. Fill truthfully per vehicle monitoring requirements;')+'<br>'
+    +bi('4. 目的地必须是明确地点名称，不可填「外出」等模糊描述。','4. Destination must be specific, no vague terms like \"outing\".')
+    +'</div></div>';
+
+  html+='<div class="fld"><label>'+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span><br><small style="font-weight:400;color:#dc2626">'+bi('必须填写中英双语！点翻译按钮自动复制到另一语言框','Must fill BOTH! Click translate to auto-copy to the other language')+'</small></label>'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">'
+    +'<div class="lt-btn"><button class="'+(S.pLang==='cn'?'active':'')+'" onclick="S.pLang=\'cn\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
+    +'<button class="'+(S.pLang==='en'?'active':'')+'" onclick="S.pLang=\'en\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
+    +'<button type="button" onclick="doTranslate(\'purpose\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.pLang==='cn'?'EN':'CN')+'</button>'
+    +'<span style="font-size:11px;color:#2563eb;font-weight:600">'+bi('当前编辑','Editing')+': '+(S.pLang==='cn'?'中文':'English')+'</span></div>'
+    +'<textarea id="rq-purpose" placeholder="'+(S.pLang==='cn'?'中文描述外出事由（点翻译自动复制到英文框）':'Describe purpose in English (click translate to auto-copy to CN)')+'" style="min-height:80px" oninput="updatePurposeStatus()"></textarea>'
+    +'<textarea id="rq-purposeEn" style="display:none" oninput="updatePurposeStatus()"></textarea>'
+    +'<div id="purpose-status" style="font-size:11px;margin-top:4px"></div>'
+    +'<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap"><span style="font-size:11px;color:#64748b;align-self:center">📚 '+bi('常用短语','Common phrases')+':</span>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'机场接送\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">机场接送</button>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'矿区巡视\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">矿区巡视</button>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'参加外部会议\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">参加外部会议</button>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Airport pickup\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Airport pickup</button>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Site inspection\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Site inspection</button>'
+    +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Business meeting\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Business meeting</button>'
+    +'</div></div>';
+
+  html+='<div class="fld"><label>'+bi('备注','Notes')+'<small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small><br><small style="font-weight:400;color:#dc2626">'
+    +bi('【责任须知】选填项。未在备注重明确标注外出人员及其职级的，默认费用由申请部门自行承担。职级差异报销标准参照财务制度执行。','[Liability Notice] Optional. If passengers and their ranks are NOT noted here, costs default to requesting department. Rank-based reimbursement per finance policy.')+'</small></label>'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
+    +'<div class="lt-btn"><button class="'+(S.nLang==='cn'?'active':'')+'" onclick="S.nLang=\'cn\';switchNotesLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
+    +'<button class="'+(S.nLang==='en'?'active':'')+'" onclick="S.nLang=\'en\';switchNotesLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
+    +'<button type="button" onclick="doTranslate(\'notes\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.nLang==='cn'?'EN':'CN')+'</button>'
+    +'<span style="font-size:11px;color:#2563eb;font-weight:600">'+bi('当前编辑','Editing')+': '+(S.nLang==='cn'?'中文':'English')+'</span></div>'
+    +'<input type="text" id="rq-notes" placeholder="'+(S.nLang==='cn'?'中文备注（选填）':'English notes (optional)')+'">'
+    +'<input type="text" id="rq-notesEn" style="display:none"></div>';
+
+  html+='<div class="fld"><label>📝 '+bi('签字板 / Signature','Signature Pad')+' <span style="color:#dc2626">* '+bi('必填','Required')+'</span>'
+    +'<br><small style="font-weight:400;color:var(--tx-dim)">'+bi('签署后方可提交，支持触屏手写和鼠标绘制','Must sign before submitting, touchscreen & mouse supported')+'</small></label>'
+    +'<button type="button" class="bt bt-o bt-b" onclick="toggleSig()" id="sig-btn" style="border:2px dashed var(--bd-hi);justify-content:flex-start;text-align:left;padding-left:16px;height:48px">🖊️ <span id="sig-btn-text">'+T('submit_sign')+'</span></button>'
+    +'<div id="sig-panel" style="display:none;margin-top:12px;border:1px solid var(--bd);border-radius:12px;padding:14px;background:var(--bg-elevated)">'
+    +'<div style="font-weight:600;margin-bottom:8px;font-size:13px;color:var(--tx-dim)">'+bi('部门负责人签字 / Department Head Signature','Department Head Signature')+'</div>'
+    +'<canvas id="sig-cvs" style="display:block;width:100%;height:300px;background:#fff;border-radius:8px;border:2px solid var(--bd-hi);cursor:crosshair;touch-action:none"></canvas>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button type="button" class="bt bt-o bt-sm" onclick="sigClear()">🗑 '+bi('清除','Clear')+'</button>'
+    +'<div style="flex:1"></div>'
+    +'<button type="button" class="bt bt-o bt-sm" onclick="toggleSig()">✕ '+T('common_cancel')+'</button>'
+    +'<button type="button" class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button>'
+    +'</div></div>'
+    +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
+  html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
+
+  // My recent requests with recall option
+  const myReqs=DB.requests.get().filter(r=>r.submitter===S.user.name&&r.department===S.user.department&&r.status==='pending').sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
+  if(myReqs.length){
+    html+='<div class="card" style="margin-top:12px"><div class="card-h">📋 '+bi('我的待处理需求','My Pending Requests')+' ('+myReqs.length+') <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('截止前可撤回','Recallable before cutoff')+'</span></div>';
+    myReqs.forEach(r=>{
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px">'
+        +'<div style="flex:1"><div style="font-weight:500">📅 '+fmtL(r.date)+' ⏰ '+r.timeSlot+'</div>'
+        +'<div style="color:var(--tx-dim);font-size:11px">👥 '+r.passengers+' pax · 📍 '+(r.destination||'—')+'</div></div>'
+        +'<button class="bt bt-d bt-sm" onclick="recallReq(\''+r.id+'\')" style="flex-shrink:0;margin-left:8px">↩ '+bi('撤回','Recall')+'</button></div>';
+    });html+='</div>';
+  }
+
+  html+='<div class="card"><div class="card-h">📋 '+bi('需求池','All Requests')+'</div><div id="my-reqs">';
+  let reqs=isAdmin()?DB.requests.get():DB.requests.get().filter(r=>r.department===S.user.department);
+  reqs=reqs.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30);
+  if(!reqs.length)html+='<div class="emp">'+T('common_no')+'</div>';
+  else reqs.forEach(r=>{
+    const sl=r.status==='pending'?T('stat_pending'):T('stat_dispatched');
+    const tc=r.status==='pending'?'tg-p':'tg-d';
+    const show=L==='zh'?r.purpose:(r.purposeEn||r.purpose);
+    const showE=(L==='en'&&r.purpose)?r.purpose:((L==='zh'&&r.purposeEn)?r.purposeEn:'');
+    // Edit/Delete buttons only visible to admin or unlocked user
+    const canEdit=(isAdmin()||(S.unlockUntil>Date.now()))&&r.status==='pending';
+    html+='<div class="rr" style="cursor:default"><div class="rr-b"><div class="rr-t">'+show+' <span class="tag '+tc+'">'+sl+'</span>'
+      +(canEdit?' <a class="edb" onclick="openEditReq(\''+r.id+'\')">'+T('edit')+'</a>':'')
+      +(canEdit?' <a class="edb" style="color:#dc2626" onclick="delReq(\''+r.id+'\')">'+T('del')+'</a>':'')
+      +'</div>'
+      +(showE?'<div class="rr-e">'+showE+'</div>':'')
+      +'<div class="rr-m"><span>📅 '+fmtL(r.date)+' ('+r.date+') '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div>'
+      +(r.paxNames&&r.paxNames.length?'<div style="font-size:12px;color:#2563eb;margin-top:3px;font-weight:500">🚗 '+bi('乘车人','Passengers')+': '+r.paxNames.filter(Boolean).join('、')+'</div>':'')
+      +'</div></div>';
+  });
+  html+='</div></div>';
+  return html;
+}
+
+function delReq(id){
+  if(!confirm('Delete?'))return;
+  let reqs=DB.requests.get();reqs=reqs.filter(r=>r.id!==id);DB.requests.set(reqs);
+  toast('Deleted');renderPage();
+}
+
+function openEditReq(id){
+  const r=DB.requests.get().find(x=>x.id===id);if(!r)return;
+  showModal('<h3>✏️ '+T('edit')+'</h3>'
+    +'<div class="fld"><label>Date</label><input type="date" id="er-date" value="'+r.date+'"></div>'
+    +'<div class="fld"><label>Time</label><input type="text" id="er-time" value="'+r.timeSlot+'"></div>'
+    +'<div class="fld"><label>Pax</label><input type="number" id="er-pax" value="'+r.passengers+'"></div>'
+    +'<div class="fld"><label>Purpose CN</label><textarea id="er-p" style="min-height:60px">'+r.purpose+'</textarea></div>'
+    +'<div class="fld"><label>Purpose EN</label><textarea id="er-pe" style="min-height:60px">'+r.purposeEn+'</textarea></div>'
+    +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">Cancel</button> <button class="bt bt-p bt-sm" onclick="saveEditReq(\''+id+'\')">Save</button></div>',true);
+}
+function saveEditReq(id){
+  const reqs=DB.requests.get();const r=reqs.find(x=>x.id===id);if(!r)return;
+  r.date=document.getElementById('er-date').value||r.date;
+  r.timeSlot=document.getElementById('er-time').value||r.timeSlot;
+  r.passengers=parseInt(document.getElementById('er-pax').value)||r.passengers;
+  r.purpose=document.getElementById('er-p').value.trim()||r.purpose;
+  r.purposeEn=document.getElementById('er-pe').value.trim()||r.purposeEn;
+  DB.requests.set(reqs);closeModal();toast('Updated');renderPage();
+}
+
+function doSubmit(){
+  const date=document.getElementById('rq-date').value;
+  const dep=document.getElementById('rq-dep').value,ret=document.getElementById('rq-ret').value;
+  const time=(dep&&ret)?(dep+'-'+ret):(dep||ret||'');
+  const slotNotes=document.getElementById('rq-slot-notes').value.trim();
+  // Collect extra slots
+  const extraSlots=[];
+  if(DB.multiSlot.get()){
+    [2,3].forEach(n=>{
+      const ed=document.getElementById('rq-dep'+n),er=document.getElementById('rq-ret'+n);
+      if(ed&&ed.value&&er&&er.value){
+        extraSlots.push({slot:ed.value+'-'+er.value,notes:(document.getElementById('rq-notes'+n)||{}).value||''});
+      }
+    });
+  }
+  const paxRaw=document.getElementById('rq-pax-names').value.trim();
+  const paxNames=paxRaw?(paxRaw.split(/[,\n\r，]/).map(s=>s.trim()).filter(Boolean)):[];
+  const pax=paxNames.length||1;
+  const purpose=document.getElementById('rq-purpose').value.trim();
+  const purposeEn=document.getElementById('rq-purposeEn').value.trim();
+  const dest=document.getElementById('rq-dest').value.trim();
+  const destEn=document.getElementById('rq-destEn').value.trim();
+  const notes=document.getElementById('rq-notes').value.trim();
+  const notesEn=document.getElementById('rq-notesEn').value.trim();
+  if(!date||!dep||!ret||!dest||!purpose||!purposeEn)return toast(L==='zh'?'请填写日期、出发返程时间和中英双语外出事由':'Please fill date, departure/return time and bilingual purpose');
+  
+  // Build full notes including slot notes and extra slots
+  let fullNotes=notes||'';
+  if(slotNotes)fullNotes=(fullNotes?fullNotes+' | ':'')+'⏰ '+slotNotes;
+  extraSlots.forEach(s=>{
+    fullNotes=(fullNotes?fullNotes+' | ':'')+'⏰'+s.slot+(s.notes?' ('+s.notes+')':'');
+  });
+
+  const reqs=DB.requests.get();
+  reqs.push({id:uid(),date,timeSlot:time,passengers:pax,paxNames,purpose,purposeEn,
+    destination:dest||'',destinationEn:destEn||'',notes:fullNotes,notesEn:notesEn||'',
+    approved:'yes',signature:S.sigData,department:S.user.department,submitter:S.user.name,
+    status:'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
+  DB.requests.set(reqs);sbSyncOne('requests',DB.requests.get());
+  toast(T('common_success'));
+  S.sigData='';
+  renderPage();
+}
+
+function recallReq(rid){
+  if(!confirm(L==='zh'?'确定撤回该需求？':'Confirm recall this request?'))return;
+  const reqs=DB.requests.get();
+  const idx=reqs.findIndex(r=>r.id===rid);
+  if(idx===-1)return toast('Not found');
+  reqs.splice(idx,1);
+  DB.requests.set(reqs);
+  toast(L==='zh'?'✅ 已撤回':'Recalled');
+  renderPage();
+}
+
+// ==================== SIGNATURE ====================
+function toggleSig(){
+  const panel=document.getElementById('sig-panel');
+  const btnText=document.getElementById('sig-btn-text');
+  if(!panel)return;
+  if(panel.style.display==='none'||!panel.style.display){
+    panel.style.display='block';
+    if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('重新签字','Re-sign'):'✖ '+bi('收起','Collapse');
+    setTimeout(initSig,150);
+  }else{
+    panel.style.display='none';
+    if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('已签字','Signed'):'🖊 '+T('submit_sign');
+  }
+}
+let sigCtx=null,sigDrawing=false,sigLX=0,sigLY=0,sigDone=false;
+function initSig(){
+  const c=document.getElementById('sig-cvs');if(!c)return;
+  const w=c.offsetWidth,h=c.offsetHeight;
+  // Use devicePixelRatio for retina, but keep coordinate system 1:1
+  const dpr=window.devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;
+  c.style.width=w+'px';c.style.height=h+'px';
+  sigCtx=c.getContext('2d');sigCtx.scale(dpr,dpr);
+  sigCtx.strokeStyle='#0f172a';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  if(S.sigData){const img=new Image();img.onload=()=>{sigCtx.drawImage(img,0,0,w,h);sigDone=true;};img.src=S.sigData;}
+  // Mouse (PC)
+  c.onmousedown=e=>{sigDrawing=true;sigDone=true;const p=pos(e,c);sigLX=p.x;sigLY=p.y;};
+  c.onmousemove=e=>{if(!sigDrawing)return;const p=pos(e,c);sigCtx.beginPath();sigCtx.moveTo(sigLX,sigLY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLX=p.x;sigLY=p.y;};
+  c.onmouseup=c.onmouseleave=()=>{sigDrawing=false;};
+  // Touch (Mobile)
+  c.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;sigDone=true;const t=e.touches[0];const p=pos(t,c);sigLX=p.x;sigLY=p.y;},{passive:false});
+  c.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const p=pos(t,c);sigCtx.beginPath();sigCtx.moveTo(sigLX,sigLY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLX=p.x;sigLY=p.y;},{passive:false});
+  c.addEventListener('touchend',()=>{sigDrawing=false;});
+}
+function pos(e,c){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;sigCtx.clearRect(0,0,c.width,c.height);sigDone=false;S.sigData='';const st=document.getElementById('sig-st');if(st)st.style.display='none';const btnText=document.getElementById('sig-btn-text');if(btnText)btnText.textContent='🖊 '+T('submit_sign');}
+function sigSave(){
+  if(!sigDone)return toast(L==='zh'?'请先签字':'Please sign first');
+  S.sigData=document.getElementById('sig-cvs').toDataURL('image/png');
+  const st=document.getElementById('sig-st');if(st)st.style.display='block';
+  const panel=document.getElementById('sig-panel');if(panel)panel.style.display='none';
+  const btnText=document.getElementById('sig-btn-text');
+  if(btnText)btnText.textContent='✏️ '+bi('已签字','Signed');
+  toast(L==='zh'?'✓ 签字已保存':'Signature saved');
+}
+
+// ==================== DISPATCH ====================
+function renderDispatch(){
+  const _t=today();
+  const ds=DB.dispatches.get().filter(d=>d.date===_t);
+  let html='<div class="act"><span style="font-size:15px;color:#0f172a;font-weight:600">📅 '+fmtL(_t)+' '+T('dispatch_title')+'</span><div class="sp"></div>';
+  if(isAdmin())html+='<button class="bt bt-p bt-sm" onclick="expImg()">📸 Export PNG</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button>';
+  html+='</div>';
+  if(!ds.length){html+='<div class="emp"><svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg><p>'+T('common_no')+'</p></div>';}
+  else html+=ds.map(d=>buildDC(d)).join('');
+  return html;
+}
+function buildDC(d){
+  const rl=DB.requests.get().filter(r=>d.requestIds.includes(r.id));
+  const pax=rl.reduce((s,r)=>s+r.passengers,0);
+  const depts=[...new Set(rl.map(r=>dShow(r.department)))].join('、');
+  const prps=L==='zh'?[...new Set(rl.map(r=>r.purpose))].join('；'):[...new Set(rl.map(r=>r.purposeEn||r.purpose))].join('; ');
+  const prpsE=L==='zh'&&rl.some(r=>r.purposeEn)?[...new Set(rl.map(r=>r.purposeEn))].join('; '):'';
+  const dnotesCn=d.notes||'';
+  const dnotesEn=d.notesEn||'';
+  const paxNames=[];
+  rl.forEach(r=>{if(r.paxNames)r.paxNames.forEach(n=>{if(n)paxNames.push(n);});});
+  if(!paxNames.length)rl.forEach(r=>paxNames.push(r.submitter));
+  return '<div class="dc"><div class="dc-h"><div><h4>'+T('dispatch_title')+'</h4><div style="font-size:11px;opacity:.7">'+fmtL(d.date)+' ('+d.date+')</div></div><div class="dc-p">'+d.vehicle+'</div></div>'
+    +'<div class="dc-b"><div class="dc-row"><span class="dc-l">'+T('driver_label')+' / Driver</span><span class="dc-v"><strong>'+d.driver+'</strong></span></div>'
+    +'<div class="dc-row"><span class="dc-l">'+T('meeting_point')+' / Point</span><span class="dc-v">'+(d.meetingPoint||'—')+'</span></div>'
+    +'<div class="dc-row"><span class="dc-l">'+T('pax')+' / Pax</span><span class="dc-v">'+pax+'</span></div>'
+    +'<div class="dc-row"><span class="dc-l">'+T('dept')+' / Dept</span><span class="dc-v">'+depts+'</span></div>'
+    +'<div class="dc-row"><span class="dc-l">'+T('purpose')+' / Purpose</span><span class="dc-v">'+prps+(prpsE?' <small style="color:#64748b;font-style:italic">('+prpsE+')</small>':'')+'</span></div>'
+    +'<div class="dc-row"><span class="dc-l">👥 '+bi('乘车人','Passengers')+'</span><span class="dc-v">'+paxNames.join('、')+'</span></div>'
+    +(dnotesCn?'<div class="dc-row"><span class="dc-l">'+T('notes')+' / Notes</span><span class="dc-v">'+dnotesCn+(dnotesEn?' <small style="color:#64748b;font-style:italic">('+dnotesEn+')</small>':'')+'</span></div>':'')
+    +'</div></div>';
+}
+
+function expImg(){
+  if(!isAdmin())return;
+  const _t=today();const ds=DB.dispatches.get().filter(d=>d.date===_t);
+  if(!ds.length)return toast(T('common_no'));
+  const cvs=document.createElement('canvas');cvs.width=420;cvs.height=120+ds.length*155;
+  const ctx=cvs.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cvs.width,cvs.height);
+  ctx.fillStyle='#0f172a';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('KMC Vehicle Dispatch',210,38);
+  ctx.fillStyle='#64748b';ctx.font='13px sans-serif';ctx.fillText(fmtL(_t)+' | '+_t,210,56);
+  let y=76;
+  ds.forEach(d=>{
+    const rl=DB.requests.get().filter(r=>d.requestIds.includes(r.id));
+    const pax=rl.reduce((s,r)=>s+r.passengers,0);
+    ctx.fillStyle='#f8fafc';ctx.fillRect(10,y,400,140);
+    ctx.strokeStyle='#d1d5db';ctx.strokeRect(10,y,400,140);
+    ctx.fillStyle='#2563eb';ctx.font='bold 26px sans-serif';ctx.textAlign='right';ctx.fillText(d.vehicle,395,y+36);
+    ctx.fillStyle='#1e293b';ctx.font='bold 15px sans-serif';ctx.textAlign='left';ctx.fillText('Driver: '+d.driver,22,y+26);
+    ctx.fillStyle='#334155';ctx.font='13px sans-serif';
+    ctx.fillText('Pax: '+pax+' | Dept: '+[...new Set(rl.map(r=>r.department))].join(', '),22,y+52);
+    ctx.fillText([...new Set(rl.map(r=>r.purpose+' / '+r.purposeEn))].join('; '),22,y+74);
+    if(d.notes)ctx.fillText('Notes: '+d.notes,22,y+96);
+    y+=155;
+  });
+  ctx.fillStyle='#94a3b8';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('Dispatcher: '+S.user.name,210,y+14);
+  cvs.toBlob(b=>{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Dispatch_'+_t+'.png';a.click();URL.revokeObjectURL(u);toast('Exported');},'image/png');
+}
+function expCSV(){
+  if(!isAdmin())return;
+  let csv='\uFEFFDate,Vehicle,Driver,Pax,Dept,Purpose(CN),Purpose(EN),Passengers,Notes\n';
+  DB.dispatches.get().forEach(d=>{const rl=DB.requests.get().filter(r=>d.requestIds.includes(r.id));
+    csv+=d.date+','+d.vehicle+','+d.driver+','+rl.reduce((s,r)=>s+r.passengers,0)+','
+      +[...new Set(rl.map(r=>r.department))].join('/')+',"'+[...new Set(rl.map(r=>r.purpose))].join('; ')
+      +'","'+[...new Set(rl.map(r=>r.purposeEn||''))].join('; ')+'","'
+      +rl.map(r=>r.submitter+'('+r.department+')').join('/')+'","'+(d.notes||'')+'"\n';});
+  const b=new Blob([csv],{type:'text/csv'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Records.csv';a.click();URL.revokeObjectURL(u);toast('CSV Exported');
+}
+
+function expXLS(){
+  // Excel-compatible export (HTML table .xls, Chinese-safe) - details + summary
+  const rs=DB.requests.get(),ds=DB.dispatches.get();
+  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>台账明细</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet><x:ExcelWorksheet><x:Name>统计汇总</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+
+  // Sheet 1: Details
+  h+='<table border="1"><tr><th>日期</th><th>车辆</th><th>司机</th><th>人数</th><th>部门</th><th>外出事由(中文)</th><th>外出事由(English)</th><th>乘车人员</th><th>备注</th></tr>';
+  ds.forEach(d=>{
+    const rl=rs.filter(r=>d.requestIds&&d.requestIds.includes(r.id));
+    h+='<tr><td>'+esc(d.date)+'</td><td>'+esc(d.vehicle)+'</td><td>'+esc(d.driver)+'</td><td>'+(rl.reduce((s,r)=>s+(r.passengers||1),0))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.department))].join('/'))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.purpose))].join('; '))+'</td>'
+      +'<td>'+esc([...new Set(rl.map(r=>r.purposeEn||''))].join('; '))+'</td>'
+      +'<td>'+esc(rl.map(r=>r.submitter+'('+r.department+')').join('/'))+'</td>'
+      +'<td>'+esc(d.notes||'')+'</td></tr>';
+  });
+  h+='</table>';
+
+  // Sheet 2: Summary
+  h+='<br><br><table border="1"><tr><th colspan="3">统计汇总 / Summary</th></tr>';
+  // By department
+  h+='<tr><th colspan="3">按部门 / By Department</th></tr><tr><th>部门</th><th>需求数</th><th>占比</th></tr>';
+  const deptCnt={};rs.forEach(r=>{deptCnt[r.department]=(deptCnt[r.department]||0)+1;});
+  Object.entries(deptCnt).sort((a,b)=>b[1]-a[1]).forEach(([d,c])=>{
+    h+='<tr><td>'+esc(dShow(d))+'</td><td>'+c+'</td><td>'+Math.round(c/rs.length*100)+'%</td></tr>';
+  });
+  // By vehicle
+  h+='<tr><th colspan="3">按车辆 / By Vehicle</th></tr><tr><th>车辆</th><th>派车次数</th><th>占比</th></tr>';
+  const vehCnt={};ds.forEach(d=>{vehCnt[d.vehicle]=(vehCnt[d.vehicle]||0)+1;});
+  Object.entries(vehCnt).sort((a,b)=>b[1]-a[1]).forEach(([v,c])=>{
+    h+='<tr><td>'+esc(v)+'</td><td>'+c+'</td><td>'+Math.round(c/ds.length*100)+'%</td></tr>';
+  });
+  // By driver
+  h+='<tr><th colspan="3">按司机 / By Driver</th></tr><tr><th>司机</th><th>出车次数</th><th>占比</th></tr>';
+  const drvCnt={};ds.forEach(d=>{drvCnt[d.driver]=(drvCnt[d.driver]||0)+1;});
+  Object.entries(drvCnt).sort((a,b)=>b[1]-a[1]).forEach(([v,c])=>{
+    h+='<tr><td>'+esc(v)+'</td><td>'+c+'</td><td>'+Math.round(c/ds.length*100)+'%</td></tr>';
+  });
+  h+='</table></body></html>';
+
+  const b=new Blob(['\uFEFF'+h],{type:'application/vnd.ms-excel'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');
+  a.href=u;a.download='KMC_台账_'+today()+'.xls';a.click();URL.revokeObjectURL(u);toast('✅ Excel 已导出 / Exported');
+}
+
+function expPDF(){
+  // A4 bilingual PDF report with signatures
+  const ds=DB.dispatches.get().sort((a,b)=>b.date.localeCompare(a.date)),rs=DB.requests.get();
+  const w=window.open('','_blank','width=800,height=600');
+  if(!w)return toast('Please allow popups');
+  let h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>KMC Dispatch Report</title>';
+  h+='<style>@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box;margin:0;padding:0}';
+  h+='body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;color:#000;line-height:1.4}';
+  h+='h1{text-align:center;font-size:18px;margin-bottom:4px}h1 small{font-size:12px;color:#666}';
+  h+='h2{font-size:14px;margin:16px 0 8px;border-bottom:2px solid #000;padding-bottom:4px}';
+  h+='.rec{page-break-inside:avoid;margin-bottom:12px;border:1px solid #ccc;border-radius:6px;padding:10px}';
+  h+='.rec-h{display:flex;justify-content:space-between;background:#1e293b;color:#fff;padding:6px 10px;margin:-10px -10px 8px -10px;border-radius:6px 6px 0 0;font-size:11px}';
+  h+='.rec-h .rh-p{font-size:16px;font-weight:800}';
+  h+='.row{display:flex;padding:3px 0;font-size:10px}.row .rl{color:#666;width:80px;flex-shrink:0}.row .rv{flex:1}';
+  h+='.sig-img{max-height:40px;border:1px solid #ddd;padding:2px}.footer{text-align:center;margin-top:20px;font-size:9px;color:#999}';
+  h+='.stats{display:flex;gap:12px;margin-bottom:12px}.stat{flex:1;text-align:center;background:#f8fafc;padding:8px;border:1px solid #e5e7eb;border-radius:6px}';
+  h+='.stat .sn{font-size:22px;font-weight:800;color:#2563eb}.stat .sl{font-size:9px;color:#666}';
+  h+='@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
+  h+='<\\/style><script>(function(){const h=new Date().getHours();const isDark=h<7||h>=19;const saved=localStorage.getItem(\"kmc_theme\");const theme=saved||(isDark?\"dark\":\"light\");document.documentElement.setAttribute(\"data-theme\",theme);})();<\\/script></head><body>';
+  h+='<h1>'+(L==='zh'?'车辆调度台账':'KMC Vehicle Dispatch Report')+'<small><br>'+bi('车辆调度台账 · Vehicle Dispatch Ledger','KMC Vehicle Dispatch Ledger')+'<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
+  
+  // Stats
+  const allDepts=Array.from(new Set(rs.map(r=>r.department))).filter(Boolean);
+  h+='<div class="stats"><div class="stat"><div class="sn">'+ds.length+'</div><div class="sl">'+T('total_trips')+' / Total Trips</div></div>';
+  const vc={};DB.vehicles.get().forEach(v=>vc[v.plate]=0);ds.forEach(d=>{if(vc[d.vehicle]!==undefined)vc[d.vehicle]++;});
+  const top=Object.entries(vc).sort((a,b)=>b[1]-a[1])[0];
+  if(top)h+='<div class="stat"><div class="sn">'+top[0]+'</div><div class="sl">'+T('most_used')+' / Most Used</div></div>';
+  getDepts().forEach(d=>{const cnt=rs.filter(r=>r.department===d.cn).length;h+='<div class="stat"><div class="sn">'+cnt+'</div><div class="sl">'+dShow(d.cn)+'</div></div>';});
+  h+='</div>';
+
+  // Group by month
+  const months={};
+  ds.forEach(d=>{const m=d.date.slice(0,7);if(!months[m])months[m]=[];months[m].push(d);});
+  Object.keys(months).sort((a,b)=>b.localeCompare(a)).forEach(m=>{
+    const md=months[m];
+    h+='<h2>📅 '+m+' ('+md.length+' '+T('total_trips')+' / Trips)</h2>';
+    md.forEach(d=>{
+      const rl=rs.filter(r=>d.requestIds.includes(r.id));
+      const pax=rl.reduce((s,r)=>s+r.passengers,0);
+      const depts=[...new Set(rl.map(r=>dShow(r.department)))].join(' / ');
+      const prpsCn=[...new Set(rl.map(r=>r.purpose))].join('；');
+      const prpsEn=[...new Set(rl.map(r=>r.purposeEn||''))].join('; ');
+      const sigImgs=rl.filter(r=>r.signature).map(r=>'<img class="sig-img" src="'+r.signature+'">').join(' ')||'—';
+      h+='<div class="rec"><div class="rec-h"><div>'+fmtL(d.date)+' ('+d.date+') · '+d.driver+'</div><div class="rh-p">'+d.vehicle+'</div></div>';
+      h+='<div class="row"><span class="rl">Pax / 人数</span><span class="rv">'+pax+'</span></div>';
+      h+='<div class="row"><span class="rl">Dept / 部门</span><span class="rv">'+depts+'</span></div>';
+      h+='<div class="row"><span class="rl">Point / 集合点</span><span class="rv">'+(d.meetingPoint||'—')+'</span></div>';
+      h+='<div class="row"><span class="rl">Purpose / 事由</span><span class="rv">'+prpsCn+'<br><small style="color:#666">'+prpsEn+'</small></span></div>';
+      h+='<div class="row"><span class="rl">Pax / 乘车人</span><span class="rv">'+rl.map(r=>r.submitter+'('+dShow(r.department)+')').join('、')+'</span></div>';
+      h+='<div class="row"><span class="rl">Sign / 签字</span><span class="rv">'+sigImgs+'</span></div>';
+      if(d.notes)h+='<div class="row"><span class="rl">Notes / 备注</span><span class="rv">'+d.notes+'</span></div>';
+      h+='</div>';
+    });
+  });
+
+  h+='<div class="footer">KMC Dispatcher · '+new Date().toISOString()+' · Dispatcher: '+S.user.name+'</div>';
+  h+='<script>setTimeout(function(){window.print();},500);<\/script>';
+  h+='</body></html>';
+  w.document.write(h);w.document.close();
+  // Cleanup after print
+  setTimeout(()=>{try{w.close();}catch(e){}},5000);
+}
+
+// ==================== POOL ====================
+function renderPool(){
+  if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
+  S.selDate=null;S.selReqs.clear();
+
+  // Multi-select dept filter
+  const allReqs=DB.requests.get();
+  const allDepts=Array.from(new Set(allReqs.map(r=>r.department))).filter(Boolean);
+  const allSubmitters=Array.from(new Set(allReqs.map(r=>r.submitter))).filter(Boolean).sort();
+  const deptChips=allDepts.map(d=>{
+    const sel=S.fDepts.length===0||S.fDepts.includes(d);
+    return '<button onclick="togDept(\''+d+'\')" style="padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?'#2563eb':'#e5e7eb')+';background:'+(sel?'#eff6ff':'#fff')+';color:'+(sel?'#2563eb':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+dShow(d)+'</button>';
+  }).join('');
+
+  // Apply filters
+  let reqs=allReqs.slice();
+  if(S.fFrom)reqs=reqs.filter(r=>r.date>=S.fFrom);
+  if(S.fTo)reqs=reqs.filter(r=>r.date<=S.fTo);
+  if(S.fDepts.length>0)reqs=reqs.filter(r=>S.fDepts.includes(r.department));
+  if(S.fStatus==='pending')reqs=reqs.filter(r=>r.status==='pending');
+  else if(S.fStatus==='dispatched')reqs=reqs.filter(r=>r.status==='dispatched');
+  if(S.fSubmitter)reqs=reqs.filter(r=>r.submitter===S.fSubmitter);
+  if(S.fPaxMin>0)reqs=reqs.filter(r=>(r.passengers||1)>=S.fPaxMin);
+  if(S.fPaxMax<99)reqs=reqs.filter(r=>(r.passengers||1)<=S.fPaxMax);
+  if(S.fKeywordPool){
+    const kw=S.fKeywordPool.toLowerCase();
+    reqs=reqs.filter(r=>(r.purpose||'').toLowerCase().includes(kw)||(r.purposeEn||'').toLowerCase().includes(kw)||(r.destination||'').toLowerCase().includes(kw)||(r.destinationEn||'').toLowerCase().includes(kw));
+  }
+  // Sort by date desc then time
+  reqs.sort((a,b)=>{
+    if(b.date!==a.date)return b.date.localeCompare(a.date);
+    return (b.timeSlot||'').localeCompare(a.timeSlot||'');
+  });
+  const pending=reqs.filter(r=>r.status==='pending');
+  const dispatched=reqs.filter(r=>r.status==='dispatched');
+
+  let html='<div class="card"><div class="card-h">🔍 '+bi('需求池筛选面板','Request Pool Filter')+'</div>';
+
+  // 1. Date range
+  html+='<div class="fld"><label>📅 '+bi('日期范围','Date Range')+'</label><div style="display:flex;gap:6px;align-items:center">'
+    +'<input type="date" id="pl-from" value="'+(S.fFrom||'')+'" onchange="S.fFrom=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'<span style="color:#94a3b8">→</span>'
+    +'<input type="date" id="pl-to" value="'+(S.fTo||'')+'" onchange="S.fTo=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'</div></div>';
+
+  // 2. Department chips
+  html+='<div class="fld"><label>🏢 '+T('select_depts')+(S.fDepts.length?' · '+T('selected')+' '+S.fDepts.length:'')+'</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
+    +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
+    +'</div></div>';
+
+  // 3. Status
+  const statChips=[
+    ['all',bi('全部','All'),'#2563eb'],
+    ['pending',bi('待处理','Pending'),'#f59e0b'],
+    ['dispatched',bi('已派车','Dispatched'),'#10b981'],
+  ].map(([v,t,c])=>{
+    const sel=S.fStatus===v;
+    return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
+  }).join('');
+  html+='<div class="fld"><label>🔄 '+bi('状态','Status')+'</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+statChips+'</div></div>';
+
+  // 4. Submitter
+  html+='<div class="fld"><label>👤 '+bi('提交人','Submitter')+'</label>'
+    +'<select id="pl-sub" onchange="S.fSubmitter=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">'+bi('全部','All')+'</option>'
+    +allSubmitters.map(n=>'<option '+(S.fSubmitter===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div>';
+
+  // 5. Pax range
+  html+='<div class="fld"><label>👥 '+bi('人数范围','Passengers')+' ('+S.fPaxMin+' - '+(S.fPaxMax>=99?'∞':S.fPaxMax)+')</label>'
+    +'<div style="display:flex;gap:6px;align-items:center">'
+    +'<input type="number" min="0" max="99" value="'+S.fPaxMin+'" onchange="S.fPaxMin=parseInt(this.value)||0;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'<span style="color:#94a3b8">→</span>'
+    +'<input type="number" min="0" max="99" value="'+S.fPaxMax+'" onchange="S.fPaxMax=parseInt(this.value)||99;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'</div></div>';
+
+  // 6. Keyword
+  html+='<div class="fld"><label>🔎 '+bi('关键词','Keyword')+' ('+bi('事由/目的地','purpose/destination')+')</label>'
+    +'<input type="text" id="pl-kw" value="'+S.fKeywordPool+'" placeholder="'+bi('搜索事由、目的地...','Search purpose, destination...')+'" oninput="S.fKeywordPool=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"></div>';
+
+  // Reset all
+  html+='<div style="margin-top:10px"><button class="bt bt-o bt-sm" onclick="resetPoolFilters()">🔄 '+T('reset')+' '+bi('全部筛选','All Filters')+'</button></div>';
+
+  html+='</div>';
+
+  // Summary stats
+  html+='<div style="display:flex;gap:8px;margin-bottom:12px"><div class="st" style="flex:1"><div class="st-n">'+pending.length+'</div><div class="st-l">⏳ '+bi('待处理','Pending')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+dispatched.length+'</div><div class="st-l">✅ '+bi('已派车','Dispatched')+'</div></div></div>';
+
+  // Pending list (selectable)
+  if(pending.length){
+    html+='<div class="sec-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')</div>';
+    pending.forEach(r=>{
+      const apv=r.approved?('<span class="tag '+(r.approved==='yes'?'tg-d':'tg-r')+'" style="margin-left:4px">'+(r.approved==='yes'?'✓':'✗')+'</span>'):'';
+      html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
+        +(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
+        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div></div></div>';
+    });
+    html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()" disabled>🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
+  }
+
+  // Dispatched list (grouped by dispatch id)
+  if(dispatched.length){
+    html+='<div class="sec-title">✅ '+bi('已派车','Dispatched')+' ('+dispatched.length+')</div>';
+    const g={};dispatched.forEach(r=>{const k=r.mergedToDispatchId||'?';if(!g[k])g[k]=[];g[k].push(r);});
+    Object.entries(g).forEach(([k,grp])=>{const dd=DB.dispatches.get().find(d=>d.id===k);
+      html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?dd.vehicle:'?')+' · '+(dd?dd.driver:'?')+' · '+fmtL(grp[0].date)+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
+        +grp.map(r=>'<div style="font-size:13px;padding:4px 0">'+dShow(r.department)+' '+r.submitter+': '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' ('+r.timeSlot+', '+r.passengers+'pax)</div>').join('')
+        +(dd&&dd.meetingPoint?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📍 '+dd.meetingPoint+'</div>':'')+'</div>';
+    });
+  }
+
+  if(!pending.length&&!dispatched.length)html+='<div class="emp">'+bi('无匹配需求','No matching requests')+'</div>';
+  return html;
+}
+function resetPoolFilters(){
+  S.fFrom='';S.fTo='';S.fDepts=[];S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;S.fKeywordPool='';renderPage();
+}
+function togR(id){const e=document.getElementById('rr-'+id);if(!e)return;
+  if(S.selReqs.has(id)){S.selReqs.delete(id);e.classList.remove('sel');}
+  else{S.selReqs.add(id);e.classList.add('sel');}
+  const b=document.getElementById('bt-disp');if(b)b.disabled=S.selReqs.size===0;}
+function togDept(d){
+  const i=S.fDepts.indexOf(d);
+  if(i>=0)S.fDepts.splice(i,1);
+  else S.fDepts.push(d);
+  renderPage();
+}
+function selAll(){const reqs=DB.requests.get().filter(r=>S.fSubmitter?r.submitter===S.fSubmitter:true);
+  const allReqs=DB.requests.get().filter(r=>{
+    if(r.status!=='pending')return false;
+    if(S.fFrom&&r.date<S.fFrom)return false;
+    if(S.fTo&&r.date>S.fTo)return false;
+    if(S.fDepts.length&&!S.fDepts.includes(r.department))return false;
+    if(S.fSubmitter&&r.submitter!==S.fSubmitter)return false;
+    return true;
+  });
+  allReqs.forEach(r=>{S.selReqs.add(r.id);const e=document.getElementById('rr-'+r.id);if(e)e.classList.add('sel');});
+  const b=document.getElementById('bt-disp');if(b)b.disabled=S.selReqs.size===0;}
+function showDisp(){
+  const vs=DB.vehicles.get(),ds=DB.drivers.get(),rl=DB.requests.get().filter(r=>S.selReqs.has(r.id));
+  const pax=rl.reduce((s,r)=>s+r.passengers,0);
+  showModal('<h3>🚗 '+T('pool_merge')+'</h3><p style="font-size:13px;color:#64748b">'+S.selReqs.size+' requests, '+pax+' pax</p>'
+    +'<div class="fld"><label>Vehicle</label><select id="md-v">'+vs.map(v=>'<option>'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Driver</label><select id="md-d">'+ds.map(d=>'<option>'+d.name+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Departure Time</label><input type="text" id="md-t" placeholder="07:00"></div>'
+    +'<div class="fld"><label>Meeting Point</label><input type="text" id="md-p" placeholder="Location"></div>'
+    +'<div class="fld"><label>Notes</label><input type="text" id="md-nt" placeholder="Notes"></div>'
+    +'<div style="text-align:right;margin-top:12px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="doDisp()">'+T('common_save')+'</button></div>',true);
+}
+function doDisp(){const rIds=[...S.selReqs];const v=document.getElementById('md-v').value.split(' - ')[0];
+  const d=document.getElementById('md-d').value,t2=document.getElementById('md-t').value.trim();
+  const p=document.getElementById('md-p').value.trim(),n=document.getElementById('md-nt').value.trim();
+  const firstR=DB.requests.get().find(r=>r.id===rIds[0]);const did=uid();
+  const ds=DB.dispatches.get();ds.push({id:did,date:firstR.date,vehicle:v,driver:d,
+    departureTime:t2||null,meetingPoint:p||null,notes:n||'',requestIds:rIds,createdAt:new Date().toISOString()});DB.dispatches.set(ds);
+  const rs=DB.requests.get();rs.forEach(r=>{if(rIds.includes(r.id)){r.status='dispatched';r.mergedToDispatchId=did;}});DB.requests.set(rs);DB.dispatches.set(ds);sbSyncOne('requests',DB.requests.get());sbSyncOne('dispatches',DB.dispatches.get());
+  S.selReqs.clear();closeModal();toast('Dispatched');renderPage();}
+function editD(did){const dd=DB.dispatches.get().find(d=>d.id===did);if(!dd)return;
+  const vs=DB.vehicles.get(),ds=DB.drivers.get();
+  showModal('<h3>Edit Dispatch</h3>'
+    +'<div class="fld"><label>Vehicle</label><select id="me-v">'+vs.map(v=>'<option value="'+v.plate+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Driver</label><select id="me-d">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+d.name+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Departure</label><input type="text" id="me-t" value="'+(dd.departureTime||'')+'"></div>'
+    +'<div class="fld"><label>Meeting Point</label><input type="text" id="me-p" value="'+(dd.meetingPoint||'')+'"></div>'
+    +'<div class="fld"><label>Notes</label><input type="text" id="me-nt" value="'+(dd.notes||'')+'"></div>'
+    +'<div style="text-align:right;margin-top:12px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveD(\''+did+'\')">'+T('common_save')+'</button></div>',true);
+}
+function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did);if(!dd)return;
+  dd.vehicle=document.getElementById('me-v').value;dd.driver=document.getElementById('me-d').value;
+  dd.departureTime=document.getElementById('me-t').value.trim()||null;
+  dd.meetingPoint=document.getElementById('me-p').value.trim()||null;
+  dd.notes=document.getElementById('me-nt').value.trim()||null;
+  DB.dispatches.set(ds);closeModal();toast('Updated');renderPage();}
+function cancelD(did){if(!confirm('Revert?'))return;
+  const ds=DB.dispatches.get();const i=ds.findIndex(d=>d.id===did);if(i===-1)return;const dd=ds[i];ds.splice(i,1);DB.dispatches.set(ds);
+  const rs=DB.requests.get();rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);toast('Reverted');renderPage();}
+
+
+// ==================== DAILY SUMMARY ====================
+function renderDaily(){
+  if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
+  const dt=S.selDate||tmrw();
+  const rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date===dt);
+  // Group by department
+  const deptGroups={};
+  rs.forEach(r=>{const d=r.department||(L==='zh'?'未知':'Unknown');if(!deptGroups[d])deptGroups[d]=[];deptGroups[d].push(r);});
+  
+  let html='<div class="card"><div class="card-h">📋 '+bi('每日汇总','Daily Summary')+' · '+fmtL(dt)+'</div>';
+  html+='<div class="fld"><label>📅 '+bi('选择日期','Select Date')+'</label>'
+    +'<input type="date" value="'+dt+'" onchange="S.selDate=this.value;renderPage()" style="padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)"></div>';
+  
+  const totalDepartments=Object.keys(deptGroups).length;
+  const totalRequests=rs.length;
+  const totalPax=rs.reduce((s,r)=>s+(r.passengers||1),0);
+  
+  html+='<div style="display:flex;gap:8px;margin-bottom:14px">'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalRequests+'</div><div class="st-l">'+bi('需求数','Requests')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalPax+'</div><div class="st-l">👥 '+bi('总人数','Total Pax')+'</div></div>'
+    +'<div class="st" style="flex:1"><div class="st-n">'+totalDepartments+'</div><div class="st-l">🏢 '+bi('涉及部门','Depts')+'</div></div>'
+    +'</div></div>';
+	
+  if(!rs.length){
+    html+='<div class="emp">'+bi('当日暂无待处理需求','No pending requests for this date')+'</div>';
+  }else{
+    // By department
+    const sortedDepts=Object.keys(deptGroups).sort((a,b)=>{
+      // 后勤部 first
+      if(a==='后勤部')return -1;if(b==='后勤部')return 1;
+      return a.localeCompare(b);
+    });
+    sortedDepts.forEach(dept=>{
+      const items=deptGroups[dept].sort((a,b)=>(a.timeSlot||'').localeCompare(b.timeSlot||''));
+      html+='<div class="card"><div class="card-h">'+dept+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+items.length+' '+bi('项','items')+')</span></div>';
+      items.forEach(r=>{
+        html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);font-size:13px;gap:8px">'
+          +'<div style="flex:1"><div style="font-weight:600;color:var(--tx);line-height:1.5">'+r.submitter+'</div>'
+          +'<div style="color:var(--tx-dim);margin-top:2px">📍 '+(L==='zh'?r.destination:(r.destinationEn||r.destination))+'</div>'
+          +'<div style="color:var(--tx-dim)">🖊 '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--ac);font-size:14px">'+r.timeSlot+'</div>'
+          +'<div style="color:var(--tx-dim);font-size:11px">👥 '+r.passengers+' pax</div>'
+          +(r.notes?'<div style="color:var(--tx-dim);font-size:10px;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 '+r.notes+'</div>':'')
+          +'</div></div>';
+      });
+      html+='</div>';
+    });
+  }
+  return html;
+}
+
+
+// ==================== RECORDS ====================
+function renderRecords(){
+  if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
+  const ds=DB.dispatches.get().sort((a,b)=>b.date.localeCompare(a.date)),rs=DB.requests.get();
+  const vs=DB.vehicles.get().map(v=>v.plate);
+  const isAdmin_=isAdmin()||(S.unlockUntil>Date.now());
+  if(isAdmin_){
+    const drivers=[...new Set(ds.map(d=>d.driver).filter(Boolean))];
+    let advHtml='<div class="card" style="border-left:3px solid #2563eb;margin-bottom:12px"><div class="card-h">🔍 Advanced Filter<span style="font-size:10px;color:#2563eb;font-weight:400;margin-left:6px">Admin</span></div>';
+    advHtml+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">';
+    advHtml+='<div class="fld" style="margin:0"><label>🔎 Keyword</label><input type="text" id="rec-kw" value="'+S.recKeyword+'" placeholder="Search purpose/destination" onchange="S.recKeyword=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"></div>';
+    advHtml+='<div class="fld" style="margin:0"><label>👤 Driver</label><select id="rec-dr" onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="">All Drivers</option>'+drivers.map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>';
+    advHtml+='<div class="fld" style="margin:0"><label>📊 Sort</label><select id="rec-sort" onchange="S.recSort=this.value;renderPage()" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px"><option value="date-desc" '+(S.recSort==='date-desc'?'selected':'')+'>Date New→Old</option><option value="date-asc" '+(S.recSort==='date-asc'?'selected':'')+'>Date Old→New</option><option value="plate-asc" '+(S.recSort==='plate-asc'?'selected':'')+'>Plate A→Z</option><option value="driver-asc" '+(S.recSort==='driver-asc'?'selected':'')+'>Driver A→Z</option></select></div></div></div>';
+  }
+  const ad=Array.from(new Set(rs.map(r=>r.department))).filter(Boolean);
+  const allSubmitters=Array.from(new Set(rs.map(r=>r.submitter))).filter(Boolean).sort();
+  if(!ds.length)return '<div class="emp">'+T('no_records')+'</div>';
+
+  // Multi-select dept chips
+  const deptChips=ad.map(d=>{
+    const sel=S.fDepts.length===0||S.fDepts.includes(d);
+    return '<button onclick="togDept(\''+d+'\')" style="padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?'#2563eb':'#e5e7eb')+';background:'+(sel?'#eff6ff':'#fff')+';color:'+(sel?'#2563eb':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+dShow(d)+'</button>';
+  }).join('');
+
+  let html=(isAdmin_?advHtml:'')+'<div class="stats"><div class="st"><div class="st-n">'+ds.length+'</div><div class="st-l">'+T('total_trips')+' / Total Trips</div></div></div>';
+  html+='<div class="card"><div class="card-h">🔍 '+bi('筛选面板','Filter Panel')+'</div>';
+  html+='<div class="fld"><label>📅 '+T('date_range')+' / Date Range</label><div style="display:flex;gap:6px;align-items:center">'
+    +'<input type="date" id="ft-f" value="'+S.fFrom+'" onchange="S.fFrom=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'<span style="color:#94a3b8">→</span>'
+    +'<input type="date" id="ft-t" value="'+S.fTo+'" onchange="S.fTo=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
+    +'</div></div>';
+  html+='<div class="fld"><label>🏢 '+T('select_depts')+(S.fDepts.length?' · '+T('selected')+' '+S.fDepts.length:'')+'</label>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
+    +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
+    +'</div></div>';
+  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'
+  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>'
+  // New: Status filter
+  +'<div class="fld"><label>🔄 '+bi('状态','Status')+'</label><div style="display:flex;gap:6px">'
+  +['all','pending','dispatched'].map(v=>{
+    const t=v==='all'?bi('全部','All'):v==='pending'?bi('待处理','Pending'):bi('已派车','Dispatched');
+    const c=v==='all'?'#2563eb':v==='pending'?'#f59e0b':'#10b981';
+    const sel=S.fStatus===v;
+    return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
+  }).join('')+'</div></div>'
+  // New: Submitter filter
+  +'<div class="fld"><label>👤 '+bi('提交人','Submitter')+'</label><select onchange="S.fSubmitter=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部','All')+'</option>'+allSubmitters.map(n=>'<option '+(S.fSubmitter===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div>'
+  // New: Pax range
+  +'<div class="fld"><label>👥 '+bi('人数范围','Passengers')+' ('+S.fPaxMin+' - '+(S.fPaxMax>=99?'∞':S.fPaxMax)+')</label><div style="display:flex;gap:6px;align-items:center">'
+  +'<input type="number" min="0" max="99" value="'+S.fPaxMin+'" onchange="S.fPaxMin=parseInt(this.value)||0;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
+  +'<span style="color:#94a3b8">→</span>'
+  +'<input type="number" min="0" max="99" value="'+S.fPaxMax+'" onchange="S.fPaxMax=parseInt(this.value)||99;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
+  +'</div></div>'
+  +'<div style="margin-top:14px;display:flex;gap:8px"><button class="bt bt-o bt-sm" onclick="resetRecFilters()">🔄 '+T('reset')+'</button><div class="sp"></div><button class="bt bt-p bt-sm" onclick="expPDF()">📄 '+bi('PDF','PDF')+'</button><button class="bt bt-o bt-sm" onclick="expXLS()">📊 '+bi('Excel','Excel')+'</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button></div>';
+  html+='</div>';
+
+  let fd=ds;
+  if(S.fFrom)fd=fd.filter(d=>d.date>=S.fFrom);
+  if(S.fTo)fd=fd.filter(d=>d.date<=S.fTo);
+  if(S.fVeh)fd=fd.filter(d=>d.vehicle===S.fVeh);
+  if(S.recKeyword){const kw=S.recKeyword.toLowerCase();fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>(r.purpose||"").toLowerCase().includes(kw)||(r.purposeEn||"").toLowerCase().includes(kw)||(r.destination||"").toLowerCase().includes(kw)||(r.destinationEn||"").toLowerCase().includes(kw));});}
+  if(S.recDriver)fd=fd.filter(d=>d.driver===S.recDriver);
+  if(S.recSort==="date-asc")fd.sort((a,b)=>a.date.localeCompare(b.date));
+  else if(S.recSort==="plate-asc")fd.sort((a,b)=>a.vehicle.localeCompare(b.vehicle));
+  else if(S.recSort==="driver-asc")fd.sort((a,b)=>a.driver.localeCompare(b.driver));
+  if(S.fDepts.length>0)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>S.fDepts.includes(r.department));});
+  // New filter: status
+  if(S.fStatus==='pending')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.every(r=>r.status==='pending');});
+  else if(S.fStatus==='dispatched')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.status==='dispatched');});
+  // New filter: submitter
+  if(S.fSubmitter)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.submitter===S.fSubmitter);});
+  // New filter: pax range
+  if(S.fPaxMin>0||S.fPaxMax<99)fd=fd.filter(d=>{const pax=rs.filter(r=>d.requestIds.includes(r.id)).reduce((s,r)=>s+(r.passengers||1),0);return pax>=S.fPaxMin&&pax<=S.fPaxMax;});
+  if(!fd.length)html+='<div class="emp">'+T('no_match')+'</div>';
+  else{html+=fd.map(d=>{
+    const rl=rs.filter(r=>d.requestIds.includes(r.id));const pax=rl.reduce((s,r)=>s+r.passengers,0);
+    const depts=[...new Set(rl.map(r=>r.department))];
+    const prps=L==='zh'?[...new Set(rl.map(r=>r.purpose))].join('；'):[...new Set(rl.map(r=>r.purposeEn||r.purpose))].join('; ');
+    const prpsE=L==='zh'&&rl.some(r=>r.purposeEn)?[...new Set(rl.map(r=>r.purposeEn))].join('; '):'';
+    return '<div class="card"><div class="card-h"><div>📅 '+fmtL(d.date)+' ('+d.date+') · 🚗 '+d.vehicle+' · 👤 '+d.driver+'</div><button class="bt bt-o bt-sm" onclick="editD(\''+d.id+'\')">'+T('edit')+'</button></div>'
+      +'<div style="font-size:13px;color:#64748b">'+T('pax')+': '+pax+' · '+T('dept')+': '+depts.map(dShow).join(' / ')+' · '+T('meeting_point')+': '+(d.meetingPoint||'—')+'</div>'
+      +'<div style="font-size:14px;margin-top:4px;color:#0f172a">'+prps+'</div>'
+      +(prpsE?'<div style="font-size:13px;color:#64748b;font-style:italic;margin-top:2px">'+prpsE+'</div>':'')
+      +(d.notes?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📝 '+T('notes')+': '+d.notes+'</div>':'')
+      +'</div>';
+  }).join('');}
+  return html;
+}
+
+function resetRecFilters(){
+  S.fFrom='';S.fTo='';S.fDepts=[];S.fVeh='';S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;renderPage();
+}
+
+// ==================== SETTINGS ====================
+function renderSettings(){
+  const vs=DB.vehicles.get(),ds=DB.drivers.get();
+  const unlocked=S.unlockUntil>Date.now();
+  const showAdmin=isAdmin()||unlocked;
+  let html='';
+
+  // Admin section only visible when admin or unlocked
+  if(showAdmin){
+    html+='<div class="card" style="border-left:3px solid #f59e0b"><div class="card-h">🔐 '+T('common_unlockTitle')+(unlocked&&!isAdmin()?' <span style="background:#dc2626;color:#fff;font-size:11px;padding:2px 8px;border-radius:4px;margin-left:8px">UNLOCKED</span>':'')+'</div>';
+    if(unlocked&&!isAdmin()){
+      html+='<button class="bt bt-d bt-sm" onclick="lockAdmin()" style="margin-bottom:8px">🔒 '+T('common_lockedMsg')+'</button>';
+    }
+    html+='<div class="fld" style="margin-top:8px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
+      +'<button class="bt bt-p bt-sm" onclick="changeAdminPw()">'+T('common_save')+'</button></div>';
+  }else{
+    html+='<div class="card" style="background:rgba(37,99,235,.05);border:1px dashed #94a3b8;text-align:center;color:#64748b;font-size:13px"><div style="padding:6px">🔒 '+T('common_locked')+'</div></div>';
+  }
+  html+='<div class="card"><div class="card-h">🔐 '+bi('修改个人密码','Change My Password')+'</div>'
+    +'<div style="font-size:12px;color:#64748b;margin-bottom:10px">'+bi('设置后登录时使用个人密码代替系统邀请码','After setting, use personal password instead of system invite code to login')+'</div>'
+    +'<div class="fld"><label>'+bi('当前密码/邀请码','Current Password / Invite Code')+'</label><input type="password" id="my-old-pw" placeholder="Current password or invite code"></div>'
+    +'<div class="fld"><label>'+bi('新密码','New Password')+' <small style="color:#94a3b8;font-weight:400">('+bi('至少4位','min 4 chars')+')</small></label><input type="password" id="my-new-pw" placeholder="New password"></div>'
+    +'<button class="bt bt-p bt-sm" onclick="changeMyPw()">'+T('common_save')+'</button></div>';
+
+  html+='<div class="card"><div class="card-h">💾 '+T('backup')+' / Data Backup</div><div style="display:flex;gap:6px;flex-wrap:wrap">'
+    +'<button class="bt bt-o bt-sm" onclick="expData()">📥 '+T('export_json')+'</button>'
+    +(showAdmin?'<button class="bt bt-o bt-sm" onclick="document.getElementById(\'ifile\').click()">📤 '+T('import_json')+'</button><input type="file" id="ifile" accept=".json" onchange="impData(this)" style="display:none"><button class="bt bt-d bt-sm" onclick="wipe()">⚠ '+T('clear_data')+'</button>':'')
+    +'</div><p style="font-size:11px;color:#94a3b8;margin-top:6px">Data stored in browser localStorage. Export regularly.</p></div>';
+
+  // System settings (admin only)
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">⚙️ '+bi('系统设置','System Settings')+'</div>'
+      +'<div class="fld"><label>'+bi('系统名称（中文）','System Name (CN)')+'</label>'
+      +'<input type="text" id="st-syscn" value="'+DB.sysName.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+      +'<div class="fld"><label>'+bi('系统名称（英文）','System Name (EN)')+'</label>'
+      +'<input type="text" id="st-sysen" value="'+DB.sysNameEn.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+      +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
+  }
+
+  // Admin feature toggles
+    html+='<div class="card"><div class="card-h">⚙️ '+bi('功能开关','Feature Toggles')+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">📅 '+bi('日期范围开关','Date Range')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.dateRange.get()?bi('开启：允许30天内自由选','ON: 30-day calendar'):bi('关闭：仅允许明天或后天','OFF: tomorrow/after-tomorrow only'))+'</div></div>'
+      +'<button class="bt '+((DB.dateRange.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.dateRange.set(!DB.dateRange.get());renderPage()">'+(DB.dateRange.get()?'ON':'OFF')+'</button></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">⏰ '+bi('多时段开关','Multi-slot')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.multiSlot.get()?bi('开启：允许同一路线多组出发/返程','ON: multiple time slots per request'):bi('关闭：每组单时段','OFF: single slot only'))+'</div></div>'
+      +'<button class="bt '+((DB.multiSlot.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.multiSlot.set(!DB.multiSlot.get());renderPage()">'+(DB.multiSlot.get()?'ON':'OFF')+'</button></div>'
+      +'</div>';
+
+  // Department management (admin only)
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">🏢 '+bi('部门管理','Departments')+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+getDepts().length+' '+bi('个','depts')+')</span></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:10px">'+bi('删除部门将同时删除该部门所有人员','Deleting a department also removes all its staff')+'</div>'
+      +getDepts().map((d,i)=>{
+        const cnt=(DB.users.get()||[]).filter(u=>u.department===d.cn).length;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd);font-size:13px">'
+          +'<div style="flex:1"><strong>'+d.cn+'</strong> <span style="color:var(--tx-dim);font-size:11px">/'+(d.en||'')+'</span>'
+          +'<span style="background:var(--ac);color:#fff;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:8px">'+cnt+' '+bi('人','pax')+'</span></div>'
+          +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="bt bt-o bt-sm" onclick="editDept('+i+')">'+T('edit')+'</button>'
+          +'<button class="bt bt-d bt-sm" onclick="delDept('+i+')">'+T('del')+'</button></div></div>';
+      }).join('')
+      +'<div style="margin-top:10px;padding:12px;border:1px dashed var(--bd-hi);border-radius:8px;background:var(--bg-soft)">'
+      +'<div style="font-weight:600;margin-bottom:8px;font-size:13px">+ '+bi('新增部门','Add Department')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+      +'<input id="nd-cn" placeholder="'+bi('中文名','CN name')+'" style="flex:1;min-width:90px;padding:9px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;background:var(--bg-soft);color:var(--tx)">'
+      +'<input id="nd-en" placeholder="'+bi('英文名','EN name')+'" style="flex:1;min-width:90px;padding:9px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;background:var(--bg-soft);color:var(--tx)">'
+      +'<button class="bt bt-p bt-sm" onclick="addDept()">+ '+T('add')+'</button></div></div></div>';
+  }
+
+  html+='<div style="text-align:center;margin-top:16px"><button class="bt bt-o bt-sm" onclick="logout()">Logout</button></div>';
+  return html;
+}
+
+function addDept(){
+  const cn=document.getElementById('nd-cn').value.trim();
+  const en=document.getElementById('nd-en').value.trim();
+  if(!cn)return toast(bi('请输入中文部门名','Enter CN department name'));
+  const depts=getDepts();
+  if(depts.find(d=>d.cn===cn))return toast(bi('部门已存在','Department exists'));
+  depts.push({cn,en:en||cn});
+  DB.depts.set(depts);toast('✅ '+bi('已新增','Added'));renderPage();
+}
+function delDept(i){
+  const depts=getDepts();
+  const d=depts[i];if(!d)return;
+  if(!confirm(bi('删除部门「'+d.cn+'」将同时删除该部门全部人员，确定？','Delete dept "'+d.cn+'" will also remove all its staff. Confirm?')))return;
+  depts.splice(i,1);
+  DB.depts.set(depts);
+  // Remove users of this dept (option C: delete staff together)
+  const us=(DB.users.get()||[]).filter(u=>u.department!==d.cn);
+  DB.users.set(us);
+  toast('✅ '+bi('已删除部门及人员','Dept & staff removed'));renderPage();
+}
+function editDept(i){
+  const depts=getDepts();
+  const d=depts[i];if(!d)return;
+  const cn=prompt(bi('中文名','CN name'),d.cn);
+  if(!cn)return;
+  const en=prompt(bi('英文名','EN name'),d.en||d.cn);
+  d.cn=cn;d.en=en||cn;
+  DB.depts.set(depts);
+  toast('✅ '+bi('已更新','Updated'));renderPage();
+}
+
+function changeAdminPw(){
+  const pw=document.getElementById('new-pw').value.trim();
+  if(!pw||pw.length<4)return toast('Password too short');
+  localStorage.setItem('kmc2_admin_pw',pw);
+  document.getElementById('new-pw').value='';
+  toast('Password updated');
+}
+
+function addV(){const p=document.getElementById('nv-p').value.trim(),t=document.getElementById('nv-t').value.trim(),te=document.getElementById('nv-te').value.trim(),s=parseInt(document.getElementById('nv-s').value)||5;
+  if(!p||!t)return;const vs=DB.vehicles.get();vs.push({plate:p,type:t,typeEn:te||t,seats:s});DB.vehicles.set(vs);sbSyncOne('vehicles',DB.vehicles.get());toast('Added');renderPage();}
+function editV(i){const v=DB.vehicles.get()[i];
+  showModal('<h3>'+T('edit')+' '+T('vehicles')+'</h3>'
+    +'<div class="fld"><label>'+bi('车牌','Plate')+'</label><input id="ev-p" value="'+v.plate+'"></div>'
+    +'<div class="fld"><label>'+bi('车型 CN','Type CN')+'</label><input id="ev-t" value="'+v.type+'"></div>'
+    +'<div class="fld"><label>'+bi('车型 EN','Type EN')+'</label><input id="ev-te" value="'+(v.typeEn||'')+'"></div>'
+    +'<div class="fld"><label>'+T('seats')+'</label><input id="ev-s" type="number" value="'+v.seats+'"></div>'
+    +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveV('+i+')">'+T('common_save')+'</button></div>',true);}
+function saveV(i){const vs=DB.vehicles.get();vs[i].plate=document.getElementById('ev-p').value.trim();vs[i].type=document.getElementById('ev-t').value.trim();vs[i].typeEn=document.getElementById('ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt(document.getElementById('ev-s').value)||5;DB.vehicles.set(vs);closeModal();toast('Updated');renderPage();}
+function delV(i){if(!confirm(T('common_cancel')+'?'))return;const vs=DB.vehicles.get();vs.splice(i,1);DB.vehicles.set(vs);toast('Deleted');renderPage();}
+function addDr(){const n=document.getElementById('nd-n').value.trim();if(!n)return;const ds=DB.drivers.get();ds.push({name:n});DB.drivers.set(ds);sbSyncOne('drivers',DB.drivers.get());toast('Added');renderPage();}
+function editDr(i){const d=DB.drivers.get()[i];
+  showModal('<h3>'+T('edit')+' '+T('drivers')+'</h3>'
+    +'<div class="fld"><label>'+bi('司机姓名','Driver Name')+'</label><input id="ed-n" value="'+d.name+'"></div>'
+    +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveDr('+i+')">'+T('common_save')+'</button></div>',true);}
+function saveDr(i){const ds=DB.drivers.get();ds[i].name=document.getElementById('ed-n').value.trim();DB.drivers.set(ds);closeModal();toast('Updated');renderPage();}
+function delDr(i){if(!confirm(T('common_cancel')+'?'))return;const ds=DB.drivers.get();ds.splice(i,1);DB.drivers.set(ds);toast('Deleted');renderPage();}
+
+// User management - distribute/delete accounts covering all departments
+function addUser(){
+  const name=document.getElementById('nu-n').value.trim();
+  const dept=document.getElementById('nu-d').value;
+  if(!name||!dept)return toast('Name and Department required');
+  const us=DB.users.get();
+  if(us.find(u=>u.name===name&&u.department===dept))return toast('User already exists');
+  us.push({name,department:dept,role:'user',firstLogin:new Date().toISOString(),lastLogin:'-'});
+  DB.users.set(us);toast('Added');renderPage();
+}
+function delUser(i){
+  if(!confirm(T('common_cancel')+'?'))return;
+  const us=DB.users.get();us.splice(i,1);DB.users.set(us);toast('Deleted');renderPage();
+}
+function editUser(i){
+  const u=DB.users.get()[i];
+  showModal('<h3>'+T('edit')+' '+T('user_name')+'</h3>'
+    +'<div class="fld"><label>'+T('user_name')+' / Name</label><input id="eu-n" value="'+u.name+'"></div>'
+    +'<div class="fld"><label>'+T('user_dept')+' / Department</label><select id="eu-d">'+getDepts().map(d=>'<option value="'+d.cn+'" '+(d.cn===u.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>'+T('user_role')+' / Role</label><select id="eu-r"><option value="user" '+(u.role==='user'?'selected':'')+'>User 用户</option><option value="admin" '+(u.role==='admin'?'selected':'')+'>Admin 管理员</option></select></div>'
+    +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveUser('+i+')">'+T('common_save')+'</button></div>',true);
+}
+function saveUser(i){
+  const us=DB.users.get();const old=us[i];
+  const oldName=old.name,oldDept=old.department;
+  us[i].name=document.getElementById('eu-n').value.trim()||old.name;
+  us[i].department=document.getElementById('eu-d').value;
+  us[i].role=document.getElementById('eu-r').value;
+  DB.users.set(us);
+  // Update related requests
+  const rs=DB.requests.get();
+  rs.forEach(r=>{if(r.submitter===oldName&&r.department===oldDept){r.submitter=us[i].name;r.department=us[i].department;}});
+  DB.requests.set(rs);closeModal();toast('Updated');renderPage();
+}
+function expData(){localStorage.setItem('kmc_last_backup',today());const data={vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),users:DB.users.get(),invite:DB.invite.get(),exportedAt:new Date().toISOString()};
+  const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Data_'+today()+'.json';a.click();URL.revokeObjectURL(u);toast('Exported');}
+function impData(inp){if(!isAdmin())return;const f=inp.files[0];if(!f||!confirm('Overwrite all data?')){inp.value='';return;}
+  const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.vehicles)DB.vehicles.set(d.vehicles);if(d.drivers)DB.drivers.set(d.drivers);if(d.requests)DB.requests.set(d.requests);if(d.dispatches)DB.dispatches.set(d.dispatches);if(d.users)DB.users.set(d.users);if(d.invite)DB.invite.set(d.invite);toast('Imported');renderPage();}catch{toast('Invalid file');}};r.readAsText(f);inp.value='';}
+function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Delete everything?'))return;
+  ['vehicles','drivers','requests','dispatches','users','imported'].forEach(k=>LS(k).set([]));DB.init();toast('Cleared');renderPage();}
+
+// ==================== BOOT ====================
+(function(){
+  const u=DB.user.get();
+  if(u){S.user=u;showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
+})();
+
+
+// Backup reminder - remind admin to export every 7 days
+function checkBackupReminder(){
+  const lastBackup=localStorage.getItem('kmc_last_backup')||'';
+  if(!lastBackup){
+    localStorage.setItem('kmc_last_backup',today());
+    return;
+  }
+  const last=new Date(lastBackup),now=new Date();
+  const days=Math.floor((now-last)/86400000);
+  if(days>=7&&isAdmin()){
+    const doIt=confirm(bi('距上次备份已 '+days+' 天，建议现在导出 JSON 备份（设置→数据备份）。是否立即导出？','Last backup was '+days+' days ago. Export JSON backup now?'));
+    if(doIt){expData();localStorage.setItem('kmc_last_backup',today());}
+  }
+}
+
+// Auto-sync every 60 seconds
+setInterval(async()=>{
+  if(syncStatus==='syncing')return;
+  syncStatus='syncing';
+  updateSyncIcon();
+  try{
+    await Promise.race([syncAll(),new Promise((_,r)=>setTimeout(()=>r('timeout'),8000))]);
+    syncStatus='ok';
+    setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},2000);
+  }catch(e){
+    syncStatus='error';
+    setTimeout(()=>{syncStatus='idle';updateSyncIcon();},3000);
+  }
+  updateSyncIcon();
+},60000);
+
+</script>
+</body>
+</html>
