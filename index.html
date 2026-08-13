@@ -350,6 +350,7 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 </style></style>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -549,67 +550,78 @@ function closeModal(){document.getElementById('modal-root').innerHTML='';}
 
 
 
-const REPO_OWNER='qiuxunshi-png';
-const REPO_NAME='kmc-sync-data';
-const DATA_FILE='kmc-data.json';
-let gistToken=localStorage.getItem('kmc_gist_token')||'';
+// ==================== SUPABASE 数据层（方案A：多人实时同步） ====================
+const SUPABASE_URL='https://ssydtlyybnknxdsuimx.supabase.co';
+const SUPABASE_ANON='sb_publishable_DxBm-qz2vB9gN3UlJKW7ZA_9dnD9iCk';
+let sbClient=null;
+function sbInit(){
+  if(sbClient)return sbClient;
+  if(typeof supabase==='undefined'){return null;}
+  try{sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);}catch(e){console.error('sbInit',e);return null;}
+  return sbClient;
+}
+// 字段映射：本地数据 -> Supabase 行
+const _mapV=v=>({plate:v.plate,type:v.type||'',typeEn:v.typeEn||'',seats:v.seats||0});
+const _mapD=d=>({name:d.name});
+const _mapDt=d=>({cn:d.cn,en:d.en||''});
+const _mapU=u=>({name:u.name,department:u.department,role:u.role||'user',password:u.password||'',firstLogin:u.firstLogin||null,lastLogin:u.lastLogin||null});
 
+// 读全部数据（Supabase -> 本地结构）
 async function repoRead(){
+  const sb=sbInit();if(!sb)return null;
   try{
-    const r=await fetch('https://raw.githubusercontent.com/'+REPO_OWNER+'/'+REPO_NAME+'/main/'+DATA_FILE);
-    if(!r.ok)return null;
-    const text=await r.text();
-    if(!text||text.trim()==='')return null;
-    return JSON.parse(text);
-  }catch(e){return null;}
+    const [v,d,u,r,dp,dt]=await Promise.all([
+      sb.from('vehicles').select('*'),
+      sb.from('drivers').select('*'),
+      sb.from('users').select('*'),
+      sb.from('requests').select('*'),
+      sb.from('dispatches').select('*'),
+      sb.from('depts').select('*'),
+    ]);
+    return {
+      vehicles:(v.data||[]).map(x=>({plate:x.plate,type:x.type,typeEn:x.typeEn,seats:x.seats})),
+      drivers:(d.data||[]).map(x=>({name:x.name})),
+      users:u.data||[],
+      requests:r.data||[],
+      dispatches:dp.data||[],
+      depts:(dt.data||[]).map(x=>({cn:x.cn,en:x.en})),
+    };
+  }catch(e){console.error('repoRead',e);return null;}
 }
 
+// 全量写（upsert 6 张表，按主键合并，多人并发不丢单）
 async function repoWrite(data){
-  if(!gistToken)return false;
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2))));
-  // 最多尝试 2 次：第 2 次重取 sha，处理 422 竞态
-  for(let attempt=0;attempt<2;attempt++){
-    try{
-      // 每次重取当前 SHA
-      const getR=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
-        headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json'}
-      });
-      let sha=null;
-      if(getR.ok){const j=await getR.json();sha=j.sha;}
-      const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
-        method:'PUT',
-        headers:{
-          'Authorization':'token '+gistToken,
-          'Accept':'application/vnd.github+json',
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({message:'Sync from KMC Dispatcher',content:content,sha:sha})
-      });
-      if(r.ok)return true;
-      // 401/403 = token 失效，不重试
-      if(r.status===401||r.status===403)return false;
-      // 422 = sha 冲突，重试一次；其他错误直接失败
-      if(r.status!==422)return false;
-    }catch(e){return false;}
-  }
-  return false;
+  const sb=sbInit();if(!sb)return false;
+  try{
+    if(data.vehicles&&data.vehicles.length){const{error}=await sb.from('vehicles').upsert(data.vehicles.map(_mapV));if(error)console.warn('vehicles',error.message);}
+    if(data.drivers&&data.drivers.length){const{error}=await sb.from('drivers').upsert(data.drivers.map(_mapD));if(error)console.warn('drivers',error.message);}
+    if(data.users&&data.users.length){const{error}=await sb.from('users').upsert(data.users.map(_mapU));if(error)console.warn('users',error.message);}
+    if(data.requests&&data.requests.length){const{error}=await sb.from('requests').upsert(data.requests);if(error)console.warn('requests',error.message);}
+    if(data.dispatches&&data.dispatches.length){const{error}=await sb.from('dispatches').upsert(data.dispatches);if(error)console.warn('dispatches',error.message);}
+    if(data.depts&&data.depts.length){const{error}=await sb.from('depts').upsert(data.depts.map(_mapDt));if(error)console.warn('depts',error.message);}
+    return true;
+  }catch(e){console.error('repoWrite',e);return false;}
 }
 
-// 触发 GitHub Actions workflow_dispatch（自托管 Runner 后台链路）
-async function triggerRunner(action, payload){
-  if(!gistToken)return false;
+// 单表增量 upsert（写操作后即时同步，免 token）
+async function sbSyncOne(table,data){
+  const sb=sbInit();if(!sb)return;
   try{
-    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/actions/workflows/sync.yml/dispatches',{
-      method:'POST',
-      headers:{
-        'Authorization':'token '+gistToken,
-        'Accept':'application/vnd.github+json',
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({ref:'main',inputs:{action:action||'read',payload:payload||''}})
-    });
-    return r.status===204;
-  }catch(e){return false;}
+    const items=Array.isArray(data)?data:[data];
+    let rows=items;
+    if(table==='vehicles')rows=items.map(_mapV);
+    else if(table==='drivers')rows=items.map(_mapD);
+    else if(table==='depts')rows=items.map(_mapDt);
+    else if(table==='users')rows=items.map(_mapU);
+    const{error}=await sb.from(table).upsert(rows);
+    if(error)console.warn('sbSyncOne',table,error.message);
+  }catch(e){console.error('sbSyncOne',table,e);}
+}
+
+// 单条删除（撤回需求 / 删司机等）
+async function sbDelOne(table,key,value){
+  const sb=sbInit();if(!sb)return;
+  try{const{error}=await sb.from(table).delete().eq(key,value);if(error)console.warn('sbDelOne',error.message);}catch(e){console.error('sbDelOne',e);}
 }
 
 // Sync icon update
@@ -634,11 +646,6 @@ function updateSyncIcon(){
   });
 }
 
-// Single-table quick sync (used after data mutations)
-async function sbSyncOne(table,data){
-  if(!syncAvailable)return;
-  await repoWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),depts:DB.depts.get()||DEFAULT_DEPTS});
-}
 
 async function manualSync(){
   if(syncStatus==='syncing')return;
@@ -657,28 +664,21 @@ async function manualSync(){
   setTimeout(()=>{if(syncStatus==='ok'||syncStatus==='error'){syncStatus='idle';updateSyncIcon();}},3000);
 }
 
-function saveGistToken(){
-  const t=document.getElementById('st-gist-token').value.trim();
-  if(t){gistToken=t;localStorage.setItem('kmc_gist_token',t);toast('Token saved');syncStatus='idle';updateSyncIcon();setTimeout(()=>manualSync(),500);}
-  else{toast('Enter token first');}
-}
 
 
 let syncAvailable=false;
 async function syncAll(){
+  const sb=sbInit();
+  if(!sb){syncAvailable=false;return;}
   try{
-    if(!gistToken){
-      gistToken=localStorage.getItem('kmc_gist_token')||'';
-      if(!gistToken){syncAvailable=false;return;}
-    }
     const remote=await repoRead();
     if(remote){
-      syncAvailable=true;
-      if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles||[]);
-      if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers||[]);
-      if(remote.users&&remote.users.length)DB.users.set(remote.users||[]);
-      if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests||[]);
-      if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches||[]);
+      // 远端非空才覆盖本地（避免空远端清空本地）
+      if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles);
+      if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers);
+      if(remote.users&&remote.users.length)DB.users.set(remote.users);
+      if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
+      if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches);
       if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
     }
     const data={
@@ -690,15 +690,39 @@ async function syncAll(){
       depts:DB.depts.get()||DEFAULT_DEPTS,
     };
     const ok=await repoWrite(data);
-    // 写成功即置 syncAvailable=true（修复首次同步卡死：远端无数据时读返回 null，但写成功仍应可用）
-    if(ok){
-      syncAvailable=true;
-      // 后台触发 Runner（fire-and-forget，失败不阻塞前端）
-      triggerRunner('read','').catch(()=>{});
-    }else{
-      syncAvailable=false;
-    }
+    syncAvailable=ok;
+    if(ok)setupRealtime();
   }catch(e){console.error('syncAll',e);syncAvailable=false;}
+}
+
+// 只读刷新（实时订阅触发，不写回，避免循环）
+async function pullFromCloud(){
+  const remote=await repoRead();
+  if(!remote)return;
+  if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles);
+  if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers);
+  if(remote.users&&remote.users.length)DB.users.set(remote.users);
+  if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
+  if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches);
+  if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
+  if(S.user)renderPage();
+}
+
+// 实时订阅（Supabase Realtime）
+let _rtSetup=false;
+function setupRealtime(){
+  if(_rtSetup)return;
+  const sb=sbInit();if(!sb)return;
+  try{
+    _rtSetup=true;
+    const ch=sb.channel('kmc-live');
+    ['requests','dispatches','vehicles','drivers','users','depts'].forEach(t=>{
+      ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{
+        setTimeout(()=>{pullFromCloud().catch(()=>{});},400);
+      });
+    });
+    ch.subscribe();
+  }catch(e){console.error('realtime',e);}
 }
 const DB={
   vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),
@@ -1686,6 +1710,7 @@ function recallReq(rid){
   if(idx===-1)return toast('Not found');
   reqs.splice(idx,1);
   DB.requests.set(reqs);
+  sbDelOne('requests','id',rid); // 同步删除云端
   toast(L==='zh'?'✅ 已撤回':'Recalled');
   renderPage();
 }
@@ -2135,7 +2160,10 @@ function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did)
   DB.dispatches.set(ds);closeModal();toast('Updated');renderPage();}
 function cancelD(did){if(!confirm('Revert?'))return;
   const ds=DB.dispatches.get();const i=ds.findIndex(d=>d.id===did);if(i===-1)return;const dd=ds[i];ds.splice(i,1);DB.dispatches.set(ds);
-  const rs=DB.requests.get();rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);toast('Reverted');renderPage();}
+  const rs=DB.requests.get();rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);
+  sbDelOne('dispatches','id',did); // 同步删云端派车单
+  sbSyncOne('requests',rs); // 同步恢复需求状态
+  toast('Reverted');renderPage();}
 
 
 // ==================== DAILY SUMMARY ====================
@@ -2322,16 +2350,14 @@ function renderSettings(){
       +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
   }
 
-  // Cloud sync settings (admin only) - 修复 Token 录入 UI 缺失
+  // Cloud sync settings (admin only) - Supabase 实时云同步
   if(showAdmin){
-    html+='<div class="card"><div class="card-h">☁️ '+bi('云同步设置','Cloud Sync')+' <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('GitHub 仓库 kmc-sync-data','GitHub repo kmc-sync-data')+'</span></div>'
-      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:8px">'+bi('粘贴 GitHub Fine-grained Token（需 Contents 读写权限），保存后自动同步','Paste GitHub Fine-grained Token (Contents read/write), auto-sync after save')+'</div>'
-      +'<div class="fld"><label>🔑 '+bi('GitHub Token','GitHub Token')+'</label>'
-      +'<input type="password" id="st-gist-token" value="'+gistToken+'" placeholder="github_pat_..." style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;background:var(--bg-soft);color:var(--tx);font-family:monospace"></div>'
+    html+='<div class="card"><div class="card-h">☁️ '+bi('云同步设置','Cloud Sync')+' <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('Supabase 实时数据库','Supabase Realtime')+'</span></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:8px">'+bi('已接入 Supabase 云端：员工免 token 提交，多人实时同步，无需额外配置','Connected to Supabase: staff submit without token, realtime multi-device sync, no extra config')+'</div>'
       +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
-      +'<button class="bt bt-p bt-sm" onclick="saveGistToken()">'+T('common_save')+'</button>'
-      +'<button class="bt bt-o bt-sm" onclick="manualSync()">☁️ '+bi('立即同步','Sync Now')+'</button>'
-      +'<div style="font-size:11px;color:var(--tx-dim);margin-left:auto">'+(syncAvailable?bi('✅ 云端已连接','✅ Cloud connected'):bi('⚠ 未连接（无 token 或同步失败）','⚠ Not connected (no token or sync failed)'))+'</div>'
+      +'<button class="bt bt-p bt-sm" onclick="manualSync()">☁️ '+bi('立即同步','Sync Now')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="syncAll()">🔄 '+bi('拉取最新数据','Pull Latest')+'</button>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-left:auto">'+(syncAvailable?bi('✅ 云端已连接','✅ Cloud connected'):bi('⚠ 未连接（请先执行建表 SQL）','⚠ Not connected (run setup SQL first)'))+'</div>'
       +'</div></div>';
   }
 
@@ -2389,6 +2415,8 @@ function delDept(i){
   // Remove users of this dept (option C: delete staff together)
   const us=(DB.users.get()||[]).filter(u=>u.department!==d.cn);
   DB.users.set(us);
+  sbDelOne('depts','cn',d.cn); // 同步删云端部门
+  const sb=sbInit();if(sb)sb.from('users').delete().eq('department',d.cn).then(()=>{}); // 同步删该部门用户
   toast('✅ '+bi('已删除部门及人员','Dept & staff removed'));renderPage();
 }
 function editDept(i){
@@ -2420,14 +2448,14 @@ function editV(i){const v=DB.vehicles.get()[i];
     +'<div class="fld"><label>'+T('seats')+'</label><input id="ev-s" type="number" value="'+v.seats+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveV('+i+')">'+T('common_save')+'</button></div>',true);}
 function saveV(i){const vs=DB.vehicles.get();vs[i].plate=document.getElementById('ev-p').value.trim();vs[i].type=document.getElementById('ev-t').value.trim();vs[i].typeEn=document.getElementById('ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt(document.getElementById('ev-s').value)||5;DB.vehicles.set(vs);closeModal();toast('Updated');renderPage();}
-function delV(i){if(!confirm(T('common_cancel')+'?'))return;const vs=DB.vehicles.get();vs.splice(i,1);DB.vehicles.set(vs);toast('Deleted');renderPage();}
+function delV(i){if(!confirm(T('common_cancel')+'?'))return;const vs=DB.vehicles.get();const plate=vs[i]&&vs[i].plate;vs.splice(i,1);DB.vehicles.set(vs);if(plate)sbDelOne('vehicles','plate',plate);toast('Deleted');renderPage();}
 function addDr(){const n=document.getElementById('nd-n').value.trim();if(!n)return;const ds=DB.drivers.get();ds.push({name:n});DB.drivers.set(ds);sbSyncOne('drivers',DB.drivers.get());toast('Added');renderPage();}
 function editDr(i){const d=DB.drivers.get()[i];
   showModal('<h3>'+T('edit')+' '+T('drivers')+'</h3>'
     +'<div class="fld"><label>'+bi('司机姓名','Driver Name')+'</label><input id="ed-n" value="'+d.name+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveDr('+i+')">'+T('common_save')+'</button></div>',true);}
 function saveDr(i){const ds=DB.drivers.get();ds[i].name=document.getElementById('ed-n').value.trim();DB.drivers.set(ds);closeModal();toast('Updated');renderPage();}
-function delDr(i){if(!confirm(T('common_cancel')+'?'))return;const ds=DB.drivers.get();ds.splice(i,1);DB.drivers.set(ds);toast('Deleted');renderPage();}
+function delDr(i){if(!confirm(T('common_cancel')+'?'))return;const ds=DB.drivers.get();const name=ds[i]&&ds[i].name;ds.splice(i,1);DB.drivers.set(ds);if(name)sbDelOne('drivers','name',name);toast('Deleted');renderPage();}
 
 // User management - distribute/delete accounts covering all departments
 function addUser(){
@@ -2437,11 +2465,13 @@ function addUser(){
   const us=DB.users.get();
   if(us.find(u=>u.name===name&&u.department===dept))return toast('User already exists');
   us.push({name,department:dept,role:'user',firstLogin:new Date().toISOString(),lastLogin:'-'});
-  DB.users.set(us);toast('Added');renderPage();
+  DB.users.set(us);sbSyncOne('users',us);toast('Added');renderPage();
 }
 function delUser(i){
   if(!confirm(T('common_cancel')+'?'))return;
-  const us=DB.users.get();us.splice(i,1);DB.users.set(us);toast('Deleted');renderPage();
+  const us=DB.users.get();const u=us[i];us.splice(i,1);DB.users.set(us);
+  if(u){const sb=sbInit();if(sb)sb.from('users').delete().eq('name',u.name).eq('department',u.department).then(()=>{});}
+  toast('Deleted');renderPage();
 }
 function editUser(i){
   const u=DB.users.get()[i];
@@ -2457,7 +2487,7 @@ function saveUser(i){
   us[i].name=document.getElementById('eu-n').value.trim()||old.name;
   us[i].department=document.getElementById('eu-d').value;
   us[i].role=document.getElementById('eu-r').value;
-  DB.users.set(us);
+  DB.users.set(us);sbSyncOne('users',us);
   // Update related requests
   const rs=DB.requests.get();
   rs.forEach(r=>{if(r.submitter===oldName&&r.department===oldDept){r.submitter=us[i].name;r.department=us[i].department;}});
