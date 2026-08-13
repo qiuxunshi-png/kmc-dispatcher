@@ -1674,9 +1674,8 @@ function doSubmit(){
       }
     });
   }
-  const paxRaw=document.getElementById('rq-pax-names').value.trim();
-  const paxNames=paxRaw?(paxRaw.split(/[,\n\r，]/).map(s=>s.trim()).filter(Boolean)):[];
-  const pax=paxNames.length||1;
+  const pax=parseInt(document.getElementById('rq-pax').value)||1;
+  const paxNames=[];
   const purpose=document.getElementById('rq-purpose').value.trim();
   const purposeEn=document.getElementById('rq-purposeEn').value.trim();
   const dest=document.getElementById('rq-dest').value.trim();
