@@ -13,7 +13,11 @@
   --ac:#5b8af5;--ac-g:linear-gradient(135deg,#5b8af5,#7c5bf5);
   --gn:#34c77b;--gn-g:linear-gradient(135deg,#34c77b,#2db88a);
   --rd:#f5555d;--rd-g:linear-gradient(135deg,#f5555d,#e04050);
-  --or:#f5a623;
+  --or:#f5a623;--or-g:linear-gradient(135deg,#f5a623,#e89313);
+  --warn-bg:rgba(245,166,35,0.08);--warn-bd:rgba(245,166,35,0.3);
+  --info-bg:rgba(91,138,245,0.08);--info-bd:rgba(91,138,245,0.3);
+  --danger-bg:rgba(245,85,93,0.08);--danger-bd:rgba(245,85,93,0.3);
+  --success-bg:rgba(52,199,123,0.06);--success-bd:rgba(52,199,123,0.3);
   --rx:12px;--rx-lg:16px;--rx-sm:8px;
   --sh:0 4px 16px rgba(0,0,0,0.25);
   --sh-lg:0 12px 40px rgba(0,0,0,0.5);
@@ -23,7 +27,15 @@
 html[data-theme="light"]{
   --bg:#f5f7fa;--bg-soft:#fff;--bg-elevated:#fff;
   --bd:rgba(0,0,0,0.06);--bd-hi:rgba(0,0,0,0.12);
-  --tx:#1f2937;--tx-dim:#6b7280;--tx-muted:#9ca3af;
+  --tx:#0f172a;--tx-dim:#475569;--tx-muted:#94a3b8;
+  --ac:#3b82f6;--ac-g:linear-gradient(135deg,#3b82f6,#6366f1);
+  --gn:#10b981;--gn-g:linear-gradient(135deg,#10b981,#059669);
+  --rd:#ef4444;--rd-g:linear-gradient(135deg,#ef4444,#dc2626);
+  --or:#f59e0b;--or-g:linear-gradient(135deg,#f59e0b,#d97706);
+  --warn-bg:rgba(245,158,11,0.08);--warn-bd:rgba(245,158,11,0.3);
+  --info-bg:rgba(59,130,246,0.06);--info-bd:rgba(59,130,246,0.25);
+  --danger-bg:rgba(239,68,68,0.06);--danger-bd:rgba(239,68,68,0.25);
+  --success-bg:rgba(16,185,129,0.06);--success-bd:rgba(16,185,129,0.25);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-size:14px;line-height:1.55;font-family:var(--font);
@@ -43,11 +55,61 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .shell-pc .pcnav button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;
   font-size:14px;color:var(--tx-dim);background:transparent;border:none;text-align:left;cursor:pointer;
   border-radius:10px;transition:var(--tr);margin-bottom:2px;font-weight:500}
-.shell-pc .pcnav button .nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shell-pc .pcnav button .ic{width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shell-pc .pcnav button .ic svg{width:22px!important;height:22px!important;stroke-width:1.8!important;display:block}
 .shell-pc .pcnav button:hover{background:rgba(91,138,245,0.08);color:var(--tx)}
 .shell-pc .pcnav button.active{background:rgba(91,138,245,0.15);color:var(--ac);font-weight:600}
 .shell-pc .pcnav button.active::before{content:'';width:3px;height:18px;background:var(--ac);
   border-radius:2px;margin-right:-13px}
+
+/* ========== Mobile Bottom Nav (unified size for PC/Mobile) ========== */
+.mob-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(11,16,20,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--bd);padding:6px 8px calc(6px + env(safe-area-inset-bottom)) 8px;
+  display:flex;justify-content:space-around;align-items:center;gap:2px;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.3)}
+.mob-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:6px 2px;background:transparent;border:none;color:var(--tx-dim);
+  font-size:11px;line-height:1.2;cursor:pointer;border-radius:8px;
+  transition:all 0.15s ease;font-family:inherit;font-weight:500;
+  min-height:54px}
+.mob-nav button svg{width:24px!important;height:24px!important;display:block;flex-shrink:0;
+  stroke-width:1.8!important}
+.mob-nav button:hover{color:var(--tx)}
+.mob-nav button.active{color:var(--ac);background:rgba(91,138,245,0.12);font-weight:600}
+.mob-nav button.active svg{transform:scale(1.08)}
+@media (min-width:769px){.mob-nav{display:none}}
+
+/* ========== Signature Pad ========== */
+.sig-panel-wrap{box-shadow:0 8px 32px rgba(0,0,0,0.35);background:linear-gradient(135deg,rgba(91,138,245,0.04),rgba(124,91,245,0.04))}
+.sig-cvs{position:relative;background:
+  repeating-linear-gradient(0deg,transparent,transparent 19px,rgba(15,23,42,0.06) 19px,rgba(15,23,42,0.06) 20px),
+  #fff!important}
+.sig-cvs::after{content:'✍️ 请在此处签名';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  color:#cbd5e1;font-size:14px;pointer-events:none;letter-spacing:1px;font-weight:500}
+.sig-cvs.has-data::after{content:''}
+.sig-hint{font-size:11px;color:var(--tx-dim);margin-top:6px;display:flex;align-items:center;gap:6px}
+
+/* ========== Required-Field Highlight & Step Indicators ========== */
+.fld-required{padding:14px 14px 14px 18px;border-left:4px solid #dc2626;border-radius:0 10px 10px 0;
+  background:linear-gradient(90deg,rgba(220,38,38,0.06),rgba(220,38,38,0.01) 60%,transparent);margin-bottom:18px;
+  position:relative;transition:all 0.2s ease}
+.fld-required.filled{border-left-color:#10b981;background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(16,185,129,0.01) 60%,transparent)}
+.step-badge{display:inline-flex;align-items:center;justify-content:center;
+  min-width:24px;height:24px;padding:0 8px;margin-right:6px;border-radius:12px;
+  background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-size:12px;font-weight:700;
+  box-shadow:0 2px 6px rgba(220,38,38,0.3);letter-spacing:0.3px}
+.fld-required.filled .step-badge{background:linear-gradient(135deg,#10b981,#34d399);
+  box-shadow:0 2px 6px rgba(16,185,129,0.3)}
+.field-hint{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-top:8px;
+  background:rgba(91,138,245,0.06);border:1px dashed rgba(91,138,245,0.3);border-radius:8px;
+  font-size:12px;color:var(--tx-dim);line-height:1.5}
+.field-hint .ic{font-size:14px;line-height:1.2;flex-shrink:0;margin-top:1px}
+.field-hint .ic.warn{color:#f59e0b}
+.field-hint .ic.tip{color:#2563eb}
+.field-hint .ic.danger{color:#dc2626}
+.field-hint b{color:var(--tx);font-weight:600}
+.fld-required.filled .field-hint{background:rgba(16,185,129,0.04);border-color:rgba(16,185,129,0.25)}
 
 /* Top mobile bar - WhatsApp style */
 .mt{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 18px;display:flex;
@@ -122,18 +184,116 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .edb{font-size:11px;margin-left:4px;cursor:pointer;color:var(--ac);text-decoration:none}
 .edb:hover{text-decoration:underline}
 
-.dc{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:18px;margin-bottom:12px;transition:var(--tr)}
-.dc:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
-.dc-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.dc-h h4{font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-0.2px}
-.dc-p{font-size:12px;font-weight:600;color:var(--ac);padding:4px 12px;
-  background:rgba(91,138,245,0.1);border-radius:6px}
-.dc-b .dc-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;
-  border-bottom:1px solid var(--bd)}
-.dc-b .dc-row:last-child{border:none}
-.dc-l{color:var(--tx-dim)}
-.dc-v{color:var(--tx);font-weight:500}
+/* ========== Dispatch Card 2.0 ========== */
+.dc2{position:relative;overflow:hidden;background:var(--bg-elevated);border:1px solid var(--bd);
+  border-radius:var(--rx-lg);margin-bottom:16px;box-shadow:var(--sh);
+  transition:var(--tr)}
+.dc2:hover{border-color:var(--bd-hi);transform:translateY(-2px);box-shadow:var(--sh-lg)}
+.dc2-h{position:relative;padding:18px 20px 14px;background:linear-gradient(135deg,rgba(91,138,245,0.12),rgba(124,91,245,0.08));
+  border-bottom:1px solid var(--bd);overflow:hidden}
+.dc2-h::before{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;
+  background:radial-gradient(circle,rgba(91,138,245,0.18),transparent 70%);border-radius:50%}
+.dc2-h::after{content:'';position:absolute;left:-20px;bottom:-50px;width:120px;height:120px;
+  background:radial-gradient(circle,rgba(124,91,245,0.12),transparent 70%);border-radius:50%}
+.dc2-h-inner{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dc2-title{font-size:11px;font-weight:700;color:var(--ac);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px}
+.dc2-date{font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.3px;line-height:1.3}
+.dc2-plate{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-soft);
+  border:1.5px solid var(--ac);border-radius:10px;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(91,138,245,0.18)}
+.dc2-plate-num{font-size:18px;font-weight:800;color:var(--ac);letter-spacing:0.5px;
+  font-family:'SF Mono','Monaco','Consolas',monospace}
+.dc2-plate-icon{width:28px;height:28px;background:var(--ac-g);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.dc2-b{padding:14px 20px}
+.dc2-driver{display:flex;align-items:center;gap:12px;padding:10px 12px;
+  background:linear-gradient(135deg,rgba(91,138,245,0.06),rgba(124,91,245,0.03));
+  border:1px solid var(--bd);border-radius:var(--rx-sm);margin-bottom:12px}
+.dc2-avatar{width:40px;height:40px;border-radius:50%;background:var(--ac-g);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;
+  flex-shrink:0;box-shadow:0 2px 8px rgba(91,138,245,0.25)}
+.dc2-driver-name{font-size:15px;font-weight:600;color:var(--tx);line-height:1.2}
+.dc2-driver-role{font-size:11px;color:var(--tx-dim);margin-top:2px;font-weight:500}
+.dc2-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.dc2-stat{background:var(--bg-soft);border:1px solid var(--bd);border-radius:var(--rx-sm);padding:8px 12px}
+.dc2-stat-label{font-size:10px;font-weight:600;color:var(--tx-muted);letter-spacing:0.5px;
+  text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.dc2-stat-val{font-size:13px;color:var(--tx);font-weight:600;line-height:1.3;
+  word-break:break-word}
+.dc2-pax{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 12px;
+  background:var(--info-bg);border:1px solid var(--info-bd);border-radius:var(--rx-sm);margin-bottom:12px}
+.dc2-pax-avatars{display:flex;margin-right:4px}
+.dc2-pax-avatars span{width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  border:2px solid var(--bg-elevated);margin-left:-6px;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.dc2-pax-avatars span:first-child{margin-left:0}
+.dc2-pax-count{font-size:12px;font-weight:700;color:var(--ac);
+  background:var(--bg-elevated);padding:4px 10px;border-radius:12px}
+.dc2-pax-names{font-size:12px;color:var(--tx-dim);flex:1;line-height:1.5}
+.dc2-purpose{padding:12px 14px;background:var(--warn-bg);border:1px solid var(--warn-bd);
+  border-radius:var(--rx-sm);font-size:13px;line-height:1.6;color:var(--tx);
+  margin-bottom:10px}
+.dc2-purpose-label{font-size:10px;font-weight:700;color:var(--or);letter-spacing:0.6px;
+  text-transform:uppercase;margin-bottom:4px}
+.dc2-purpose-en{color:var(--tx-dim);font-style:italic;margin-top:4px;font-size:12px}
+.dc2-notes{padding:10px 12px;background:var(--info-bg);border:1px dashed var(--info-bd);
+  border-radius:var(--rx-sm);font-size:12px;color:var(--tx-dim);line-height:1.5}
+.dc2-notes-label{font-size:10px;font-weight:700;color:var(--ac);letter-spacing:0.6px;
+  text-transform:uppercase;margin-bottom:3px}
+.dc2-actions{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd)}
+.dc2-actions .bt{flex:1;font-size:12px;padding:7px 10px}
+
+/* ========== Empty state - friendly ========== */
+.emp{padding:60px 24px;text-align:center;color:var(--tx-muted);font-size:13px}
+.emp-icon{width:80px;height:80px;margin:0 auto 14px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(91,138,245,0.1),rgba(124,91,245,0.06));
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  border:2px dashed var(--bd-hi);color:var(--ac)}
+.emp-title{font-size:14px;font-weight:600;color:var(--tx);margin-bottom:4px}
+.emp-sub{font-size:12px;color:var(--tx-dim);line-height:1.5}
+
+/* ========== Top Action Bar ========== */
+.act{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;
+  background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
+  box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.act-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--tx);
+  letter-spacing:-0.2px;flex-shrink:0}
+.act-title .ic{width:32px;height:32px;border-radius:8px;background:var(--ac-g);
+  display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0}
+.act-spacer{flex:1;min-width:8px}
+.act-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.act-group .bt{font-size:12px;padding:6px 12px;font-weight:600}
+.act-group .bt .ic{display:none}
+@media(max-width:768px){
+  .act{padding:10px 12px;gap:8px}
+  .act-title{font-size:13px}
+  .act-title .ic{width:28px;height:28px;font-size:14px}
+  .act-group .bt{padding:6px 10px;font-size:11px}
+  .dc2-h{padding:14px 16px 12px}
+  .dc2-b{padding:12px 14px}
+  .dc2-date{font-size:16px}
+  .dc2-plate-num{font-size:15px}
+  .dc2-grid{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
+  .dc2-stat{padding:7px 10px}
+  .dc2-pax{padding:8px 10px}
+  .dc2-pax-names{font-size:11px;width:100%;flex-basis:100%}
+}
+@media(max-width:480px){
+  .dc2-h-inner{flex-direction:column;align-items:flex-start}
+  .dc2-plate{align-self:flex-start}
+  .dc2-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ========== Mobile top bar refined ========== */
+.mt .ti{font-size:11px;color:var(--tx-dim);margin-right:8px;white-space:nowrap;
+  padding:4px 10px;background:var(--bg-elevated);border-radius:12px;
+  border:1px solid var(--bd);font-weight:500;letter-spacing:0.2px}
+.mt .sync-wrap{display:inline-flex;align-items:center;gap:6px;margin-right:6px}
+.mt #sync-icon-mob{width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(91,138,245,0.15),rgba(124,91,245,0.1));
+  border:1px solid rgba(91,138,245,0.3);display:flex;align-items:center;
+  justify-content:center;font-size:16px;cursor:pointer;transition:var(--tr)}
+.mt #sync-icon-mob:hover{transform:rotate(180deg);background:var(--ac-g);color:#fff}
 
 .rr{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx-sm);
   padding:12px 14px;margin-bottom:6px;font-size:13px;transition:var(--tr)}
@@ -354,8 +514,7 @@ function getDepts(){
   if(!d||!d.length)return DEFAULT_DEPTS;
   return d;
 }
-const DEPTS_CN=getDepts().map(x=>x.cn);
-const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
+// NOTE: DEPTS_CN and DCN2EN moved to lazy init after DB declaration
 function dShow(d){
   if(!d)return '';
   const dept=getDepts().find(x=>x.cn===d||x.en===d);
@@ -395,7 +554,7 @@ const REPO_NAME='kmc-sync-data';
 const DATA_FILE='kmc-data.json';
 let gistToken=localStorage.getItem('kmc_gist_token')||'';
 
-async function gistRead(){
+async function repoRead(){
   try{
     const r=await fetch('https://raw.githubusercontent.com/'+REPO_OWNER+'/'+REPO_NAME+'/main/'+DATA_FILE);
     if(!r.ok)return null;
@@ -405,44 +564,52 @@ async function gistRead(){
   }catch(e){return null;}
 }
 
-async function gistWrite(data){
+async function repoWrite(data){
+  if(!gistToken)return false;
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2))));
+  // 最多尝试 2 次：第 2 次重取 sha，处理 422 竞态
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      // 每次重取当前 SHA
+      const getR=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+        headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json'}
+      });
+      let sha=null;
+      if(getR.ok){const j=await getR.json();sha=j.sha;}
+      const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
+        method:'PUT',
+        headers:{
+          'Authorization':'token '+gistToken,
+          'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({message:'Sync from KMC Dispatcher',content:content,sha:sha})
+      });
+      if(r.ok)return true;
+      // 401/403 = token 失效，不重试
+      if(r.status===401||r.status===403)return false;
+      // 422 = sha 冲突，重试一次；其他错误直接失败
+      if(r.status!==422)return false;
+    }catch(e){return false;}
+  }
+  return false;
+}
+
+// 触发 GitHub Actions workflow_dispatch（自托管 Runner 后台链路）
+async function triggerRunner(action, payload){
   if(!gistToken)return false;
   try{
-    // First get current SHA
-    const getR=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
-      headers:{'Authorization':'token '+gistToken,'Accept':'application/vnd.github+json'}
-    });
-    let sha=null;
-    if(getR.ok){
-      const j=await getR.json();
-      sha=j.sha;
-    }
-    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/contents/'+DATA_FILE,{
-      method:'PUT',
+    const r=await fetch('https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME+'/actions/workflows/sync.yml/dispatches',{
+      method:'POST',
       headers:{
         'Authorization':'token '+gistToken,
         'Accept':'application/vnd.github+json',
         'Content-Type':'application/json'
       },
-      body:JSON.stringify({
-        message:'Sync from KMC Dispatcher',
-        content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
-        sha:sha
-      })
+      body:JSON.stringify({ref:'main',inputs:{action:action||'read',payload:payload||''}})
     });
-    return r.ok;
+    return r.status===204;
   }catch(e){return false;}
-}
-
-async function sbInit(){return null;}
-async function sbUpsert(t,d){return false;}
-async function sbLoad(t){return null;}
-async function sbDel(t,i){return false;}
-
-
-// Initialize cloud database tables (kept for back-compat)
-async function sbCreateTables(){
-  return gistToken !== '';
 }
 
 // Sync icon update
@@ -470,10 +637,8 @@ function updateSyncIcon(){
 // Single-table quick sync (used after data mutations)
 async function sbSyncOne(table,data){
   if(!syncAvailable)return;
-  await gistWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),depts:DB.depts.get()||DEFAULT_DEPTS});
+  await repoWrite({vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),users:DB.users.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),depts:DB.depts.get()||DEFAULT_DEPTS});
 }
-
-async function sbDelOne(table,id){}
 
 async function manualSync(){
   if(syncStatus==='syncing')return;
@@ -506,7 +671,7 @@ async function syncAll(){
       gistToken=localStorage.getItem('kmc_gist_token')||'';
       if(!gistToken){syncAvailable=false;return;}
     }
-    const remote=await gistRead();
+    const remote=await repoRead();
     if(remote){
       syncAvailable=true;
       if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles||[]);
@@ -524,15 +689,17 @@ async function syncAll(){
       dispatches:DB.dispatches.get()||[],
       depts:DB.depts.get()||DEFAULT_DEPTS,
     };
-    const ok=await gistWrite(data);
-    if(!ok)syncAvailable=false;
+    const ok=await repoWrite(data);
+    // 写成功即置 syncAvailable=true（修复首次同步卡死：远端无数据时读返回 null，但写成功仍应可用）
+    if(ok){
+      syncAvailable=true;
+      // 后台触发 Runner（fire-and-forget，失败不阻塞前端）
+      triggerRunner('read','').catch(()=>{});
+    }else{
+      syncAvailable=false;
+    }
   }catch(e){console.error('syncAll',e);syncAvailable=false;}
 }
-//@deprecated_sbDelOne
-async function sbDelOne(table,id){
-  await sbDel('kmc_'+table,id);
-}
-
 const DB={
   vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
@@ -561,6 +728,10 @@ const DB={
   }
 };
 DB.init();
+
+// Initialize department lookups after DB is ready
+const DEPTS_CN=getDepts().map(x=>x.cn);
+const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
 
 // Cutoff time helper
 function getCutoff(){return DB.cutoff.get()||'19:00';}
@@ -947,6 +1118,7 @@ renderLT();
 
 // ==================== LOGIN ====================
 function doLogin(){
+  try{
   const dept=document.getElementById('ld').value;
   const name=document.getElementById('ln').value.trim();
   if(!dept)return toast('Select department / 请选择部门');
@@ -962,6 +1134,10 @@ function doLogin(){
   S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
   DB.user.set(S.user);
   showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
+  }catch(e){
+    console.error('doLogin ERR:',e);
+    alert('登录失败 / Login error: '+e.message+'\n\n请截图发回开发者');
+  }
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
@@ -1099,10 +1275,60 @@ function renderPage(){
   if(m1)m1.innerHTML=html;
   if(m2)m2.innerHTML=html;
   // Init passenger fields for submit page
-  if(S.tab==='submit'){setTimeout(updatePurposeStatus,80);}
+  if(S.tab==='submit'){
+    setTimeout(updatePurposeStatus,80);
+    setTimeout(()=>{['step-1','step-2','step-3','step-4','step-5','step-6'].forEach(id=>checkFilled(id));},120);
+  }
 }
 
 // ==================== SUBMIT ====================
+// Mark required field as "filled" — turns border red→green and badge gradient red→green
+function checkFilled(stepId,val){
+  const el=document.getElementById(stepId);
+  if(!el)return;
+  // Determine "filled" by: input value non-empty OR if step-3 always starts at 1 (filled by default)
+  let filled=false;
+  if(stepId==='step-3')filled=true;  // pax always has default 1
+  else if(typeof val==='string')filled=val.trim().length>0;
+  else{
+    const inp=el.querySelector('input,textarea');
+    if(inp)filled=inp.value.trim().length>0;
+  }
+  if(stepId==='step-5'){  // purpose needs BOTH cn+en
+    const cn=(document.getElementById('rq-purpose')||{}).value||'';
+    const en=(document.getElementById('rq-purposeEn')||{}).value||'';
+    filled=cn.trim().length>0&&en.trim().length>0;
+  }
+  if(stepId==='step-2'){  // time needs BOTH dep+ret
+    const dep=(document.getElementById('rq-dep')||{}).value||'';
+    const ret=(document.getElementById('rq-ret')||{}).value||'';
+    filled=dep&&ret;
+  }
+  if(stepId==='step-6'){  // signature
+    filled=!!(S.sigData&&S.sigData.length>0);
+  }
+  el.classList.toggle('filled',filled);
+}
+// ± passenger count adjuster — submit form
+function adjustPax(delta){
+  const input=document.getElementById('rq-pax');
+  const display=document.getElementById('rq-pax-display');
+  if(!input||!display)return;
+  let v=parseInt(input.value)||1;
+  v=Math.max(1,Math.min(99,v+delta));
+  input.value=v;
+  display.textContent=v;
+}
+// ± passenger count adjuster — edit modal
+function adjustEditPax(delta){
+  const input=document.getElementById('er-pax');
+  const display=document.getElementById('er-pax-display');
+  if(!input||!display)return;
+  let v=parseInt(input.value)||1;
+  v=Math.max(1,Math.min(99,v+delta));
+  input.value=v;
+  display.textContent=v;
+}
 function genPassengerFields(){
   try{
     const paxEl=document.getElementById('rq-pax');
@@ -1239,17 +1465,19 @@ function renderSubmit(){
   const dateEnabled=DB.dateRange.get();
   const dateMin=dateEnabled?_t:(new Date().getHours()>=parseInt(getCutoff().split(':')[0])?_tm:_t);
   const dateMax=dateEnabled?(new Date(Date.now()+30*86400000)).toISOString().slice(0,10):_tm;
-  html+='<div class="fld"><label>'+T('submit_date')+' * <small style="font-weight:400;color:var(--tx-dim)">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
-    +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'"></div>';
+  html+='<div class="fld fld-required" id="step-1"><label><span class="step-badge">1</span><span>'+T('submit_date')+' <span style="color:#dc2626">*</span></span><small style="font-weight:400;color:var(--tx-dim);margin-left:4px">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
+    +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'" oninput="checkFilled(\'step-1\')">'
+    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 19:00 截止后只能选明日/后天','Today is default; after 19:00 cutoff only tomorrow/day-after is selectable')+'。</span></div></div>';
   // Primary time slot
-  html+='<div class="fld"><label>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></label>'
+  html+='<div class="fld fld-required" id="step-2"><label><span class="step-badge">2</span><span>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></span></label>'
     +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
-    +'<input type="time" id="rq-dep" value="08:00" style="font-size:16px;padding:10px">'
+    +'<input type="time" id="rq-dep" value="08:00" style="font-size:16px;padding:10px" oninput="checkFilled(\'step-2\')">'
     +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：06:30 / 08:00 / 14:30','Example: 06:30 / 08:00 / 14:30')+'</div></div>'
     +'<div class="bi-c"><label style="font-size:12px">'+bi('返程 Return','Return')+'</label>'
-    +'<input type="time" id="rq-ret" value="12:00" style="font-size:16px;padding:10px">'
+    +'<input type="time" id="rq-ret" value="12:00" style="font-size:16px;padding:10px" oninput="checkFilled(\'step-2\')">'
     +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：12:00 / 18:00 / 22:00','Example: 12:00 / 18:00 / 22:00')+'</div></div></div>'
-    +'<input type="text" id="rq-slot-notes" placeholder="'+bi('备注（选填）例如：同一路线不同时间段','Notes (optional) e.g., same route different time')+'" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)"></div>';
+    +'<input type="text" id="rq-slot-notes" placeholder="'+bi('备注（选填）例如：同一路线不同时间段','Notes (optional) e.g., same route different time')+'" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)">'
+    +'<div class="field-hint"><span class="ic tip">⏰</span><span><b>'+bi('填写预计出发与返程时间','Enter estimated departure & return')+'</b>。'+bi('将用于 GPS 轨迹比对；返程可临时调整','Used for GPS cross-check; return time can be adjusted later')+'。</span></div></div>';
   // Extra slot groups (when multiSlot enabled)
   if(DB.multiSlot.get()){
     [2,3].forEach(n=>{
@@ -1264,14 +1492,26 @@ function renderSubmit(){
     });
   }
 
+  // Passenger count ± buttons
+html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge">3</span><span>'+bi('乘车人数','Passengers')+' <span style="color:#dc2626">*</span></span></label>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-top:2px">'
+    +'<button type="button" onclick="adjustPax(-1)" class="pax-btn" style="width:40px;height:40px;border-radius:8px;border:2px solid var(--bd);background:var(--bg-elevated);color:var(--tx);font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none;transition:all 0.15s">−</button>'
+    +'<span id="rq-pax-display" style="font-size:28px;font-weight:700;min-width:40px;text-align:center;color:var(--ac);line-height:1">1</span>'
+    +'<button type="button" onclick="adjustPax(1)" class="pax-btn" style="width:40px;height:40px;border-radius:8px;border:2px solid var(--ac);background:rgba(91,138,245,0.1);color:var(--ac);font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none;transition:all 0.15s">+</button>'
+    +'<input type="hidden" id="rq-pax" value="1" oninput="checkFilled(\'step-3\')">'
+    +'<button type="button" class="bt bt-o bt-sm" onclick="genPassengerFields()" style="margin-left:6px">👥 '+bi('生成乘车人员名单','Generate Passenger List')+'</button>'
+    +'</div>'
+    +'<div class="field-hint"><span class="ic tip">👥</span><span><b>'+bi('点 ± 调整乘车人数','Click ± to adjust count')+'</b>。'+bi('填好人数后点"生成乘车人员名单"按人填写姓名','After setting count, click "Generate Passenger List" to fill in names')+'。</span></div></div>';
+
   // Destination field
-  html+='<div class="fld"><label>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span><br><small style="font-weight:400;color:#64748b">'+bi('明确标注出发地和目的地','Specify origin & destination, e.g., Kamativi → Hwange')+'</small></label>'
+  html+='<div class="fld fld-required" id="step-4"><label><span class="step-badge">4</span><span>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span></span></label>'
     +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
     +'<div class="lt-btn"><button class="'+(S.dLang=='cn'?'active':'')+'" onclick="S.dLang=\'cn\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
     +'<button class="'+(S.dLang=='en'?'active':'')+'" onclick="S.dLang=\'en\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
     +'<button type="button" onclick="doTranslate(\'dest\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.dLang=='cn'?'EN':'CN')+'</button></div>'
-    +'<input type="text" id="rq-dest" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'">'
-    +'<input type="text" id="rq-destEn" style="display:none"></div>';
+    +'<input type="text" id="rq-dest" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="checkFilled(\'step-4\',this.value)">'
+    +'<input type="text" id="rq-destEn" style="display:none">'
+    +'<div class="field-hint"><span class="ic tip">📍</span><span><b>'+bi('明确标注出发地 → 目的地','Specify origin → destination')+'</b>。'+bi('例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回','e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected')+'。</span></div></div>';
 
   html+='<div class="card" style="padding:14px;background:#fefce8;border:1px solid #fbbf24;margin-bottom:14px">'
     +'<div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#92400e">⚠ '+bi('GPS 管控说明','GPS Compliance Notice')+'</div>'
@@ -1282,13 +1522,13 @@ function renderSubmit(){
     +bi('4. 目的地必须是明确地点名称，不可填「外出」等模糊描述。','4. Destination must be specific, no vague terms like \"outing\".')
     +'</div></div>';
 
-  html+='<div class="fld"><label>'+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span><br><small style="font-weight:400;color:#dc2626">'+bi('必须填写中英双语！点翻译按钮自动复制到另一语言框','Must fill BOTH! Click translate to auto-copy to the other language')+'</small></label>'
+  html+='<div class="fld fld-required" id="step-5"><label><span class="step-badge">5</span><span>'+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span> <span style="font-weight:400;font-size:11px;color:#dc2626">'+bi('（中英双语必填）','(CN+EN required)')+'</span></span></label>'
     +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">'
     +'<div class="lt-btn"><button class="'+(S.pLang==='cn'?'active':'')+'" onclick="S.pLang=\'cn\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
     +'<button class="'+(S.pLang==='en'?'active':'')+'" onclick="S.pLang=\'en\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
     +'<button type="button" onclick="doTranslate(\'purpose\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.pLang==='cn'?'EN':'CN')+'</button>'
     +'<span style="font-size:11px;color:#2563eb;font-weight:600">'+bi('当前编辑','Editing')+': '+(S.pLang==='cn'?'中文':'English')+'</span></div>'
-    +'<textarea id="rq-purpose" placeholder="'+(S.pLang==='cn'?'中文描述外出事由（点翻译自动复制到英文框）':'Describe purpose in English (click translate to auto-copy to CN)')+'" style="min-height:80px" oninput="updatePurposeStatus()"></textarea>'
+    +'<textarea id="rq-purpose" placeholder="'+(S.pLang==='cn'?'中文描述外出事由（点翻译自动复制到英文框）':'Describe purpose in English (click translate to auto-copy to CN)')+'" style="min-height:80px" oninput="updatePurposeStatus();checkFilled(\'step-5\',this.value)"></textarea>'
     +'<textarea id="rq-purposeEn" style="display:none" oninput="updatePurposeStatus()"></textarea>'
     +'<div id="purpose-status" style="font-size:11px;margin-top:4px"></div>'
     +'<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap"><span style="font-size:11px;color:#64748b;align-self:center">📚 '+bi('常用短语','Common phrases')+':</span>'
@@ -1298,7 +1538,8 @@ function renderSubmit(){
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Airport pickup\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Airport pickup</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Site inspection\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Site inspection</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Business meeting\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Business meeting</button>'
-    +'</div></div>';
+    +'</div>'
+    +'<div class="field-hint"><span class="ic danger">⚠️</span><span><b>'+bi('必填中英双语','Both CN & EN required')+'</b>。'+bi('中文框填写后，点"翻译到 EN"自动复制；或直接双语手填','Fill CN, click "Translate to EN" to auto-copy; or fill manually')+'。</span></div></div>';
 
   html+='<div class="fld"><label>'+bi('备注','Notes')+'<small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small><br><small style="font-weight:400;color:#dc2626">'
     +bi('【责任须知】选填项。未在备注重明确标注外出人员及其职级的，默认费用由申请部门自行承担。职级差异报销标准参照财务制度执行。','[Liability Notice] Optional. If passengers and their ranks are NOT noted here, costs default to requesting department. Rank-based reimbursement per finance policy.')+'</small></label>'
@@ -1310,19 +1551,20 @@ function renderSubmit(){
     +'<input type="text" id="rq-notes" placeholder="'+(S.nLang==='cn'?'中文备注（选填）':'English notes (optional)')+'">'
     +'<input type="text" id="rq-notesEn" style="display:none"></div>';
 
-  html+='<div class="fld"><label>📝 '+bi('签字板 / Signature','Signature Pad')+' <span style="color:#dc2626">* '+bi('必填','Required')+'</span>'
-    +'<br><small style="font-weight:400;color:var(--tx-dim)">'+bi('签署后方可提交，支持触屏手写和鼠标绘制','Must sign before submitting, touchscreen & mouse supported')+'</small></label>'
+  html+='<div class="fld fld-required" id="step-6"><label><span class="step-badge">6</span><span>🖋️ '+bi('部门负责人签字 / Signature','Department Head Signature')+' <span style="color:#dc2626">* '+bi('必填','Required')+'</span></span></label>'
     +'<button type="button" class="bt bt-o bt-b" onclick="toggleSig()" id="sig-btn" style="border:2px dashed var(--bd-hi);justify-content:flex-start;text-align:left;padding-left:16px;height:48px">🖊️ <span id="sig-btn-text">'+T('submit_sign')+'</span></button>'
-    +'<div id="sig-panel" style="display:none;margin-top:12px;border:1px solid var(--bd);border-radius:12px;padding:14px;background:var(--bg-elevated)">'
-    +'<div style="font-weight:600;margin-bottom:8px;font-size:13px;color:var(--tx-dim)">'+bi('部门负责人签字 / Department Head Signature','Department Head Signature')+'</div>'
-    +'<canvas id="sig-cvs" style="display:block;width:100%;height:300px;background:#fff;border-radius:8px;border:2px solid var(--bd-hi);cursor:crosshair;touch-action:none"></canvas>'
-    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<div id="sig-panel" class="sig-panel-wrap" style="display:none;margin-top:14px;border:2px solid var(--ac);border-radius:14px;padding:16px;background:var(--bg-elevated)">'
+    +'<div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--ac);display:flex;align-items:center;gap:6px"><span style="font-size:18px">🖋️</span><span>'+bi('部门负责人签字 / Department Head Signature','Department Head Signature')+'</span></div>'
+    +'<canvas id="sig-cvs" class="sig-cvs" style="display:block;width:100%;height:300px;border-radius:10px;border:2px dashed var(--bd-hi);cursor:crosshair;touch-action:none"></canvas>'
+    +'<div class="sig-hint"><span>💡</span><span>'+bi('支持触屏手写和鼠标绘制，可多次重叠书写。点击"保存"后生效。','Touchscreen handwriting & mouse drawing supported. Click "Save" to apply.')+'</span></div>'
+    +'<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'
     +'<button type="button" class="bt bt-o bt-sm" onclick="sigClear()">🗑 '+bi('清除','Clear')+'</button>'
     +'<div style="flex:1"></div>'
     +'<button type="button" class="bt bt-o bt-sm" onclick="toggleSig()">✕ '+T('common_cancel')+'</button>'
     +'<button type="button" class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button>'
     +'</div></div>'
-    +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div></div>';
+    +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div>'
+    +'<div class="field-hint"><span class="ic tip">🖋️</span><span><b>'+bi('点"点击展开签字面板"按钮','Click "Open Signature Panel" button')+'</b>，'+bi('用手指/鼠标在白色区域签字后点"保存"','Use finger/mouse to sign in the white area, then click "Save"')+'。</span></div></div>';
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
   // My recent requests with recall option
@@ -1372,7 +1614,13 @@ function openEditReq(id){
   showModal('<h3>✏️ '+T('edit')+'</h3>'
     +'<div class="fld"><label>Date</label><input type="date" id="er-date" value="'+r.date+'"></div>'
     +'<div class="fld"><label>Time</label><input type="text" id="er-time" value="'+r.timeSlot+'"></div>'
-    +'<div class="fld"><label>Pax</label><input type="number" id="er-pax" value="'+r.passengers+'"></div>'
+    +'<div class="fld"><label>Pax</label>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-top:2px">'
+    +'<button type="button" onclick="adjustEditPax(-1)" class="pax-btn" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--bd);background:var(--bg-elevated);color:var(--tx);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none">−</button>'
+    +'<span id="er-pax-display" style="font-size:24px;font-weight:700;min-width:36px;text-align:center;color:var(--ac)">'+r.passengers+'</span>'
+    +'<button type="button" onclick="adjustEditPax(1)" class="pax-btn" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--ac);background:rgba(91,138,245,0.1);color:var(--ac);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none">+</button>'
+    +'<input type="hidden" id="er-pax" value="'+r.passengers+'">'
+    +'</div></div>'
     +'<div class="fld"><label>Purpose CN</label><textarea id="er-p" style="min-height:60px">'+r.purpose+'</textarea></div>'
     +'<div class="fld"><label>Purpose EN</label><textarea id="er-pe" style="min-height:60px">'+r.purposeEn+'</textarea></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">Cancel</button> <button class="bt bt-p bt-sm" onclick="saveEditReq(\''+id+'\')">Save</button></div>',true);
@@ -1477,7 +1725,7 @@ function initSig(){
   c.addEventListener('touchend',()=>{sigDrawing=false;});
 }
 function pos(e,c){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
-function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;sigCtx.clearRect(0,0,c.width,c.height);sigDone=false;S.sigData='';const st=document.getElementById('sig-st');if(st)st.style.display='none';const btnText=document.getElementById('sig-btn-text');if(btnText)btnText.textContent='🖊 '+T('submit_sign');}
+function sigClear(){const c=document.getElementById('sig-cvs');if(!c)return;sigCtx.clearRect(0,0,c.width,c.height);sigDone=false;S.sigData='';const st=document.getElementById('sig-st');if(st)st.style.display='none';const btnText=document.getElementById('sig-btn-text');if(btnText)btnText.textContent='🖊 '+T('submit_sign');c.classList.remove('has-data');}
 function sigSave(){
   if(!sigDone)return toast(L==='zh'?'请先签字':'Please sign first');
   S.sigData=document.getElementById('sig-cvs').toDataURL('image/png');
@@ -1485,6 +1733,8 @@ function sigSave(){
   const panel=document.getElementById('sig-panel');if(panel)panel.style.display='none';
   const btnText=document.getElementById('sig-btn-text');
   if(btnText)btnText.textContent='✏️ '+bi('已签字','Signed');
+  const c=document.getElementById('sig-cvs');if(c)c.classList.add('has-data');
+  checkFilled('step-6');
   toast(L==='zh'?'✓ 签字已保存':'Signature saved');
 }
 
@@ -1492,34 +1742,76 @@ function sigSave(){
 function renderDispatch(){
   const _t=today();
   const ds=DB.dispatches.get().filter(d=>d.date===_t);
-  let html='<div class="act"><span style="font-size:15px;color:#0f172a;font-weight:600">📅 '+fmtL(_t)+' '+T('dispatch_title')+'</span><div class="sp"></div>';
-  if(isAdmin())html+='<button class="bt bt-p bt-sm" onclick="expImg()">📸 Export PNG</button><button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button>';
+  let html='<div class="act">'
+    +'<div class="act-title"><span class="ic">🚐</span><span>'+fmtL(_t)+' '+T('dispatch_title')+'</span></div>'
+    +'<div class="act-spacer"></div>';
+  if(isAdmin()){
+    html+='<div class="act-group">'
+      +'<button class="bt bt-p bt-sm" onclick="expImg()">📸 '+bi('导出 PNG','Export PNG')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button>'
+      +'</div>';
+  }
   html+='</div>';
-  if(!ds.length){html+='<div class="emp"><svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg><p>'+T('common_no')+'</p></div>';}
+  if(!ds.length){
+    html+='<div class="emp">'
+      +'<div class="emp-icon">🚐</div>'
+      +'<div class="emp-title">'+bi('今日暂无派车单','No dispatch plans for today')+'</div>'
+      +'<div class="emp-sub">'+bi('提交需求后将在截止时间 19:00 统一合并派车','After cutoff at 19:00, requests will be merged into dispatch plans')+'</div>'
+      +'</div>';
+  }
   else html+=ds.map(d=>buildDC(d)).join('');
   return html;
 }
 function buildDC(d){
   const rl=DB.requests.get().filter(r=>d.requestIds.includes(r.id));
   const pax=rl.reduce((s,r)=>s+r.passengers,0);
-  const depts=[...new Set(rl.map(r=>dShow(r.department)))].join('、');
-  const prps=L==='zh'?[...new Set(rl.map(r=>r.purpose))].join('；'):[...new Set(rl.map(r=>r.purposeEn||r.purpose))].join('; ');
-  const prpsE=L==='zh'&&rl.some(r=>r.purposeEn)?[...new Set(rl.map(r=>r.purposeEn))].join('; '):'';
+  const depts=[...new Set(rl.map(r=>r.department))].join('、');
+  const prps=[...new Set(rl.map(r=>r.purpose))].filter(Boolean).join('； ');
+  const prpsE=[...new Set(rl.map(r=>r.purposeEn))].filter(Boolean).join('; ');
   const dnotesCn=d.notes||'';
   const dnotesEn=d.notesEn||'';
   const paxNames=[];
   rl.forEach(r=>{if(r.paxNames)r.paxNames.forEach(n=>{if(n)paxNames.push(n);});});
   if(!paxNames.length)rl.forEach(r=>paxNames.push(r.submitter));
-  return '<div class="dc"><div class="dc-h"><div><h4>'+T('dispatch_title')+'</h4><div style="font-size:11px;opacity:.7">'+fmtL(d.date)+' ('+d.date+')</div></div><div class="dc-p">'+d.vehicle+'</div></div>'
-    +'<div class="dc-b"><div class="dc-row"><span class="dc-l">'+T('driver_label')+' / Driver</span><span class="dc-v"><strong>'+d.driver+'</strong></span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('meeting_point')+' / Point</span><span class="dc-v">'+(d.meetingPoint||'—')+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('pax')+' / Pax</span><span class="dc-v">'+pax+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('dept')+' / Dept</span><span class="dc-v">'+depts+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">'+T('purpose')+' / Purpose</span><span class="dc-v">'+prps+(prpsE?' <small style="color:#64748b;font-style:italic">('+prpsE+')</small>':'')+'</span></div>'
-    +'<div class="dc-row"><span class="dc-l">👥 '+bi('乘车人','Passengers')+'</span><span class="dc-v">'+paxNames.join('、')+'</span></div>'
-    +(dnotesCn?'<div class="dc-row"><span class="dc-l">'+T('notes')+' / Notes</span><span class="dc-v">'+dnotesCn+(dnotesEn?' <small style="color:#64748b;font-style:italic">('+dnotesEn+')</small>':'')+'</span></div>':'')
+  const driverInit=(d.driver||'?').trim().slice(0,1).toUpperCase();
+  const avatars=paxNames.slice(0,5).map((n,i)=>'<span style="background:'+['#5b8af5','#7c5bf5','#34c77b','#f5a623','#f5555d'][i%5]+';z-index:'+(5-i)+'">'+((n||'?').slice(0,1))+'</span>').join('');
+  const more=paxNames.length>5?'<span style="background:var(--tx-dim);z-index:0">+'+(paxNames.length-5)+'</span>':'';
+  return '<div class="dc2">'
+    +'<div class="dc2-h"><div class="dc2-h-inner">'
+    +'<div><div class="dc2-title">'+T('dispatch_title')+'</div>'
+    +'<div class="dc2-date">'+fmtL(d.date)+' <span style="font-size:13px;color:var(--tx-dim);font-weight:500">'+d.date+'</span></div>'
+    +'</div>'
+    +'<div class="dc2-plate"><span class="dc2-plate-icon">🚗</span><span class="dc2-plate-num">'+d.vehicle+'</span></div>'
+    +'</div></div>'
+    +'<div class="dc2-b">'
+    +'<div class="dc2-driver"><div class="dc2-avatar">'+driverInit+'</div>'
+    +'<div><div class="dc2-driver-name">'+d.driver+'</div>'
+    +'<div class="dc2-driver-role">🚙 '+T('driver_label')+' / Driver</div></div></div>'
+    +'<div class="dc2-grid">'
+    +'<div class="dc2-stat"><div class="dc2-stat-label">👥 '+T('pax')+' / Pax</div><div class="dc2-stat-val">'+pax+' '+bi('人','ppl')+'</div></div>'
+    +'<div class="dc2-stat"><div class="dc2-stat-label">🏢 '+T('dept')+' / Dept</div><div class="dc2-stat-val">'+depts+'</div></div>'
+    +(d.meetingPoint?'<div class="dc2-stat"><div class="dc2-stat-label">📍 '+T('meeting_point')+' / Point</div><div class="dc2-stat-val">'+d.meetingPoint+'</div></div>':'')
+    +'</div>'
+    +'<div class="dc2-pax">'
+    +'<div class="dc2-pax-avatars">'+avatars+more+'</div>'
+    +'<span class="dc2-pax-count">'+pax+' '+bi('人','ppl')+'</span>'
+    +'<span class="dc2-pax-names">'+paxNames.join('、')+'</span>'
+    +'</div>'
+    +(prps?'<div class="dc2-purpose"><div class="dc2-purpose-label">📋 '+T('purpose')+'</div>'
+      +prps+(prpsE?'<div class="dc2-purpose-en">'+prpsE+'</div>':'')
+      +'</div>':'')
+    +(dnotesCn||dnotesEn?'<div class="dc2-notes">'
+      +(dnotesCn?'<div class="dc2-notes-label">📝 '+T('notes')+'</div>'+dnotesCn:'')
+      +(dnotesEn&&dnotesEn!==dnotesCn?'<div style="color:var(--tx-muted);font-style:italic;margin-top:3px">'+dnotesEn+'</div>':'')
+      +'</div>':'')
+    +'<div class="dc2-actions">'
+    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+T('edit')+'</button>':'')
+    +(isAdmin()?'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+T('delete')+'</button>':'')
+    +'</div>'
     +'</div></div>';
 }
+function editDispatch(id){toast('🚧 '+bi('编辑派车单功能开发中','Edit dispatch feature coming soon'));}
+function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);toast(L==='zh'?'已删除':'Deleted');renderPage();}
 
 function expImg(){
   if(!isAdmin())return;
@@ -1622,7 +1914,7 @@ function expPDF(){
   h+='.stats{display:flex;gap:12px;margin-bottom:12px}.stat{flex:1;text-align:center;background:#f8fafc;padding:8px;border:1px solid #e5e7eb;border-radius:6px}';
   h+='.stat .sn{font-size:22px;font-weight:800;color:#2563eb}.stat .sl{font-size:9px;color:#666}';
   h+='@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
-  h+='<\\/style><script>(function(){const h=new Date().getHours();const isDark=h<7||h>=19;const saved=localStorage.getItem(\"kmc_theme\");const theme=saved||(isDark?\"dark\":\"light\");document.documentElement.setAttribute(\"data-theme\",theme);})();<\\/script></head><body>';
+  h+='<\\/style><\\script>(function(){const h=new Date().getHours();const isDark=h<7||h>=19;const saved=localStorage.getItem(\"kmc_theme\");const theme=saved||(isDark?\"dark\":\"light\");document.documentElement.setAttribute(\"data-theme\",theme);})();<\\/script></head><body>';
   h+='<h1>'+(L==='zh'?'车辆调度台账':'KMC Vehicle Dispatch Report')+'<small><br>'+bi('车辆调度台账 · Vehicle Dispatch Ledger','KMC Vehicle Dispatch Ledger')+'<br>Dispatcher: '+S.user.name+' · '+fmtL(today())+' ('+today()+')</small></h1>';
   
   // Stats
@@ -1660,7 +1952,7 @@ function expPDF(){
   });
 
   h+='<div class="footer">KMC Dispatcher · '+new Date().toISOString()+' · Dispatcher: '+S.user.name+'</div>';
-  h+='<script>setTimeout(function(){window.print();},500);<\/script>';
+  h+='<\\script>setTimeout(function(){window.print();},500);<\\/script>';
   h+='</body></html>';
   w.document.write(h);w.document.close();
   // Cleanup after print
@@ -2028,6 +2320,19 @@ function renderSettings(){
       +'<div class="fld"><label>'+bi('系统名称（英文）','System Name (EN)')+'</label>'
       +'<input type="text" id="st-sysen" value="'+DB.sysNameEn.get()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
       +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
+  }
+
+  // Cloud sync settings (admin only) - 修复 Token 录入 UI 缺失
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">☁️ '+bi('云同步设置','Cloud Sync')+' <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('GitHub 仓库 kmc-sync-data','GitHub repo kmc-sync-data')+'</span></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:8px">'+bi('粘贴 GitHub Fine-grained Token（需 Contents 读写权限），保存后自动同步','Paste GitHub Fine-grained Token (Contents read/write), auto-sync after save')+'</div>'
+      +'<div class="fld"><label>🔑 '+bi('GitHub Token','GitHub Token')+'</label>'
+      +'<input type="password" id="st-gist-token" value="'+gistToken+'" placeholder="github_pat_..." style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:12px;background:var(--bg-soft);color:var(--tx);font-family:monospace"></div>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+      +'<button class="bt bt-p bt-sm" onclick="saveGistToken()">'+T('common_save')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="manualSync()">☁️ '+bi('立即同步','Sync Now')+'</button>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-left:auto">'+(syncAvailable?bi('✅ 云端已连接','✅ Cloud connected'):bi('⚠ 未连接（无 token 或同步失败）','⚠ Not connected (no token or sync failed)'))+'</div>'
+      +'</div></div>';
   }
 
   // Admin feature toggles
