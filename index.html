@@ -167,7 +167,7 @@ textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
 
 /* Form fields */
 .fld{margin-bottom:16px}
-.fld label{display:block;font-size:12px;font-weight:500;color:var(--tx-dim);margin-bottom:6px}
+.fld label{display:block;font-size:12px;font-weight:600;color:var(--tx-dim);margin-bottom:6px;white-space:nowrap;letter-spacing:.2px}
 .fld input,.fld select,.fld textarea{width:100%;padding:11px 14px;border:1px solid var(--bd);
   border-radius:var(--rx-sm);font-size:14px;background:rgba(17,22,29,0.55);
   color:var(--tx);outline:none;font-family:inherit;transition:var(--tr);
@@ -2640,13 +2640,14 @@ function selAll(){const reqs=DB.requests.get().filter(r=>S.fSubmitter?r.submitte
 function showDisp(){
   const vs=DB.vehicles.get(),ds=DB.drivers.get(),rl=DB.requests.get().filter(r=>S.selReqs.has(r.id));
   const pax=rl.reduce((s,r)=>s+r.passengers,0);
-  showModal('<h3>🚗 '+T('pool_merge')+'</h3><p style="font-size:13px;color:#64748b">'+S.selReqs.size+' requests, '+pax+' pax</p>'
-    +'<div class="fld"><label>Vehicle</label><select id="md-v">'+vs.map(v=>'<option>'+esc(v.plate)+' - '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Driver</label><select id="md-d">'+ds.map(d=>'<option>'+esc(d.name)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Departure Time</label><input type="text" id="md-t" placeholder="07:00"></div>'
-    +'<div class="fld"><label>Meeting Point</label><input type="text" id="md-p" placeholder="Location"></div>'
-    +'<div class="fld"><label>Notes</label><input type="text" id="md-nt" placeholder="Notes"></div>'
-    +'<div style="text-align:right;margin-top:12px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="doDisp()">'+T('common_save')+'</button></div>',true);
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">🚗 '+T('pool_merge')+'</h3>'
+    +'<p style="font-size:13px;color:var(--ac);margin-bottom:14px;padding:10px 14px;background:rgba(91,138,245,0.1);border:1px solid rgba(91,138,245,0.2);border-radius:10px;display:flex;align-items:center;gap:6px">📋 '+bi('已选 '+S.selReqs.size+' 条需求 · 共 '+pax+' 人','Selected '+S.selReqs.size+' requests · '+pax+' pax')+'</p>'
+    +'<div class="fld"><label>🚗 '+bi('车辆','Vehicle')+'</label><select class="pair-input" id="md-v">'+vs.map(v=>'<option>'+esc(v.plate)+' — '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select class="pair-input" id="md-d">'+ds.map(d=>'<option>'+esc(d.name)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>⏰ '+bi('出发时间','Departure Time')+'</label><input class="pair-input" type="text" id="md-t" placeholder="07:00"></div>'
+    +'<div class="fld"><label>📍 '+bi('集合点','Meeting Point')+'</label><input class="pair-input" type="text" id="md-p" placeholder="'+bi('如：Kamativi 矿区门口','e.g., Kamativi Mine gate')+'"></div>'
+    +'<div class="fld"><label>📝 '+bi('备注','Notes')+'</label><input class="pair-input" type="text" id="md-nt" placeholder="'+bi('选填','Optional')+'"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="doDisp()">✓ '+T('common_save')+'</button></div>',true);
 }
 function doDisp(){const rIds=[...S.selReqs];const v=document.getElementById('md-v').value.split(' - ')[0];
   const d=document.getElementById('md-d').value,t2=document.getElementById('md-t').value.trim();
@@ -2658,13 +2659,14 @@ function doDisp(){const rIds=[...S.selReqs];const v=document.getElementById('md-
   S.selReqs.clear();closeModal();toast('Dispatched');renderPage();}
 function editD(did){const dd=DB.dispatches.get().find(d=>d.id===did);if(!dd)return;
   const vs=DB.vehicles.get(),ds=DB.drivers.get();
-  showModal('<h3>Edit Dispatch</h3>'
-    +'<div class="fld"><label>Vehicle</label><select id="me-v">'+vs.map(v=>'<option value="'+esc(v.plate)+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+esc(v.plate)+' - '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Driver</label><select id="me-d">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Departure</label><input type="text" id="me-t" value="'+esc(dd.departureTime||'')+'"></div>'
-    +'<div class="fld"><label>Meeting Point</label><input type="text" id="me-p" value="'+esc(dd.meetingPoint||'')+'"></div>'
-    +'<div class="fld"><label>Notes</label><input type="text" id="me-nt" value="'+esc(dd.notes||'')+'"></div>'
-    +'<div style="text-align:right;margin-top:12px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveD(\''+did+'\')">'+T('common_save')+'</button></div>',true);
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">✏️ '+bi('编辑派车单','Edit Dispatch')+'</h3>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:14px;padding:10px 14px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:10px;display:flex;align-items:center;gap:6px">📅 '+bi(dd.date+' · '+dd.vehicle+' · '+dd.driver,'Date: '+dd.date+' · '+dd.vehicle+' · '+dd.driver)+'</p>'
+    +'<div class="fld"><label>🚗 '+bi('车辆','Vehicle')+'</label><select class="pair-input" id="me-v">'+vs.map(v=>'<option value="'+esc(v.plate)+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+esc(v.plate)+' — '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select class="pair-input" id="me-d">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>⏰ '+bi('出发时间','Departure Time')+'</label><input class="pair-input" type="text" id="me-t" placeholder="07:00" value="'+esc(dd.departureTime||'')+'"></div>'
+    +'<div class="fld"><label>📍 '+bi('集合点','Meeting Point')+'</label><input class="pair-input" type="text" id="me-p" placeholder="'+bi('如：Kamativi 矿区门口','e.g., Kamativi Mine gate')+'" value="'+esc(dd.meetingPoint||'')+'"></div>'
+    +'<div class="fld"><label>📝 '+bi('备注','Notes')+'</label><input class="pair-input" type="text" id="me-nt" placeholder="'+bi('选填','Optional')+'" value="'+esc(dd.notes||'')+'"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveD(\''+did+'\')">✓ '+T('common_save')+'</button></div>',true);
 }
 function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did);if(!dd)return;
   dd.vehicle=document.getElementById('me-v').value;dd.driver=document.getElementById('me-d').value;
