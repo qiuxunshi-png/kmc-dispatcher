@@ -216,6 +216,13 @@ textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
   padding:16px;text-align:center;transition:var(--tr);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .st:hover{border-color:var(--bd-hi);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.st-clickable{cursor:pointer;user-select:none}
+.st-clickable:hover{border-color:var(--ac);box-shadow:0 8px 28px rgba(91,138,245,0.25)}
+.st-clickable.stat-collapsed{opacity:0.45;background:rgba(15,23,42,0.3)}
+.st-clickable.stat-collapsed:hover{opacity:0.7}
+.st-clickable .st-l{display:flex;align-items:center;gap:4px;justify-content:center}
+.st-clickable .collapse-arrow{font-size:9px;transition:transform .25s}
+.st-clickable.stat-collapsed .collapse-arrow{transform:rotate(-90deg)}
 .st-n{font-size:26px;font-weight:700;color:var(--tx);font-family:var(--mono)}
 .st-l{font-size:10px;color:var(--tx-dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px}
 
@@ -2583,13 +2590,16 @@ function renderPool(){
 
   html+='</div>';
 
-  // Summary stats
-  html+='<div style="display:flex;gap:8px;margin-bottom:12px"><div class="st" style="flex:1"><div class="st-n">'+pending.length+'</div><div class="st-l">⏳ '+bi('待处理','Pending')+'</div></div>'
-    +'<div class="st" style="flex:1"><div class="st-n">'+dispatched.length+'</div><div class="st-l">✅ '+bi('已派车','Dispatched')+'</div></div></div>';
+  // Summary stats (可点击折叠/展开对应内容)
+  html+='<div style="display:flex;gap:8px;margin-bottom:12px">'
+    +'<div class="st st-clickable" id="stat-pending" onclick="togglePoolSection(\'pending\')" style="flex:1"><div class="st-n">'+pending.length+'</div><div class="st-l">⏳ '+bi('待处理','Pending')+' <span class="collapse-arrow">▾</span></div></div>'
+    +'<div class="st st-clickable" id="stat-dispatched" onclick="togglePoolSection(\'dispatched\')" style="flex:1"><div class="st-n">'+dispatched.length+'</div><div class="st-l">✅ '+bi('已派车','Dispatched')+' <span class="collapse-arrow">▾</span></div></div>'
+    +'</div>';
 
-  // Pending list (selectable)
+  // Pending list (selectable, 可折叠)
   if(pending.length){
-    html+='<div class="sec-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')</div>';
+    html+='<div class="pool-section" id="pool-pending">';
+    html+='<div class="sec-title" id="pool-pending-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')</div>';
     pending.forEach(r=>{
       const apv=r.approved?('<span class="tag '+(r.approved==='yes'?'tg-d':'tg-r')+'" style="margin-left:4px">'+(r.approved==='yes'?'✓':'✗')+'</span>'):'';
       html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
@@ -2597,17 +2607,20 @@ function renderPool(){
         +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+esc(dShow(r.department))+'</span><span>👤 '+esc(r.submitter)+'</span></div></div></div>';
     });
     html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()" disabled>🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
+    html+='</div>';
   }
 
-  // Dispatched list (grouped by dispatch id)
+  // Dispatched list (grouped by dispatch id, 可折叠)
   if(dispatched.length){
-    html+='<div class="sec-title">✅ '+bi('已派车','Dispatched')+' ('+dispatched.length+')</div>';
+    html+='<div class="pool-section" id="pool-dispatched">';
+    html+='<div class="sec-title" id="pool-dispatched-title">✅ '+bi('已派车','Dispatched')+' ('+dispatched.length+')</div>';
     const g={};dispatched.forEach(r=>{const k=r.mergedToDispatchId||'?';if(!g[k])g[k]=[];g[k].push(r);});
     Object.entries(g).forEach(([k,grp])=>{const dd=DB.dispatches.get().find(d=>d.id===k);
       html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?esc(dd.vehicle):'?')+' · '+(dd?esc(dd.driver):'?')+' · '+fmtL(grp[0].date)+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
         +grp.map(r=>'<div style="font-size:13px;padding:4px 0">'+esc(dShow(r.department))+' '+esc(r.submitter)+': '+esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' ('+r.timeSlot+', '+r.passengers+'pax)</div>').join('')
         +(dd&&dd.meetingPoint?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📍 '+esc(dd.meetingPoint)+'</div>':'')+'</div>';
     });
+    html+='</div>';
   }
 
   if(!pending.length&&!dispatched.length)html+='<div class="emp">'+bi('无匹配需求','No matching requests')+'</div>';
@@ -2615,6 +2628,19 @@ function renderPool(){
 }
 function resetPoolFilters(){
   S.fFrom='';S.fTo='';S.fDepts=[];S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;S.fKeywordPool='';renderPage();
+}
+
+// 折叠/展开需求池的待处理或已派车区块
+function togglePoolSection(which){
+  const ids={pending:'pool-pending',dispatched:'pool-dispatched'};
+  const statIds={pending:'stat-pending',dispatched:'stat-dispatched'};
+  const sec=document.getElementById(ids[which]);
+  const stat=document.getElementById(statIds[which]);
+  if(!sec||!stat)return;
+  const collapsed=sec.style.display==='none';
+  sec.style.display=collapsed?'':'none';
+  stat.classList.toggle('stat-collapsed',!collapsed);
+  stat.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function togR(id){const e=document.getElementById('rr-'+id);if(!e)return;
   if(S.selReqs.has(id)){S.selReqs.delete(id);e.classList.remove('sel');}
