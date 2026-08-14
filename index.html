@@ -523,6 +523,22 @@ function dShow(d){
   return L==='zh'?dept.cn:dept.cn+' / '+dept.en;
 }
 
+// 任务类型 + 文案模板（提交需求用）
+const TASK_TYPES=[
+  {key:'airport',cn:'机场接送',en:'Airport Transfer',tplCn:'前往瀑布城机场接送人员',tplEn:'Transfer passengers to/from Victoria Falls Airport'},
+  {key:'purchase',cn:'外出采购',en:'Procurement',tplCn:'外出采购生活物资/食材',tplEn:'Procure daily necessities / food supplies'},
+  {key:'teambuild',cn:'团建旅游',en:'Team Building',tplCn:'外出团建/旅游活动，当日返程',tplEn:'Team building / outing activity, return same day'},
+  {key:'maintain',cn:'车辆维修',en:'Vehicle Maintenance',tplCn:'车辆维修保养',tplEn:'Vehicle maintenance & repair'},
+  {key:'reception',cn:'商务接待',en:'Business Reception',tplCn:'商务接待（陪同来访人员）',tplEn:'Business reception (escort visitors)'},
+  {key:'visa',cn:'签证公务',en:'Visa/Official',tplCn:'前往哈拉雷办理签证/公务',tplEn:'Visa / official business in Harare'},
+  {key:'medical',cn:'医疗接送',en:'Medical Transport',tplCn:'医疗接送（送医/复查）',tplEn:'Medical transport (hospital visit)'},
+  {key:'longterm',cn:'长期保障',en:'Long-term Support',tplCn:'长期专职保障任务',tplEn:'Long-term dedicated support'},
+  {key:'other',cn:'其他',en:'Other',tplCn:'',tplEn:''},
+];
+function taskTypeName(key){const t=TASK_TYPES.find(x=>x.key===key);return t?(L==='zh'?t.cn:t.cn+' / '+t.en):key;}
+// 常用目的地（预置，不支持自定义）
+const COMMON_DESTS=['瀑布城机场','万基','哈拉雷','布拉瓦约','Kamativi矿区','奎奎'];
+
 function renderLT(){
   const m=(v,p)=>'<button class="'+(L===v?'active':'')+'" onclick="switchL(\''+v+'\')">'+p+'</button>';
   const t=m('zh','中')+m('en','EN');
@@ -1812,9 +1828,16 @@ function renderSubmit(){
   const dateEnabled=DB.dateRange.get();
   const dateMin=dateEnabled?_t:(new Date().getHours()>=parseInt(getCutoff().split(':')[0])?_tm:_t);
   const dateMax=dateEnabled?(new Date(Date.now()+30*86400000)).toISOString().slice(0,10):_tm;
+  // 任务类型
+  html+='<div class="fld fld-required" id="step-0"><label><span class="step-badge">0</span><span>📌 '+bi('任务类型','Task Type')+' <span style="color:#dc2626">*</span></span></label>'
+    +'<select id="rq-type" onchange="onTypeChange()" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
+    +'<option value="">'+bi('请选择任务类型','Select task type')+'</option>'
+    +TASK_TYPES.map(t=>'<option value="'+t.key+'">'+t.cn+' / '+t.en+'</option>').join('')
+    +'</select>'
+    +'<div class="field-hint"><span class="ic tip">📌</span><span>'+bi('选择类型后自动填充常用文案，可再修改','Selecting a type auto-fills common text, editable afterwards')+'</span></div></div>';
   html+='<div class="fld fld-required" id="step-1"><label><span class="step-badge">1</span><span>'+T('submit_date')+' <span style="color:#dc2626">*</span></span><small style="font-weight:400;color:var(--tx-dim);margin-left:4px">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
     +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'" oninput="checkFilled(\'step-1\')">'
-    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 19:00 截止后只能选明日/后天','Today is default; after 19:00 cutoff only tomorrow/day-after is selectable')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 19:00 截止后只能选明日/后天；长期保障任务可不填日期','Today is default; after 19:00 cutoff only tomorrow/day-after; long-term tasks may skip date')+'。</span></div></div>';
   // Primary time slot
   html+='<div class="fld fld-required" id="step-2"><label><span class="step-badge">2</span><span>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></span></label>'
     +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
@@ -1856,7 +1879,8 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<div class="lt-btn"><button class="'+(S.dLang=='cn'?'active':'')+'" onclick="S.dLang=\'cn\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
     +'<button class="'+(S.dLang=='en'?'active':'')+'" onclick="S.dLang=\'en\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
     +'<button type="button" onclick="doTranslate(\'dest\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.dLang=='cn'?'EN':'CN')+'</button></div>'
-    +'<input type="text" id="rq-dest" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="checkFilled(\'step-4\',this.value)">'
+    +'<input type="text" id="rq-dest" list="dest-list" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="checkFilled(\'step-4\',this.value)">'
+    +'<datalist id="dest-list">'+COMMON_DESTS.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</datalist>'
     +'<input type="text" id="rq-destEn" style="display:none">'
     +'<div class="field-hint"><span class="ic tip">📍</span><span><b>'+bi('明确标注出发地 → 目的地','Specify origin → destination')+'</b>。'+bi('例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回','e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected')+'。</span></div></div>';
 
@@ -1983,6 +2007,9 @@ function saveEditReq(id){
 }
 
 function doSubmit(){
+  const type=document.getElementById('rq-type').value;
+  if(!type)return toast(L==='zh'?'请选择任务类型':'Please select task type');
+  const isLongTerm=(type==='longterm');
   const date=document.getElementById('rq-date').value;
   const dep=document.getElementById('rq-dep').value,ret=document.getElementById('rq-ret').value;
   const time=(dep&&ret)?(dep+'-'+ret):(dep||ret||'');
@@ -2005,7 +2032,12 @@ function doSubmit(){
   const destEn=document.getElementById('rq-destEn').value.trim();
   const notes=document.getElementById('rq-notes').value.trim();
   const notesEn=document.getElementById('rq-notesEn').value.trim();
-  if(!date||!dep||!ret||!dest||!purpose||!purposeEn)return toast(L==='zh'?'请填写日期、出发返程时间和中英双语外出事由':'Please fill date, departure/return time and bilingual purpose');
+  // 长期任务：日期可空；普通任务：日期/时间/目的地/事由必填
+  if(isLongTerm){
+    if(!purpose||!purposeEn)return toast(L==='zh'?'请填写中英双语任务描述':'Please fill bilingual task description');
+  }else{
+    if(!date||!dep||!ret||!dest||!purpose||!purposeEn)return toast(L==='zh'?'请填写日期、出发返程时间和中英双语外出事由':'Please fill date, departure/return time and bilingual purpose');
+  }
   
   // Build full notes including slot notes and extra slots
   let fullNotes=notes||'';
@@ -2015,14 +2047,31 @@ function doSubmit(){
   });
 
   const reqs=DB.requests.get();
-  reqs.push({id:uid(),date,timeSlot:time,passengers:pax,paxNames,purpose,purposeEn,
+  reqs.push({id:uid(),type:type,date:date||'',timeSlot:time,passengers:pax,paxNames,purpose,purposeEn,
     destination:dest||'',destinationEn:destEn||'',notes:fullNotes,notesEn:notesEn||'',
     approved:'yes',signature:S.sigData,department:S.user.department,submitter:S.user.name,
-    status:'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
+    status:isLongTerm?'longterm':'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
   DB.requests.set(reqs);sbSyncOne('requests',DB.requests.get());
   toast(T('common_success'));
   S.sigData='';
   renderPage();
+}
+
+// 任务类型切换：自动填充文案模板
+function onTypeChange(){
+  const key=document.getElementById('rq-type').value;
+  const t=TASK_TYPES.find(x=>x.key===key);
+  if(!t)return;
+  const cnEl=document.getElementById('rq-purpose'),enEl=document.getElementById('rq-purposeEn');
+  if(t.tplCn&&cnEl)cnEl.value=t.tplCn;
+  if(t.tplEn&&enEl)enEl.value=t.tplEn;
+  // 长期任务：日期可选
+  const dateEl=document.getElementById('rq-date');
+  if(key==='longterm'){
+    if(dateEl)dateEl.value='';
+    if(cnEl)cnEl.placeholder=L==='zh'?'长期保障任务描述（如：硫酸锂项目专职司机，全程保障现场通勤）':'Long-term support task description';
+  }
+  if(typeof updatePurposeStatus==='function')updatePurposeStatus();
 }
 
 function recallReq(rid){
@@ -2327,6 +2376,7 @@ function renderPool(){
   if(S.fDepts.length>0)reqs=reqs.filter(r=>S.fDepts.includes(r.department));
   if(S.fStatus==='pending')reqs=reqs.filter(r=>r.status==='pending');
   else if(S.fStatus==='dispatched')reqs=reqs.filter(r=>r.status==='dispatched');
+  else if(S.fStatus==='longterm')reqs=reqs.filter(r=>r.status==='longterm');
   if(S.fSubmitter)reqs=reqs.filter(r=>r.submitter===S.fSubmitter);
   if(S.fPaxMin>0)reqs=reqs.filter(r=>(r.passengers||1)>=S.fPaxMin);
   if(S.fPaxMax<99)reqs=reqs.filter(r=>(r.passengers||1)<=S.fPaxMax);
@@ -2362,6 +2412,7 @@ function renderPool(){
     ['all',bi('全部','All'),'#2563eb'],
     ['pending',bi('待处理','Pending'),'#f59e0b'],
     ['dispatched',bi('已派车','Dispatched'),'#10b981'],
+    ['longterm',bi('长期保障','Long-term'),'#8b5cf6'],
   ].map(([v,t,c])=>{
     const sel=S.fStatus===v;
     return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
@@ -2579,9 +2630,9 @@ function renderRecords(){
   +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>'
   // New: Status filter
   +'<div class="fld"><label>🔄 '+bi('状态','Status')+'</label><div style="display:flex;gap:6px">'
-  +['all','pending','dispatched'].map(v=>{
-    const t=v==='all'?bi('全部','All'):v==='pending'?bi('待处理','Pending'):bi('已派车','Dispatched');
-    const c=v==='all'?'#2563eb':v==='pending'?'#f59e0b':'#10b981';
+  +['all','pending','dispatched','longterm'].map(v=>{
+    const t=v==='all'?bi('全部','All'):v==='pending'?bi('待处理','Pending'):v==='dispatched'?bi('已派车','Dispatched'):bi('长期保障','Long-term');
+    const c=v==='all'?'#2563eb':v==='pending'?'#f59e0b':v==='dispatched'?'#10b981':'#8b5cf6';
     const sel=S.fStatus===v;
     return '<button onclick="S.fStatus=\''+v+'\';renderPage()" style="padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?c:'#e5e7eb')+';background:'+(sel?c:'#fff')+';color:'+(sel?'#fff':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+t+'</button>';
   }).join('')+'</div></div>'
@@ -2609,6 +2660,7 @@ function renderRecords(){
   // New filter: status
   if(S.fStatus==='pending')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.every(r=>r.status==='pending');});
   else if(S.fStatus==='dispatched')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.status==='dispatched');});
+  else if(S.fStatus==='longterm')fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.status==='longterm');});
   // New filter: submitter
   if(S.fSubmitter)fd=fd.filter(d=>{const rl=rs.filter(r=>d.requestIds.includes(r.id));return rl.some(r=>r.submitter===S.fSubmitter);});
   // New filter: pax range
