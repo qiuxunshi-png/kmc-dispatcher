@@ -40,8 +40,9 @@ html[data-theme="light"]{
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-size:14px;line-height:1.55;font-family:var(--font);
   background:var(--bg);color:var(--tx);min-height:100vh;
-  background-image:radial-gradient(at 0% 0%,rgba(91,138,245,0.05) 0%,transparent 50%),
-    radial-gradient(at 100% 100%,rgba(124,91,245,0.03) 0%,transparent 50%);
+  background-image:radial-gradient(at 0% 0%,rgba(91,138,245,0.08) 0%,transparent 50%),
+    radial-gradient(at 100% 0%,rgba(124,91,245,0.06) 0%,transparent 45%),
+    radial-gradient(at 50% 100%,rgba(52,199,123,0.05) 0%,transparent 55%);
   background-attachment:fixed;
   -webkit-font-smoothing:antialiased}
 .hide{display:none!important}
@@ -111,6 +112,36 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .field-hint b{color:var(--tx);font-weight:600}
 .fld-required.filled .field-hint{background:rgba(16,185,129,0.04);border-color:rgba(16,185,129,0.25)}
 
+/* iOS-style Segmented Control (中英文切换) */
+.seg-control{display:inline-flex;align-items:center;gap:0;background:rgba(15,23,42,.06);padding:3px;border-radius:9px;vertical-align:middle;margin-left:6px}
+.seg-control button{padding:4px 12px;border:none;background:transparent;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-radius:7px;transition:all .25s cubic-bezier(.4,0,.2,1);white-space:nowrap}
+.seg-control button:hover:not(.active){color:var(--text)}
+.seg-control button.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1),0 0 0 1px rgba(0,0,0,.04)}
+.seg-translate{width:28px;height:28px;border-radius:7px;background:rgba(5,150,105,.08);color:#059669;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s ease;vertical-align:middle;margin-left:6px}
+.seg-translate:hover{background:rgba(5,150,105,.18);transform:scale(1.05)}
+.seg-translate:active{transform:scale(.95)}
+
+/* 双栏并排：中文 ↔ English（中间 🔄 一键互译） */
+.pair-row{display:flex;gap:10px;align-items:stretch}
+.pair-cell{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pair-head{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--tx-dim);letter-spacing:.3px;text-transform:uppercase}
+.pair-status{margin-left:auto;font-size:13px}
+.pair-status.ok{color:#10b981}
+.pair-status.miss{color:#dc2626}
+.pair-input{width:100%;padding:11px 14px;border:1px solid var(--bd);border-radius:var(--rx-sm);font-size:14px;background:rgba(17,22,29,0.55);color:var(--tx);outline:none;font-family:inherit;transition:var(--tr);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
+.pair-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,138,245,0.14),0 0 20px rgba(91,138,245,0.08)}
+.pair-translate{align-self:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(5,150,105,.18),rgba(16,185,129,.18));color:#059669;border:1px solid rgba(5,150,105,.25);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .25s cubic-bezier(.4,0,.2,1);flex-shrink:0;font-weight:700}
+.pair-translate:hover{background:linear-gradient(135deg,rgba(5,150,105,.3),rgba(16,185,129,.3));transform:scale(1.08);box-shadow:0 4px 16px rgba(5,150,105,.25)}
+.pair-translate:active{transform:scale(.92)}
+.pair-translate:disabled{opacity:.5;cursor:wait}
+@media(max-width:768px){
+  .pair-row{flex-direction:column;gap:6px}
+  .pair-translate{align-self:center;transform:rotate(90deg)}
+  .pair-translate:hover{transform:rotate(90deg) scale(1.08)}
+  .pair-translate:active{transform:rotate(90deg) scale(.92)}
+}
+
 /* Top mobile bar - WhatsApp style */
 .mt{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 18px;display:flex;
   justify-content:space-between;align-items:center;
@@ -120,11 +151,16 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .mt p{font-size:11px;color:var(--tx-muted);margin-top:1px}
 .mt .ti{font-size:11px;color:var(--tx-dim);margin-right:8px;white-space:nowrap}
 
-/* Card - WhatsApp style */
-.card{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:20px;margin-bottom:14px;box-shadow:var(--sh);transition:var(--tr);}
-.card:hover{border-color:var(--bd-hi);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
-  backdrop-filter:blur(12px)}
+/* Card - 深色玻璃质感 */
+.card{background:linear-gradient(180deg,rgba(26,32,41,0.92),rgba(17,22,29,0.88));
+  border:1px solid var(--bd);border-radius:var(--rx-lg);
+  padding:20px;margin-bottom:14px;box-shadow:var(--sh);transition:var(--tr);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  position:relative}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  border-radius:var(--rx-lg) var(--rx-lg) 0 0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent);pointer-events:none}
+.card:hover{border-color:var(--bd-hi);transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,0.35)}
 .card-h{font-weight:600;font-size:14px;color:var(--tx);margin-bottom:14px;
   padding-bottom:12px;border-bottom:1px solid var(--bd);
   display:flex;justify-content:space-between;align-items:center;letter-spacing:-0.2px}
@@ -133,11 +169,12 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .fld{margin-bottom:16px}
 .fld label{display:block;font-size:12px;font-weight:500;color:var(--tx-dim);margin-bottom:6px}
 .fld input,.fld select,.fld textarea{width:100%;padding:11px 14px;border:1px solid var(--bd);
-  border-radius:var(--rx-sm);font-size:14px;background:var(--bg-soft);
-  color:var(--tx);outline:none;font-family:inherit;transition:var(--tr)}
+  border-radius:var(--rx-sm);font-size:14px;background:rgba(17,22,29,0.55);
+  color:var(--tx);outline:none;font-family:inherit;transition:var(--tr);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .fld input::placeholder,.fld textarea::placeholder{color:var(--tx-muted)}
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--ac);
-  box-shadow:0 0 0 3px rgba(91,138,245,0.1)}
+  box-shadow:0 0 0 3px rgba(91,138,245,0.14),0 0 20px rgba(91,138,245,0.08)}
 .fld textarea{resize:vertical;min-height:70px}
 
 /* Buttons - modern */
@@ -175,9 +212,10 @@ body{font-size:14px;line-height:1.55;font-family:var(--font);
 .tg-d{background:rgba(52,199,123,0.15);color:var(--gn)}
 
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
-.st{background:var(--bg-elevated);border:1px solid var(--bd);border-radius:var(--rx);
-  padding:16px;text-align:center;transition:var(--tr)}
-.st:hover{border-color:var(--bd-hi);transform:translateY(-1px)}
+.st{background:linear-gradient(180deg,rgba(26,32,41,0.9),rgba(17,22,29,0.85));border:1px solid var(--bd);border-radius:var(--rx);
+  padding:16px;text-align:center;transition:var(--tr);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.st:hover{border-color:var(--bd-hi);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
 .st-n{font-size:26px;font-weight:700;color:var(--tx);font-family:var(--mono)}
 .st-l{font-size:10px;color:var(--tx-dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px}
 
@@ -427,9 +465,12 @@ const LS=(k,opts)=>{
   return{get(){try{const v=JSON.parse(localStorage.getItem(key));return(v===null||v===undefined)&&opts&&opts.onGet?opts.onGet(v):v}catch{return opts&&opts.onGet?opts.onGet(null):null}},
     set(v){localStorage.setItem(key,JSON.stringify(v))}};
 };
-(function(){const v=localStorage.getItem('kmc2_ver');
-  if(v!=='v14'){['vehicles','drivers','requests','dispatches','users','user','lang','imported','depts','cutoff'].forEach(k=>localStorage.removeItem('kmc2_'+k));
-    localStorage.setItem('kmc2_ver','v14');}})();
+(function(){
+  // v15: 版本升级不再自动清空本地数据。
+  // 历史数据已云端同步，清空会导致离线缓存丢失、imported 复位后重复导入历史数据。
+  // 如需强制重置，由管理员在「设置 → 清空数据」手动执行。
+  localStorage.setItem('kmc2_ver','v15');
+})();
 
 let L='zh';
 const loadL=()=>{const v=localStorage.getItem('kmc2_lang');if(v==='en'||v==='zh'){L=v;document.documentElement.setAttribute('data-lang',v);}else{document.documentElement.setAttribute('data-lang','zh');}};loadL();
@@ -503,6 +544,12 @@ const T=key=>{
 // Helper for bilingual display in current language
 function bi(cn,en){return L==='zh'?(cn||en):(en||cn);}
 
+// HTML 转义：所有用户输入在拼入 innerHTML 前必须经过 esc()，防止 XSS
+function esc(s){
+  if(s===null||s===undefined)return '';
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // Dynamic department list (admin-managed, synced to cloud)
 const DEFAULT_DEPTS=[
   {cn:'总经理办',en:'GM Office'},{cn:'财务部',en:'Finance'},{cn:'综合部',en:'General Affairs'},
@@ -567,7 +614,7 @@ function closeModal(){document.getElementById('modal-root').innerHTML='';}
 
 
 // ==================== SUPABASE 数据层（方案A：多人实时同步） ====================
-const SUPABASE_URL='https://ssydtlyybnknxdsuimx.supabase.co';
+const SUPABASE_URL='https://ssydtlyybnknxxdsuimx.supabase.co';
 const SUPABASE_ANON='sb_publishable_DxBm-qz2vB9gN3UlJKW7ZA_9dnD9iCk';
 let sbClient=null;
 function sbInit(){
@@ -765,6 +812,25 @@ const DB={
     if(!this.imported.get()){importHistData();this.imported.set(true);}
     // Always merge org users
     importOrgUsers();
+    // v15+ migrate: 补历史真实车牌/司机（仅在缺失时添加，不覆盖已有）
+    this.migrateFleet();
+  },
+  migrateFleet(){
+    const vs=this.vehicles.get()||[];
+    const newVeh=[
+      {plate:'3101',type:'矿区内部皮卡（3101）',typeEn:'Internal Mine Pickup (3101)',seats:5},
+      {plate:'3102',type:'矿区内部皮卡（3102）',typeEn:'Internal Mine Pickup (3102)',seats:5},
+      {plate:'3103',type:'矿区内部皮卡（3103）',typeEn:'Internal Mine Pickup (3103)',seats:5},
+      {plate:'0630',type:'矿区内部皮卡（0630）',typeEn:'Internal Mine Pickup (0630)',seats:5},
+    ];
+    let addedV=false;
+    newVeh.forEach(v=>{if(!vs.find(x=>x.plate===v.plate)){vs.push(v);addedV=true;}});
+    if(addedV)this.vehicles.set(vs);
+    const ds=this.drivers.get()||[];
+    const newDrv=['Milion','Chada','Tshuma','Choga','Pardon'];
+    let addedD=false;
+    newDrv.forEach(n=>{if(!ds.find(x=>x.name===n)){ds.push({name:n});addedD=true;}});
+    if(addedD)this.drivers.set(ds);
   }
 };
 DB.init();
@@ -779,11 +845,11 @@ function setCutoff(t){DB.cutoff.set(t);}
 
 function importHistData(){
   const H=[
-{D:'2025-10-08',V:'Nkala',P:'AGE 2915',C:'陪同谢总、姜部长矿山出发至布拉瓦约公办，预计留宿一晚，上午8点出发，10号下午返回，旅途中需注意行车安全及接待礼仪',E:'Accompanying General Manager Xie and Minister Jiang on their departure from the mine to Bravayo Public Office, expected to stay overnight. They will depart at 8am and return on the afternoon of the 10th. During the journey, it is important to pay attention to driving safety and reception etiquette',X:1},
+{D:'2025-10-08',V:'Nkala',P:'AGE 2915',C:'陪同谢总、姜部长矿山出发至布拉瓦约公办，预计留宿一晚，上午8点出发，10号下午返回，旅途中需注意行车安全及接待礼仪',E:'Accompanying General Manager Xie and Minister Jiang on their departure from the mine to Bulawayo Public Office, expected to stay overnight. They will depart at 8am and return on the afternoon of the 10th. During the journey, it is important to pay attention to driving safety and reception etiquette',X:1},
 {D:'2025-10-09',V:'Reginald',P:'4164',C:'飞机故障、空车返回，形成修改次日',E:'"Aircraft malfunction, returning without a passenger, travel schedule revised for the next day"',X:1},
-{D:'2025-10-09',V:'Samuel',P:'AGA 5395',C:'陪同moyo先生去万基参与活动，同时与程先生沟通是否采购后勤物资等事宜，需上午有8点以前出发',E:'Accompany Mr. Moyo to participate in the event at Wanji, and communicate with Mr. Cheng on whether to purchase logistics materials and other matters. Departure before 8am in the morning is required',X:1},
-{D:'2025-10-10',V:'Reginald',P:'4164',C:'瀑布成机场接一共3人，哈拉雷返回2人，飞机抵达时间中午13点25分，中国返回1人，到达时间中午12点10分，行程中注意行车安全，注意接待礼仪。',E:'Pick up a total of 3 people at Victoria Falls Airport: 2 returning from Harare (flight arrival time: 1:25 PM) and 1 returning from China (arrival time: 12:10 PM). Please drive safely and observe proper etiquette during the trip.',X:3},
-{D:'2025-10-11',V:'Samuel',P:'AGA 5395',C:'瀑布成机场接回中国返回员工王中平先生，飞机到达时间中午12点10分，自行计划出发时间，不可延误',E:'"The waterfall airport will receive Mr. Wang Zhongping, a Chinese employee returning from abroad. The arrival time of the plane is 12:10 in the afternoon. Please plan your departure time accordingly and do not delay."',X:1},
+{D:'2025-10-09',V:'Samuel',P:'AGA 5395',C:'陪同moyo先生去万基参与活动，同时与程先生沟通是否采购后勤物资等事宜，需上午有8点以前出发',E:'Accompany Mr. Moyo to participate in the event at Hwange, and communicate with Mr. Cheng on whether to purchase logistics materials and other matters. Departure before 8am in the morning is required',X:1},
+{D:'2025-10-10',V:'Reginald',P:'4164',C:'瀑布城机场接一共3人，哈拉雷返回2人，飞机抵达时间中午13点25分，中国返回1人，到达时间中午12点10分，行程中注意行车安全，注意接待礼仪。',E:'Pick up a total of 3 people at Victoria Falls Airport: 2 returning from Harare (flight arrival time: 1:25 PM) and 1 returning from China (arrival time: 12:10 PM). Please drive safely and observe proper etiquette during the trip.',X:3},
+{D:'2025-10-11',V:'Samuel',P:'AGA 5395',C:'瀑布城机场接回中国返回员工王中平先生，飞机到达时间中午12点10分，自行计划出发时间，不可延误',E:'"The waterfall airport will receive Mr. Wang Zhongping, a Chinese employee returning from abroad. The arrival time of the plane is 12:10 in the afternoon. Please plan your departure time accordingly and do not delay."',X:1},
 {D:'2025-10-11',V:'Reginald',P:'4164',C:'财务部四人、外出瀑布城团建，当日返回',E:'Four members of the Finance Department went to a waterfall city for a team-building activity and returned on the same day.',X:4},
 {D:'2025-10-13',V:'Nkala',P:'AGE 2915',C:'瀑布城到达，谢澜谊，袁老师（女），JASON黄老师(男)  12点10   ，瀑布城到达南非的男老师2人，10点45   ，（共5人，机场汇合共同返回）',E:'Waterfall City arrival, Xie Lanyi, Teacher Yuan (female), Teacher Jason Huang (male), 12:10 PM.   Waterfall City arrival, two male teachers from South Africa, 10:45 AM.  (Total of 5 people, meet at the airport and return together).',X:5},
 {D:'2025-10-13',V:'Reginald',P:'4164',C:'',E:'',X:1},
@@ -804,23 +870,23 @@ function importHistData(){
 {D:'2025-10-20',V:'Samuel',P:'AGN 9991',C:'朱成涛瀑布城到达（1人）',E:'Zhu Chengtao arrived at Waterfall City (1 person)',X:1},
 {D:'2025-10-20',V:'Nkala',P:'AGE 2915',C:'两台车送达哈拉雷移民局录入指纹，预计周三返回，周一上午7点中国食堂出发（合计乘客6人）',E:'Two vehicles were sent to the Harare Immigration Office for fingerprint registration and are expected to return on Wednesday. Departure from the Chinese cafeteria at 7 AM on Monday, with a total of 6 passengers.',X:6},
 {D:'2025-10-20',V:'Reginald',P:'AGA 5395',C:'',E:'',X:1},
-{D:'2025-10-21',V:'Samuel',P:'AGN 9991',C:'张林瀑布城出发、梁得喜同行外出万基（2人）',E:'Zhang Lin departs from Pubu City, accompanied by Liang Dexi, heading to Wankei (2 people).',X:2},
+{D:'2025-10-21',V:'Samuel',P:'AGN 9991',C:'张林瀑布城出发、梁得喜同行外出万基（2人）',E:'Zhang Lin departs from Waterfall City, accompanied by Liang Dexi, heading to Hwange (2 people).',X:2},
 {D:'2025-10-22',V:'瑞龙司机',P:'AGN 4163',C:'西二号、黄卓文、姜宏佳瀑布城出发（3人）',E:'West No. 2, Huang Zhuowen, and Jiang Hongjia departed from Waterfall City (3 people)',X:3},
 {D:'2025-10-23',V:'Samuel',P:'AGN 9991',C:'陆海晶、王鹏翔瀑布城出发（2人）',E:'Lu Haijing and Wang Pengxiang departing from Waterfall City (2 people)',X:2},
 {D:'2025-10-25',V:'Reginald',P:'AGA 5395',C:'马稚宇瀑布城到达（1人）',E:'Ma Zhiyu arrives at Waterfall City (1 person)',X:1},
-{D:'2025-10-25',V:'Samuel',P:'AGN 9991',C:'安全生产部用车、送伤员万基医院（3人）',E:'Safety Production Department vehicle use, transporting three injured personnel to Wanji Hospital.',X:3},
+{D:'2025-10-25',V:'Samuel',P:'AGN 9991',C:'安全生产部用车、送伤员万基医院（3人）',E:'Safety Production Department vehicle use, transporting three injured personnel to Hwange Hospital.',X:3},
 {D:'2025-10-27',V:'Nkala',P:'AGE 2915',C:'唐佳华、古文瀑布城到达（2人）',E:'Tang Jiahua and Ancient Waterfall City arrival (2 people)',X:2},
 {D:'2025-10-28',V:'Reginald',P:'AGA 5395',C:'余洪川、贾帅辉、常磊坡、薛建瀑布城到达（4人） 何铭瀑布城出发（1人）',E:'Yu Hongchuan, Jia Shuaihui, Chang Leipo, Xue Jian arrived at Waterfall City (4 people)   He Ming departed from Waterfall City (1 person)',X:4},
 {D:'2025-10-28',V:'Nkala',P:'AGE 2915',C:'梁得喜、姜宏佳瀑布城办事次日返回（2人）',E:'Liang Dexi and Jiang Hongjia returned from Waterfall City the next day (2 persons).',X:2},
-{D:'2025-10-29',V:'Reginald',P:'AGN 9991',C:'外出万基采购日用品',E:'Outing Wanjī Purchase Daily Necessities',X:1},
+{D:'2025-10-29',V:'Reginald',P:'AGN 9991',C:'外出万基采购日用品',E:'Outing Hwange Purchase Daily Necessities',X:1},
 {D:'2025-10-30',V:'Nkala',P:'AGE 2915',C:'叶建国瀑布城到达（1人）',E:'Ye Jianguo arrived at Waterfall City (1 person)',X:1},
 {D:'2025-10-30',V:'Unknown',P:'',C:'苟小勇瀑布城到达（1人）',E:'Gou Xiaoyong arrived at Waterfall City (1 person)',X:1},
 {D:'2025-10-30',V:'Reginald',P:'AGN 9991',C:'布拉瓦约车站接病人，下午两点到达车站(3人)',E:'Pick up patients at Bulawayo station and arrive at the station at 2 pm (3 people)',X:3},
 {D:'2025-10-31',V:'Nkala',P:'AGE 2915',C:'梁得喜瀑布城到达（1人）',E:'Liang Dexi arrives at Waterfall City (1 person)',X:1},
 {D:'2025-11-01',V:'Reginald',P:'AGN 9991',C:'出发奎奎，下午两点到达，接金鹏检修人员当日返回（1人）',E:'Depart from Kuikui, arrive at two o\'clock in the afternoon, pick up Jinpeng maintenance personnel and return on the same day (1 person)',X:1},
 {D:'2025-11-01',V:'Samuel',P:'AGA 5395',C:'刘磊、津巴布韦与赞比亚海关处，客人下午三点到达（1人）',E:'Zimbabwe and Zambia Customs, guests arrive at 3pm (1 person)',X:1},
-{D:'2025-11-01',V:'Nkala',P:'AGE 2915',C:'中矿资源来访瀑布城出发(2人 )',E:'Zhongkang Resources visits from Fupu City (2 people)',X:2},
-{D:'2025-11-01',V:'Samuel',P:'AGA 5395',C:'唐总、古文、谢澜谊、薛建万基动物园（4人）',E:'Mr. Tang, Gu Wen, Xie Lanyi, Xue Jianwanji Zoo (4 people)',X:4},
+{D:'2025-11-01',V:'Nkala',P:'AGE 2915',C:'中矿资源来访瀑布城出发(2人 )',E:'Zhongkang Resources visits from Waterfall City (2 people)',X:2},
+{D:'2025-11-01',V:'Samuel',P:'AGA 5395',C:'唐总、古文、谢澜谊、薛建万基动物园（4人）',E:'Mr. Tang, Gu Wen, Xie Lanyi, Xue Jian, Hwange Zoo (4 people)',X:4},
 {D:'2025-11-03',V:'Unknown',P:'AGN 9991',C:'安全生产部借车9991（张如伟）',E:'Safety Production Department borrowed vehicle 9991 (Zhang Ruwei)',X:1},
 {D:'2025-11-04',V:'Nkala',P:'AGE 2915',C:'MOYO先生瀑布城到达，送往Hwange Safari Lodge入住休息，送达后返回（总统到访期间接待）',E:'Mr. MOYO arrives in Victoria Falls, transported to Hwange Safari Lodge for rest and accommodation, returned after delivery, during which various 接待 were provided (reception during the President\'s visit)',X:1},
 {D:'2025-11-04',V:'Reginald',P:'AGN 9991',C:'协助接送公司援助病人万基医院拆线（1人）',E:'Assisting a patient from a transportation company to have stitches removed at Wan Kee Hospital (1 person)',X:1},
@@ -830,7 +896,7 @@ function importHistData(){
 {D:'2025-11-06',V:'Unknown',P:'',C:'柴思茂、薛旭强、殷永珠瀑布城出发（3人）',E:'Chai Simao, Xue Xuqiang, and Yin Yongzhu set off from Waterfall City (3 people).',X:3},
 {D:'2025-11-06',V:'Reginald',P:'AGN 9991',C:'金鹏设备检修人员送回奎奎，上午7点出发，当日返回（1人）',E:'Jinpeng equipment maintenance personnel escorted Kui Kui back, departing at 7:00 AM and returning the same day (1 person).',X:1},
 {D:'2025-11-08',V:'Samuel',P:'AGA 5395',C:'王鹏翔、王飞瀑布城达到（2人）',E:'Wang Pengxiang and Wang Fei reached the Waterfall City (2 people).',X:2},
-{D:'2025-11-09',V:'Reginald',P:'AGN 9991',C:'美卓设备供应商，瀑布城机场出发（2人）',E:'Metso equipment supplier, departing from Niagara Falls Airport (2 people)',X:2},
+{D:'2025-11-09',V:'Reginald',P:'AGN 9991',C:'美卓设备供应商，瀑布城机场出发（2人）',E:'Metso equipment supplier, departing from Waterfall City Airport (2 people)',X:2},
 {D:'2025-11-10',V:'Samuel',P:'AGN 9991',C:'南昌矿机供应商，刘磊瀑布城出发（1人）',E:'Nanchang mining machinery supplier, Liu Lei departs from Waterfall City (1 person)',X:1},
 {D:'2025-11-11',V:'Unknown',P:'AGN 9991',C:'已预约修理厂检查刹车系统',E:'',X:1},
 {D:'2025-11-11',V:'Reginald',P:'AGA 5395',C:'胡代文、罗从兵、孟先生瀑布城到达（3人）',E:'Hu Daiwen, Luo Congbing, Mr. Meng arrive in Waterfall City (3 people)',X:3},
@@ -847,7 +913,7 @@ function importHistData(){
 {D:'2025-11-16',V:'Samuel',P:'AGA 5395',C:'余嘉瀑布城机场出发（1人）',E:'Departure from Yujia Falls Airport (1 person)',X:1},
 {D:'2025-11-17',V:'Nkala',P:'AGE 2915',C:'梁得喜、谢澜谊瀑布城机场出发，上午10点出发（2人） 何铭、杜建兵、兰庚、梁建中 、马新宇瀑布城机场到达（5人）',E:'Liang Dexi and Xie Lanyi depart from Waterfall City Airport at 10:00 AM (2 people). Heming Du Jianbing, Lan Geng, Liang Jianzhong, and Ma Xinyu arrived at Waterfall City (5 people).',X:2},
 {D:'2025-11-17',V:'Samuel',P:'AGA 5395',C:'',E:'',X:1},
-{D:'2025-11-18',V:'Ishmael',P:'AGN 4371',C:'一二期选厂万基动物园团建（8人）',E:'Phase 1 & 2 Factory Selection Wanjī Zoo Team Building (8 people)',X:8},
+{D:'2025-11-18',V:'Ishmael',P:'AGN 4371',C:'一二期选厂万基动物园团建（8人）',E:'Phase 1 & 2 Factory Selection Hwange Zoo Team Building (8 people)',X:8},
 {D:'2025-11-18',V:'Samuel',P:'AGA 5395',C:'',E:'',X:1},
 {D:'2025-11-18',V:'Nkala',P:'AGE 2915',C:'周葵宏瀑布城机场到达（1人） 高德强、余刚瀑布城机场出发（2人）',E:'Zhou Kuihong arrived at Waterfall City (1 person) Gao Deqiang and Yu Gang departed from Waterfall City (2 people)',X:1},
 {D:'2025-11-18',V:'Reginald',P:'AGN 9991',C:'哈拉雷移民局办理签证返程途中（4人）',E:'Harare Immigration Agency processing visa return trip (4 people)',X:4},
@@ -856,8 +922,8 @@ function importHistData(){
 {D:'2025-11-20',V:'Samuel',P:'AGN 9991',C:'郭瀚文、吴志林瀑布城机场出发（2人）',E:'Guo Hanwen, Wu Zhilin departing from Waterfall City Airport (2 people)',X:2},
 {D:'2025-11-20',V:'Reginald',P:'AGA 5395',C:'外出采购羊肉',E:'Going out to buy mutton',X:1},
 {D:'2025-11-20',V:'Nkala',P:'AGE 2915',C:'更换减震器，行车电脑故障码恢复，车辆清洗',E:'Shock absorber replacement, vehicle computer fault code recovery, vehicle cleaning',X:1},
-{D:'2025-11-21',V:'Samuel',P:'AGA 5395',C:'Tshuma、Billy-瀑布城机场出发，上午10.00出发（2人）',E:'From Tshuma and Billy, departure from Niagara Falls City Airport at 10:00 AM (for two people)',X:2},
-{D:'2025-11-21',V:'Reginald',P:'AGN 9991',C:'南仓矿机供应商，出发瀑布城景区，送往附近酒店后返回，上午09.30中国餐厅外集合，出发（3人）',E:'Nan Cang Mining Machinery Supplier, departure to Falling Water Scenic Area, deliver to a nearby hotel and return after arrival. Gather at the Chinese restaurant at 9:30 am and leave (for 3 people).',X:3},
+{D:'2025-11-21',V:'Samuel',P:'AGA 5395',C:'Tshuma、Billy-瀑布城机场出发，上午10.00出发（2人）',E:'From Tshuma and Billy, departure from Waterfall City Airport at 10:00 AM (for two people)',X:2},
+{D:'2025-11-21',V:'Reginald',P:'AGN 9991',C:'南仓矿机供应商，出发瀑布城景区，送往附近酒店后返回，上午09.30中国餐厅外集合，出发（3人）',E:'Nan Cang Mining Machinery Supplier, departure to Waterfall City Scenic Area, deliver to a nearby hotel and return after arrival. Gather at the Chinese restaurant at 9:30 am and leave (for 3 people).',X:3},
 {D:'2025-11-21',V:'Nkala',P:'AGE 2915',C:'上午06.30中国餐厅外集合出发哈拉雷参加篮球比赛，预计24号返程（6人）',E:'Departing from Chinese restaurant at 06:30 in the morning to participate in a basketball tournament in Harare, expected return on the 24th (for 6 people)',X:6},
 {D:'2025-11-22',V:'Samuel',P:'AGN 9991',C:'张洳伟-瀑布城机场出发（1人）',E:'Departure from Zhangruwei Waterfall City Airport (1 person)',X:1},
 {D:'2025-11-22',V:'Reginald',P:'AGA 5395',C:'预约修理厂车辆检测',E:'Schedule a vehicle inspection at a repair shop',X:1},
@@ -890,19 +956,19 @@ function importHistData(){
 {D:'2025-12-02',V:'Unknown',P:'AGE 2915',C:'检查车辆底盘，更换备胎、全车整备，保障次日出发哈拉雷',E:'Inspect the vehicle chassis, change the spare tire, and perform a full vehicle preparation to ensure departure from Harare the next day.',X:1},
 {D:'2025-12-03',V:'Reginald',P:'AGA 5395',C:'外出采购后厨食材、预约供应商现场牛肉议价',E:'Purchasing kitchen ingredients outside the home and negotiating prices with suppliers on-site for beef.',X:1},
 {D:'2025-12-03',V:'Nkala',P:'AGE 2915',C:'钟烜阳、王世伟、余学福、高文、阮胤、宋宇峰，出发哈拉雷移民局录入指纹，上午7点出发（6人）',E:'Zhong Xuanyang, Wang Shiwei, Yu Xuefu, Gao Wen, Ruan Yin, and Song Yufeng departed for Harare to have their fingerprints taken at the immigration office. They departed at 7:00 AM (6 people).',X:6},
-{D:'2025-12-04',V:'Reginald',P:'AGN 9991',C:'叶建国、胡代文，瀑布城机场出发、上午8.30出发（2人）',E:'Ye Jianguo and Hu Daiwen depart from Niagara Falls Airport at 8:30 AM (2 people)',X:2},
+{D:'2025-12-04',V:'Reginald',P:'AGN 9991',C:'叶建国、胡代文，瀑布城机场出发、上午8.30出发（2人）',E:'Ye Jianguo and Hu Daiwen depart from Waterfall City Airport at 8:30 AM (2 people)',X:2},
 {D:'2025-12-04',V:'Unknown',P:'',C:'西二号、陈文康、黄卓文、朱成涛瀑布城机场到达（4人）',E:'West No. 2, Chen Wenkang, Huang Zhuowen, and Zhu Chengtao arrived at Waterfall City Airport (4 people).',X:4},
 {D:'2025-12-04',V:'Samuel',P:'AGA 5395',C:'吴爽、瀑布城机场到达（1人）；粱得喜同行出发、接待预审单位（2人）',E:'Wu Shuang arrived at Waterfall City Airport (1 person); Liang Dexi accompanied her on her departure and received the pre-screening unit (2 people).',X:1},
 {D:'2025-12-04',V:'Nkala',P:'AGE 2915',C:'哈拉雷办理签证、未返程',E:'Harare visa application, not yet returned',X:1},
-{D:'2025-12-05',V:'Reginald',P:'AGN 9991',C:'机电部预约万基Baobabe酒店接2人返回，上午7点出发，返回公司后外出采购牛肉（2人）',E:'The Mechanical and Electrical Department booked a pickup for two people from the Wanji Baobabe Hotel. They departed at 7:00 AM and went out to purchase beef (for the two people) after returning to the company.',X:2},
+{D:'2025-12-05',V:'Reginald',P:'AGN 9991',C:'机电部预约万基Baobabe酒店接2人返回，上午7点出发，返回公司后外出采购牛肉（2人）',E:'The Mechanical and Electrical Department booked a pickup for two people from the Hwange Baobabe Hotel. They departed at 7:00 AM and went out to purchase beef (for the two people) after returning to the company.',X:2},
 {D:'2025-12-05',V:'Samuel',P:'AGA 5395',C:'机电部预约-中铁九局、赵刚民先生瀑布城机场出发；安生部预约瀑布城采购果树苗，随行人员安生部Daniel；返程途中采购液化气（2人）',E:'The Mechanical and Electrical Department made an appointment with China Railway No. 9 Bureau and Mr. Zhao Gangmin to depart from Fallstown Airport; the Safety and Health Department made an appointment to purchase fruit tree seedlings in Fallstown, with Daniel from the Safety and Health Department accompanying them; liquefied gas (LPG) was purchased on the return trip (2 people).',X:2},
 {D:'2025-12-05',V:'Nkala',P:'AGE 2915',C:'哈拉雷办理签证、未返程',E:'Harare visa application, not yet returned',X:1},
 {D:'2025-12-06',V:'Reginald',P:'AGN 9991',C:'预约牛肉屠宰、运输，食材保障',E:'Pre-order beef slaughtering and transportation to ensure food supply.',X:1},
 {D:'2025-12-06',V:'Nkala',P:'AGE 2915',C:'预约修理厂，车辆底盘与刹车整备，车辆左前大灯检查、故障码原因查询',E:'Schedule an appointment at a repair shop for vehicle chassis and brake preparation, inspection of the left front headlight, and fault code lookup.',X:1},
 {D:'2025-12-06',V:'Samuel',P:'AGA 5395',C:'王朝明、瀑布城机场出发（1人）',E:'Departure from Wang Chaoming, Waterfall City Airport (1 person)',X:1},
-{D:'2025-12-07',V:'Nkala',P:'AGN 9991',C:'机电部预约海王旋流器供应商、梁总访客（共3人）瀑布城机场出发，上午6.30出发',E:'The Mechanical and Electrical Department has scheduled a meeting with the Neptune hydrocyclone supplier and General Manager Liang (a total of 3 people) to depart from Niagara Falls Airport at 6:30 AM.',X:3},
+{D:'2025-12-07',V:'Nkala',P:'AGN 9991',C:'机电部预约海王旋流器供应商、梁总访客（共3人）瀑布城机场出发，上午6.30出发',E:'The Mechanical and Electrical Department has scheduled a meeting with the Neptune hydrocyclone supplier and General Manager Liang (a total of 3 people) to depart from Waterfall City Airport at 6:30 AM.',X:3},
 {D:'2025-12-07',V:'Unknown',P:'AGE 2915',C:'车辆大灯模块检测',E:'Fault codes, headlight fault detection',X:1},
-{D:'2025-12-08',V:'Samuel',P:'AGA 5395',C:'综合部预约万基接人，随行人员Joseph，上午7.30出发（3人），返回后处理左后轮异响，清理后座异味',E:'The General Affairs Department arranged for Wanji to pick up the group, accompanied by Joseph. They departed at 7:30 AM (3 people). Upon return, they addressed the rattling noise from the left rear wheel and cleaned the odor from the back seat.',X:3},
+{D:'2025-12-08',V:'Samuel',P:'AGA 5395',C:'综合部预约万基接人，随行人员Joseph，上午7.30出发（3人），返回后处理左后轮异响，清理后座异味',E:'The General Affairs Department arranged for Hwange to pick up the group, accompanied by Joseph. They departed at 7:30 AM (3 people). Upon return, they addressed the rattling noise from the left rear wheel and cleaned the odor from the back seat.',X:3},
 {D:'2025-12-08',V:'Nkala',P:'AGE 2915',C:'万义、瀑布城机场出发；秦志均、何力、（初次到达津巴布韦，需候机大厅举牌迎接）瀑布城机场到达（出发1人，到达2人）',E:'Departing from Vanuatu Airport; Qin Zhijun, He Li, (first-time arrival in Zimbabwe, need to hold up a sign to greet them in the waiting hall) Arriving at Vanuatu Airport (1 person departing, 2 people arriving)',X:1},
 {D:'2025-12-08',V:'Reginald',P:'AGN 9991',C:'梁沉预约万基参加RDC会议（3人）、食堂食材采购，共同返回',E:'Liang Chen has arranged for Wan Ji to attend an RDC meeting (3 people) and to purchase food supplies for the cafeteria. They will return together after the meeting.',X:3},
 {D:'2025-12-09',V:'Nkala',P:'AGE 2915',C:'谢澜宜、王磊-瀑布城机场出发、财务部员工Billy 瀑布城机场到达（出发2人、到达1人）',E:'Xie Lanyi and Wang Lei departed from Fallstown Airport; Billy, a finance department employee, arrived at Fallstown Airport (2 departing, 1 arriving).',X:2},
@@ -912,14 +978,14 @@ function importHistData(){
 {D:'2025-12-10',V:'Samuel',P:'AGA 5395',C:'业务部预约鑫力供应商，矿区内部接待使用',E:'Business department schedules Xinline supplier for internal mine reception use',X:1},
 {D:'2025-12-10',V:'Unknown',P:'AGN 9991',C:'刹车检修、大灯抖动故障调整',E:'Brake maintenance, headlight vibration fault adjustment',X:1},
 {D:'2025-12-11',V:'Nkala',P:'AGE 2915',C:'工信部摄制组、柴思茂瀑布城机场到达，粱得喜、秦志均同行出发机场接机；上午8点30分办公室外集合出发；重要接待，注意行车安全，接待礼仪。（出发2人、返回9人、三辆车同行返回）',E:'The Ministry of Industry and Information Technology film crew and Chai Simao (7 people arriving) arrived at Waterfall City Airport; Liang Dexi and Qin Zhijun accompanied them to the airport to pick them up; they met outside the office at 8:30 am for departure; this is an important reception, please pay attention to driving safety and reception etiquette. (2 people departing, 9 people returning, three vehicles returning together)',X:2},
-{D:'2025-12-11',V:'Rrosper',P:'AGN 4163',C:'',E:'',X:1},
+{D:'2025-12-11',V:'Prosper',P:'AGN 4163',C:'',E:'',X:1},
 {D:'2025-12-11',V:'Samuel',P:'AGN 9991',C:'业务部预约鑫力供应商出发瀑布城机场，上午7.00中方食堂外集合出发（2人），送达后等待2915、4163机场汇合，接待工信部摄制组共同返回；',E:'The business department arranged for Xinli\'s supplier to depart from Waterfall City Airport. The meeting point was at 7:00 AM outside the Chinese canteen (2 people). After arrival, they waited for the 2915 and 4163 airport crews to meet up and then return together with the Ministry of Industry and Information Technology\'s film crew.',X:2},
 {D:'2025-12-12',V:'Nkala',P:'AGE 2915',C:'接待工信部摄制组，未返程',E:'They received a film crew from the Ministry of Industry and Information Technology but did not return.',X:1},
 {D:'2025-12-12',V:'Unknown',P:'AGA 5395',C:'因工信部摄制组接待4163未返程，更换5395车辆瑞龙公司使用',E:'Because the Ministry of Industry and Information Technology\'s film crew, which received vehicle 4163, did not return, it is tentatively decided that vehicle 5395 will be used by Ruilong Company instead.',X:1},
-{D:'2025-12-12',V:'Samuel',P:'AGN 9991',C:'西二号、瀑布城机场出发，11.30午饭后中方食堂外汇合出发（1人）',E:'Depart from West Niagara Airport (West 2), meet at the Chinese canteen after lunch on 11:30 and depart (1 person).',X:1},
+{D:'2025-12-12',V:'Samuel',P:'AGN 9991',C:'西二号、瀑布城机场出发，11.30午饭后中方食堂外汇合出发（1人）',E:'Depart from West Waterfall City Airport (West 2), meet at the Chinese canteen after lunch on 11:30 and depart (1 person).',X:1},
 {D:'2025-12-13',V:'Unknown',P:'AGE 2915',C:'工信部摄制组：上午拍摄社区贡献；下午拍摄文化融合；晚上拍摄矿区夜景航拍',E:'The Ministry of Industry and Information Technology\'s film crew: Morning shoot focused on community contributions; afternoon shoot focused on cultural integration; evening shoot focused on aerial nighttime views of the mining area.',X:1},
 {D:'2025-12-13',V:'Unknown',P:'AGA 5395',C:'',E:'',X:1},
-{D:'2025-12-13',V:'Reginald',P:'AGN 9991',C:'万基采购生活物资及厨房食材',E:'Wanji purchased daily necessities and kitchen ingredients.',X:1},
+{D:'2025-12-13',V:'Reginald',P:'AGN 9991',C:'万基采购生活物资及厨房食材',E:'Hwange purchased daily necessities and kitchen ingredients.',X:1},
 {D:'2025-12-14',V:'Nkala',P:'AGE 2915',C:'工信部摄制组接待、动物园观光，回营地住宿（4人）午饭后出发，具体时间待定',E:'The Ministry of Industry and Information Technology film crew will be received, and the group will visit the zoo. After returning to the camp for overnight stay (4 people), they will depart after lunch. The specific time is to be determined.',X:4},
 {D:'2025-12-14',V:'Samuel',P:'AGA 5395',C:'工信部摄制组-车间拍摄接送任务',E:'Ministry of Industry and Information Technology film crew - workshop filming and transportation task',X:1},
 {D:'2025-12-15',V:'Nkala',P:'AGE 2915',C:'工信部摄制组拍摄任务及接待使用车辆（6人）',E:'The Ministry of Industry and Information Technology\'s filming crew and the vehicles used for their reception (6 people)',X:6},
@@ -928,34 +994,34 @@ function importHistData(){
 {D:'2025-12-16',V:'Nkala',P:'AGE 2915',C:'王磊、瀑布城机场到达，取回机场存放包裹（1人）',E:'Wang Lei arrived at Waterfall City Airport (1 person).',X:1},
 {D:'2025-12-16',V:'Unknown',P:'AGN 9991',C:'工信部摄制组拍摄任务及接待使用车辆（6人）',E:'The Ministry of Industry and Information Technology\'s filming crew and the vehicles used for their reception (6 people)',X:6},
 {D:'2025-12-16',V:'Unknown',P:'AGA 5395',C:'',E:'',X:1},
-{D:'2025-12-17',V:'Nkala',P:'AGE 2915',C:'工信部摄制组：瀑布城机场出发；（6人）；上午7.30中方食堂外集合，两台车共同出发前往机场，送达后5395先行返程前往万基gain超市办理换货；2915返程时瀑布城医院取回医疗证明；',E:'Ministry of Industry and Information Technology film crew: Departure from Falls City Airport; (6 people); Meet at 7:30 am outside the Chinese canteen, two vehicles depart together to the airport, after which 5395 will return first to Wan Kee Gain Supermarket to exchange goods; 2915 will pick up the medical certificate from Falls City Hospital on the return trip;',X:6},
+{D:'2025-12-17',V:'Nkala',P:'AGE 2915',C:'工信部摄制组：瀑布城机场出发；（6人）；上午7.30中方食堂外集合，两台车共同出发前往机场，送达后5395先行返程前往万基gain超市办理换货；2915返程时瀑布城医院取回医疗证明；',E:'Ministry of Industry and Information Technology film crew: Departure from Waterfall City Airport; (6 people); Meet at 7:30 am outside the Chinese canteen, two vehicles depart together to the airport, after which 5395 will return first to Wan Kee Gain Supermarket to exchange goods; 2915 will pick up the medical certificate from Waterfall City Hospital on the return trip;',X:6},
 {D:'2025-12-17',V:'Samuel',P:'AGA 5395',C:'',E:'',X:1},
 {D:'2025-12-17',V:'Reginald',P:'AGN 9991',C:'程传贵预约采购食材（牛肉）',E:'Cheng Chuangui made an appointment to purchase ingredients (beef).',X:1},
 {D:'2025-12-18',V:'Samuel',P:'AGA 5395',C:'梁沉预约万基圣诞节日拜访（3人）',E:'Liang Chen has arranged to visit Wan Ji during the Christmas holiday (3 people).',X:3},
-{D:'2025-12-18',V:'Nkala',P:'AGN 9991',C:'秦志均、瀑布城机场出发（2人），上午8点食堂外集合出发，返程时顺路万基采购物资',E:'Qin Zhijun, departing from Waterfall City Airport (2 people); meet outside the canteen at 8:00 AM and depart. On the return trip, we will stop by Wanji to purchase supplies.',X:2},
+{D:'2025-12-18',V:'Nkala',P:'AGN 9991',C:'秦志均、瀑布城机场出发（2人），上午8点食堂外集合出发，返程时顺路万基采购物资',E:'Qin Zhijun, departing from Waterfall City Airport (2 people); meet outside the canteen at 8:00 AM and depart. On the return trip, we will stop by Hwange to purchase supplies.',X:2},
 {D:'2025-12-18',V:'Reginald',P:'AFX 6895',C:'厨房食材采购（牛肉）',E:'Kitchen ingredient procurement (beef)',X:1},
-{D:'2025-12-19',V:'Unknown',P:'AGA 5395',C:'安生部-外出万基圣诞节拜访（5人）',E:'An Sheng Department - Christmas visit to Wanji (5 people)',X:5},
+{D:'2025-12-19',V:'Unknown',P:'AGA 5395',C:'安生部-外出万基圣诞节拜访（5人）',E:'An Sheng Department - Christmas visit to Hwange (5 people)',X:5},
 {D:'2025-12-19',V:'Reginald',P:'AGN 9991',C:'预备节日食材、生活物资等外出采购',E:'Prepare for holiday food, daily necessities and other supplies by going out to purchase them.',X:1},
 {D:'2025-12-19',V:'Nkala',P:'AGE 2915',C:'车辆保养及整备、机油管道油渍清理、车辆清洗',E:'Vehicle maintenance and preparation, oil pipe cleaning, vehicle washing',X:1},
-{D:'2025-12-21',V:'Nkala',P:'AGA 5395',C:'业务部瀑布城团建，当日返程（7人）',E:'Business Department team building trip to Falls City, return trip on the same day (7 people)',X:7},
+{D:'2025-12-21',V:'Nkala',P:'AGA 5395',C:'业务部瀑布城团建，当日返程（7人）',E:'Business Department team building trip to Waterfall City, return trip on the same day (7 people)',X:7},
 {D:'2025-12-21',V:'Choga',P:'2618',C:'',E:'',X:1},
 {D:'2025-12-21',V:'Unknown',P:'AGN 9991',C:'叶总、谢总预约用车',E:'Mr. Ye and Mr. Xie have booked a car.',X:1},
 {D:'2025-12-22',V:'Nkala',P:'AGA 5395',C:'程传贵-外出采购生活物资、食材',E:'Cheng Chuangui - Going out to purchase daily necessities and food ingredients',X:1},
 {D:'2025-12-23',V:'Samuel',P:'AGA 5395',C:'梁沉预约社区和周边慰问',E:'Liang Chen made an appointment to visit and offer condolences to the community and surrounding areas.',X:1},
 {D:'2025-12-23',V:'Nkala',P:'AGE 2915',C:'崔总、瀑布城机场出发、余刚、余嘉，瀑布城机场到达（出发1人到达2人）',E:'Mr. Cui, departing from Waterfall City Airport, Yu Gang, and Yu Jia, arriving at Waterfall City Airport (1 person departing, 2 people arriving).',X:1},
-{D:'2025-12-24',V:'Samuel',P:'AGE 2915',C:'粱德喜、瀑布城机场出发-哈拉雷，上午6.30出发（1人）',E:'Liang Dexi, de la Flughaveno Niagara Falls al Harareo, forirante je la 6:30 a.m. (1 persono)',X:1},
+{D:'2025-12-24',V:'Samuel',P:'AGE 2915',C:'粱德喜、瀑布城机场出发-哈拉雷，上午6.30出发（1人）',E:'Liang Dexi, departing from Waterfall City Airport to Harare at 6:30 AM (1 person)',X:1},
 {D:'2025-12-25',V:'Nkala',P:'AGE 2915',C:'张峻、瀑布城机场出发，上午8点，瑞龙餐厅外路边汇合后出发；郭汉文、吴志林瀑布城机场到达（出发1人，到达2人）',E:'Zhang Jun departed from Waterfall City Airport and met at the roadside outside Ruilong Restaurant at 8:00 AM before departing; Guo Hanwen and Wu Zhilin arrived at Waterfall City Airport (1 person departed, 2 people arrived).',X:1},
-{D:'2025-12-27',V:'Reginald',P:'AGN 9991',C:'余炳均瀑布城机场出发，上午8点中方食堂外集合出发（1人）',E:'Yu Bingjun departs from Niagara Falls Airport. Meet outside the Chinese canteen at 8:00 AM for departure (1 person).',X:1},
+{D:'2025-12-27',V:'Reginald',P:'AGN 9991',C:'余炳均瀑布城机场出发，上午8点中方食堂外集合出发（1人）',E:'Yu Bingjun departs from Waterfall City Airport. Meet outside the Chinese canteen at 8:00 AM for departure (1 person).',X:1},
 {D:'2025-12-28',V:'Unknown',P:'AGA 5395',C:'修理厂借用，顶替0693外出哈拉雷维修',E:'The repair shop borrowed it to replace 0693 for repairs in Harare.',X:1},
 {D:'2025-12-28',V:'Nkala',P:'AGN 9991',C:'外出采购后勤食材、蔬菜',E:'Going out to purchase supplies and vegetables',X:1},
 {D:'2025-12-29',V:'Nkala',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）',E:'Vehicle repair services scheduled for Harare (2 people) at the mechanics workshop.',X:2},
 {D:'2025-12-29',V:'Reginald',P:'AGN 9991',C:'外出采购后厨食材',E:'Go out to purchase canteen ingredients',X:1},
 {D:'2025-12-30',V:'Nkala',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
-{D:'2025-12-30',V:'Samuel',P:'AGN 9991',C:'段亮亮、瀑布城机场出发；上午8点中方食堂集合出发（1人）',E:'Duan Liangliang departs from Niagara Falls Airport; meet at the Chinese canteen at 8:00 AM for departure (1 person).',X:1},
-{D:'2025-12-31',V:'Reginald',P:'AGN 9991',C:'万基采购2915车辆一年期限包含三证保险',E:'Wanji purchased vehicle 2915 for a one-year term, including three certificates and insurance.',X:1},
+{D:'2025-12-30',V:'Samuel',P:'AGN 9991',C:'段亮亮、瀑布城机场出发；上午8点中方食堂集合出发（1人）',E:'Duan Liangliang departs from Waterfall City Airport; meet at the Chinese canteen at 8:00 AM for departure (1 person).',X:1},
+{D:'2025-12-31',V:'Reginald',P:'AGN 9991',C:'万基采购2915车辆一年期限包含三证保险',E:'Hwange purchased vehicle 2915 for a one-year term, including three certificates and insurance.',X:1},
 {D:'2025-12-31',V:'Nkala',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
 {D:'2026-01-01',V:'Reginald',P:'AGN 9991',C:'文志军、易文斌瀑布城机场出发，上午8点中国餐厅外集合出发（2人）',E:'Wen Zhijun and Yi Wenbin will depart from Fallstown Airport. They will meet outside the Chinese restaurant at 8:00 AM (2 people).',X:2},
-{D:'2026-01-03',V:'Reginald',P:'AGN 9991',C:'陈文康、瀑布城机场出发（1人）；上午7.30点中国餐厅外集合出发。',E:'Chen Wenkang, departing from Niagara Falls Airport (1 person); meet outside the Chinese restaurant at 7:30 am for departure.',X:1},
+{D:'2026-01-03',V:'Reginald',P:'AGN 9991',C:'陈文康、瀑布城机场出发（1人）；上午7.30点中国餐厅外集合出发。',E:'Chen Wenkang, departing from Waterfall City Airport (1 person); meet outside the Chinese restaurant at 7:30 am for departure.',X:1},
 {D:'2026-01-03',V:'Unknown',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
 {D:'2026-01-04',V:'Samuel',P:'AGN 9991',C:'李庆、王磊瀑布城机场出发（2人）',E:'Li Qing and Wang Lei depart from Waterfall City Airport (2 people)',X:2},
 {D:'2026-01-04',V:'Unknown',P:'AGA 5395',C:'机修车间预约出发哈拉雷车辆维修业务（2人）；未返程',E:'The mechanics have booked vehicle repair services in Harare for 2 people; no return trip planned.',X:2},
@@ -976,9 +1042,9 @@ function importHistData(){
 {D:'2026-01-18',V:'Samuel',P:'AGN 9991',C:'',E:'',X:1},
 {D:'2026-01-18',V:'Nkala',P:'AGE 2915',C:'',E:'',X:1},
 {D:'2026-01-20',V:'Nkala',P:'AGA 5395',C:'MUTUMWA/MODERNMR瀑布城至哈拉雷；朱磊、杨杰、瀑布城机场出发（3人）上午8.30中方食堂外集合出发',E:'MUTUMWA/MODERNMR Falls to Harare; Zhu Lei, Yang Jie, Falls Airport (3 people) Departure: Meet outside the Chinese canteen at 8:30 AM.',X:3},
-{D:'2026-01-20',V:'Samuel',P:'AGN 9991',C:'安全生产部预约外出万基办事（2人）上午8点准时出发；',E:'The Safety Production Department has scheduled two people to go to Wanji on business. They will depart promptly at 8:00 AM.',X:2},
+{D:'2026-01-20',V:'Samuel',P:'AGN 9991',C:'安全生产部预约外出万基办事（2人）上午8点准时出发；',E:'The Safety Production Department has scheduled two people to go to Hwange on business. They will depart promptly at 8:00 AM.',X:2},
 {D:'2026-01-21',V:'Nkala',P:'AGE 2915',C:'叶建国、谢书林瀑布城机场出发（2人）上午11.00办公室外集合出发',E:'Ye Jianguo and Xie Shulin will depart from Waterfall City Airport (2 people). Meet outside the office at 11:00 AM for departure.',X:2},
-{D:'2026-01-21',V:'Reginald',P:'AGA 5395',C:'万基采购物资及食材',E:'Wanji procures supplies and ingredients',X:1},
+{D:'2026-01-21',V:'Reginald',P:'AGA 5395',C:'万基采购物资及食材',E:'Hwange procures supplies and ingredients',X:1},
 {D:'2026-01-22',V:'Reginald',P:'AGA 5395',C:'文志军、易文斌、刘思龙瀑布城机场到达；刘凯凯、瀑布城机场，上午8点中国餐厅外集合出发；（出发1人，到达3人）',E:'Wen Zhijun, Yi Wenbin, and Liu Silong arrived at Fallstown Airport; Liu Kaikai arrived at Fallstown Airport. We will meet outside the Chinese restaurant at 8:00 AM for departure; (1 person departs, 3 people arrive).',X:1},
 {D:'2026-01-22',V:'Nkala',P:'AGE 2915',C:'叶建国、谢书林、西二号、瀑布城机场、上午11点，办公室外集合出发（3人）',E:'Ye Jianguo, Xie Shulin, West No. 2, Waterfall City Airport, 11:00 AM, meet outside the office and depart (3 people)',X:3},
 {D:'2026-01-23',V:'Samuel',P:'AGA 5395',C:'朱成涛、黄卓文外出瀑布城办事（2人）',E:'Zhu Chengtao and Huang Zhuowen went to Waterfall City on business (2 people)',X:2},
@@ -986,45 +1052,45 @@ function importHistData(){
 {D:'2026-01-24',V:'Samuel',P:'AGA 5395',C:'高德强、李庆瀑布城机场到达，上午8.30出发（2人）',E:'Gao Deqiang and Li Qing arrived at Waterfall City Airport and departed at 8:30 AM (2 people).',X:2},
 {D:'2026-01-24',V:'Reginald',P:'AGN 9991',C:'外出采购食堂食材、预约供应商牛肉议价；',E:'Going out to purchase ingredients for the canteen and negotiating prices with suppliers of beef;',X:1},
 {D:'2026-01-26',V:'Reginald',P:'AGE 2915',C:'张峻、瀑布城机场到达（1人）',E:'Zhang Jun arrived at Waterfall City Airport (1 person).',X:1},
-{D:'2026-01-26',V:'Samuel',P:'AGA 5395',C:'业务部预约-万基办理业务（2人）',E:'Business Department Appointment - Wanji Business Processing (2 people)',X:2},
-{D:'2026-01-27',V:'Samuel',P:'AGA 5395',C:'业务部预约-万基办理业务（1人）',E:'Business Department Appointment - Wanji Business Processing (1 people)',X:1},
+{D:'2026-01-26',V:'Samuel',P:'AGA 5395',C:'业务部预约-万基办理业务（2人）',E:'Business Department Appointment - Hwange Business Processing (2 people)',X:2},
+{D:'2026-01-27',V:'Samuel',P:'AGA 5395',C:'业务部预约-万基办理业务（1人）',E:'Business Department Appointment - Hwange Business Processing (1 people)',X:1},
 {D:'2026-01-27',V:'Reginald',P:'AGN 9991',C:'食材采购、已约定供应商完成牛肉宰杀，采购带回',E:'Food ingredients have been procured; the supplier has been agreed to slaughter the beef, and the beef has been purchased and brought back.',X:1},
 {D:'2026-01-28',V:'Samuel',P:'AGA 5395',C:'机电部预约外出沿途电路巡线（3人）',E:'The Mechanical and Electrical Department has scheduled a field inspection of power lines along the route (3 people).',X:3},
-{D:'2026-01-29',V:'Samuel',P:'AGA 5395',C:'业务部预约万基办理业务、具体时间待通知（3人）',E:'The business department has scheduled appointments for Wanji to handle some business; the specific time will be notified later (3 people).',X:3},
+{D:'2026-01-29',V:'Samuel',P:'AGA 5395',C:'业务部预约万基办理业务、具体时间待通知（3人）',E:'The business department has scheduled appointments for Hwange to handle some business; the specific time will be notified later (3 people).',X:3},
 {D:'2026-01-29',V:'Nkala',P:'AGE 2915',C:'尹恒、洪一寒瀑布城机场出发；光伏项目人员瀑布城机场到达，接待任务；上午8点中方食堂集合出发。（出发2人、到达8人）',E:'Yin Heng and Hong Yihan depart from Waterfall City Airport; photovoltaic project personnel arrive at Waterfall City Airport for reception duties; assemble at the Chinese canteen at 8:00 AM for departure. (2 departing, 8 arriving)',X:2},
 {D:'2026-01-29',V:'Reginald',P:'AGN 9991',C:'',E:'',X:1},
-{D:'2026-01-30',V:'Samuel',P:'AGA 5395',C:'Billy、本地审计团队，瀑布城机场出发,上午11点办公室外集合出发（5人）',E:'Billy and the local audit team will depart from Niagara Falls Airport. Meet outside the office at 11:00 AM for departure (5 people).',X:5},
+{D:'2026-01-30',V:'Samuel',P:'AGA 5395',C:'Billy、本地审计团队，瀑布城机场出发,上午11点办公室外集合出发（5人）',E:'Billy and the local audit team will depart from Waterfall City Airport. Meet outside the office at 11:00 AM for departure (5 people).',X:5},
 {D:'2026-01-30',V:'Ishmael',P:'AGN 9991',C:'',E:'',X:1},
 {D:'2026-01-30',V:'Nkala',P:'AGE 2915',C:'罗发元预约，中矿资源调研，上午7.30中方食堂外集合出发（3人），预计31号返程',E:'Luo Fayuan has made an appointment to conduct a research trip to Zhongkuang Resources. The group will meet at 7:30 AM outside the Chinese canteen (3 people) and depart. The return trip is expected on the 31st.',X:3},
 {D:'2026-01-31',V:'Reginald',P:'AGN 9991',C:'余炳均、光伏项目组人员瀑布城机场到达（共计3人）',E:'Yu Bingjun and members of the photovoltaic project team arrived at Waterfall City Airport (a total of 3 people).',X:3},
-{D:'2026-02-02',V:'Samuel',P:'AGA 5395',C:'业务部3人、机电部1人-预约上午8点办公室外集合出发出发万基办理业务（4人）',E:'Three people from the Business Department and one person from the Mechanical and Electrical Department - scheduled to meet outside the office at 8:00 AM to depart for Wanji to handle business (4 people).',X:4},
+{D:'2026-02-02',V:'Samuel',P:'AGA 5395',C:'业务部3人、机电部1人-预约上午8点办公室外集合出发出发万基办理业务（4人）',E:'Three people from the Business Department and one person from the Mechanical and Electrical Department - scheduled to meet outside the office at 8:00 AM to depart for Hwange to handle business (4 people).',X:4},
 {D:'2026-02-03',V:'Reginald',P:'AGA 5395',C:'程传贵-食堂食材采购（蔬菜、羊肉以及供应商确定牛肉价格确认）',E:'Cheng Chuangui - Procurement of canteen ingredients (vegetables, mutton, supplier confirmation, and beef price confirmation)',X:1},
 {D:'2026-02-03',V:'Samuel',P:'AGN 9991',C:'综合部-Joseph和ronald前往布拉瓦约办理业务、预计2月4日返程；下午2点办公室集合出发（2人）',E:'General Affairs Department - Joseph and Ronald are going to Bulawayo for business and are expected to return on February 4th; they will meet at the office at 2 PM to depart (2 people).',X:2},
 {D:'2026-02-03',V:'Nkala',P:'AGE 2915',C:'刘铭洋 、李波 、梁沉、光伏项目组成员2人，瀑布城机场出发，段亮亮瀑布城机场到达；上午8.30中方食堂外集合出发（出发5人、到达1人）',E:'Liu Mingyang, Li Bo, Liang Chen, and two members of the photovoltaic project team departed from Waterfall City Airport, while Duan Liangliang arrived at Waterfall City Airport. The group met outside the Chinese canteen at 8:30 AM for departure (5 people departing, 1 person arriving).',X:2},
 {D:'2026-02-03',V:'Ishmael',P:'AGN 4163',C:'',E:'',X:1},
-{D:'2026-02-04',V:'Nkala',P:'AGA 5395',C:'贺永玲、朱成涛-瀑布城机场出发；上午11.00办公室外集合出发（2人）',E:'He Yongling and Zhu Chengtong will depart from Niagara Falls Airport; meet outside the office at 11:00 AM (2 people).',X:2},
+{D:'2026-02-04',V:'Nkala',P:'AGA 5395',C:'贺永玲、朱成涛-瀑布城机场出发；上午11.00办公室外集合出发（2人）',E:'He Yongling and Zhu Chengtong will depart from Waterfall City Airport; meet outside the office at 11:00 AM (2 people).',X:2},
 {D:'2026-02-04',V:'Reginald',P:'AGE 2915',C:'刘林田、陈嘉豪、王飞、罗盛清；出发哈拉雷办理签证，上午6.30中方食堂外集合出发。预计2月6日返程（4人）',E:'Liu Lintian, Chen Jiahao, Wang Fei, and Luo Shengqing; departing for Harare to process visas, meeting at 6:30 AM outside the Chinese canteen. Expected return date: February 6th (4 people).',X:4},
 {D:'2026-02-04',V:'Samuel',P:'AGN 9991',C:'综合部-Joseph和ronald前往布拉瓦约办理业务、未返程',E:'General Affairs Department - Joseph and Ronald traveled to Bulawayo on business and did not return.',X:1},
 {D:'2026-02-05',V:'Nkala',P:'AGA 5395',C:'贾立、赵泽奎、夏海斌、孙云飞瀑布城机场出发（4人）',E:'Jia Li, Zhao Zekui, Xia Haibin, and Sun Yunfei depart from Waterfall City Airport (4 people)',X:4},
-{D:'2026-02-05',V:'Chada',P:'0630',C:'业务部-万基办理业务',E:'Business Department - Wanji Handles Business',X:1},
-{D:'2026-02-05',V:'Samuel',P:'AGN 9991',C:'梁德喜、瀑布城机场出发，上午11点办公室外集合（1人）',E:'Liang Dexi, departing from Niagara Falls Airport, will meet outside the office at 11:00 AM (1 person).',X:1},
+{D:'2026-02-05',V:'Chada',P:'0630',C:'业务部-万基办理业务',E:'Business Department - Hwange Handles Business',X:1},
+{D:'2026-02-05',V:'Samuel',P:'AGN 9991',C:'梁德喜、瀑布城机场出发，上午11点办公室外集合（1人）',E:'Liang Dexi, departing from Waterfall City Airport, will meet outside the office at 11:00 AM (1 person).',X:1},
 {D:'2026-02-05',V:'Reginald',P:'AGE 2915',C:'刘林田、陈嘉豪、王飞、罗盛清；哈拉雷办理签证，未返程（4人）',E:'Liu Lintian, Chen Jiahao, Wang Fei, and Luo Shengqing; visa application in Harare, did not return (4 people).',X:4},
-{D:'2026-02-07',V:'Samuel',P:'AGA 5395',C:'临时接任务送医瀑布城（车间中方员工突发肾结石）',E:'A Chinese employee in a workshop was temporarily assigned to be taken to the hospital in Falls City (he suddenly developed kidney stones).',X:1},
+{D:'2026-02-07',V:'Samuel',P:'AGA 5395',C:'临时接任务送医瀑布城（车间中方员工突发肾结石）',E:'A Chinese employee in a workshop was temporarily assigned to be taken to the hospital in Waterfall City (he suddenly developed kidney stones).',X:1},
 {D:'2026-02-07',V:'Nkala',P:'AGN 9991',C:'刘思龙-省道维修点巡查',E:'Liu Silong - Provincial Highway Repair Point Inspection',X:1},
 {D:'2026-02-08',V:'Ishmael',P:'AFU 9345',C:'运送精矿样品至哈拉雷，共计600公斤，',E:'Two bags of concentrate samples, totaling 600 kg, were transported to Harare.',X:1},
-{D:'2026-02-08',V:'Unknown',P:'AGA 5395',C:'安生部-万基公园团建',E:'Safety Department - Wanji Park Team Building',X:1},
-{D:'2026-02-08',V:'Nkala',P:'AGA 5395',C:'单俊男、瀑布城机场出发（1人）',E:'Dan Junnan, departing from Niagara Falls Airport (1 person)',X:1},
-{D:'2026-02-10',V:'Reginald',P:'AGA 5395',C:'高玉莹、朱元波、姚树友、瀑布城机场出发；李蒙、瀑布成机场到达。上午8.30中方食堂外集合出发；（出发3人，到达1人）',E:'Gao Yuying, Zhu Yuanbo, Yao Shuyou, depart from Waterfall City Airport; Li Meng, arrive at Waterfall City Airport. Meet at 8:30 AM outside the Chinese canteen; (3 depart, 1 arrives)',X:3},
+{D:'2026-02-08',V:'Unknown',P:'AGA 5395',C:'安生部-万基公园团建',E:'Safety Department - Hwange Park Team Building',X:1},
+{D:'2026-02-08',V:'Nkala',P:'AGA 5395',C:'单俊男、瀑布城机场出发（1人）',E:'Dan Junnan, departing from Waterfall City Airport (1 person)',X:1},
+{D:'2026-02-10',V:'Reginald',P:'AGA 5395',C:'高玉莹、朱元波、姚树友、瀑布城机场出发；李蒙、瀑布城机场到达。上午8.30中方食堂外集合出发；（出发3人，到达1人）',E:'Gao Yuying, Zhu Yuanbo, Yao Shuyou, depart from Waterfall City Airport; Li Meng, arrive at Waterfall City Airport. Meet at 8:30 AM outside the Chinese canteen; (3 depart, 1 arrives)',X:3},
 {D:'2026-02-10',V:'Unknown',P:'AGN 9991',C:'预约修理厂处理车辆三元催化故障；',E:'Schedule an appointment at a repair shop to fix a problem with the vehicle\'s catalytic converter;',X:1},
 {D:'2026-02-12',V:'Nkala',P:'AGN 9991',C:'罗发元、李丽、杨启帆、曹杰瀑布城机场出发，上午7.30中方食堂外集合；（4人）',E:'Luo Fayuan, Li Li, Yang Qifan, and Cao Jie will depart from Fallstown Airport and meet outside the Chinese canteen at 7:30 AM; (4 people)',X:4},
 {D:'2026-02-13',V:'Samuel',P:'AGN 9991',C:'刘思龙-中午13点30出发前往学校Maanziasiya',E:'Liu Silong - Departed for school Maanziasiya at 1:30 PM',X:1},
-{D:'2026-02-14',V:'Nkala',P:'AGE 2915',C:'梁德喜、贺永玲，瀑布城机场到达；白宗山、瀑布城机场出发、上午7.30中方食堂外集合出发。（出发1人、到达2人）',E:'Liang Dexi and He Yongling will arrive at Niagara Falls Airport; Bai Zongshan will depart from Niagara Falls Airport. Meet outside the Chinese canteen at 7:30 AM for departure. (1 person departing, 2 people arriving)',X:1},
+{D:'2026-02-14',V:'Nkala',P:'AGE 2915',C:'梁德喜、贺永玲，瀑布城机场到达；白宗山、瀑布城机场出发、上午7.30中方食堂外集合出发。（出发1人、到达2人）',E:'Liang Dexi and He Yongling will arrive at Waterfall City Airport; Bai Zongshan will depart from Waterfall City Airport. Meet outside the Chinese canteen at 7:30 AM for departure. (1 person departing, 2 people arriving)',X:1},
 {D:'2026-02-15',V:'Reginald',P:'AGE 2915',C:'财务部瀑布城景区团建，中午12点，中方食堂外集合出发；预计16号返回（6人）',E:'The Finance Department is having a team-building event at Waterfall City. We will meet at 12:00 noon outside the Chinese canteen and depart. We expect to return on the 16th (6 people).',X:6},
-{D:'2026-02-17',V:'Nkala',P:'AGA 5395',C:'余学福-瀑布城机场，上午8点中方食堂外集合出发(1人)',E:'Yu Xuefu - Niagara Falls Airport, meet at 8:00 AM outside the Chinese canteen for departure (1 person).',X:1},
+{D:'2026-02-17',V:'Nkala',P:'AGA 5395',C:'余学福-瀑布城机场，上午8点中方食堂外集合出发(1人)',E:'Yu Xuefu - Waterfall City Airport, meet at 8:00 AM outside the Chinese canteen for departure (1 person).',X:1},
 {D:'2026-02-18',V:'Ishmael',P:'AGA 5395',C:'综合部-布拉瓦约相关业务、次日返程（2人）',E:'General Affairs Department - Bulawayo related business, return trip the next day (2 people)',X:2},
-{D:'2026-02-19',V:'Samuel',P:'AGN 9991',C:'业务部-万基办理相关业务，上午8.00点办公室外集合出发；（2人）',E:'Business Department - Wanji handles related business. Meet outside the office at 8:00 AM to depart; (2 people)',X:2},
+{D:'2026-02-19',V:'Samuel',P:'AGN 9991',C:'业务部-万基办理相关业务，上午8.00点办公室外集合出发；（2人）',E:'Business Department - Hwange handles related business. Meet outside the office at 8:00 AM to depart; (2 people)',X:2},
 {D:'2026-02-19',V:'Ishmael',P:'AGA 5395',C:'综合部-布拉瓦约相关业务、未返程（2人）',E:'General Affairs Department - Bulawayo related business, 2 people who did not return.',X:2},
-{D:'2026-02-20',V:'Nkala',P:'AGN 9991',C:'业务部-瀑布城移民局相关业务，上午8点办公室外集合出发（2人）',E:'Business Department - Niagara Falls Immigration Office related business, meet outside the office at 8:00 AM for departure (2 people).',X:2},
+{D:'2026-02-20',V:'Nkala',P:'AGN 9991',C:'业务部-瀑布城移民局相关业务，上午8点办公室外集合出发（2人）',E:'Business Department - Waterfall City Immigration Office related business, meet outside the office at 8:00 AM for departure (2 people).',X:2},
 {D:'2026-02-20',V:'Samuel',P:'AGE 2915',C:'余炳均、张祥-瀑布城机场出发；（2人）',E:'Yu Bingjun and Zhang Xiang depart from Waterfall City Airport; (2 people)',X:2},
 {D:'2026-02-22',V:'Nkala',P:'AGN 9991',C:'王钟平、廖辉-哈拉雷办理签证，上午7点中方食堂外集合出发，预计24日返程（2人）',E:'Wang Zhongping and Liao Hui will apply for visas in Harare. They will meet outside the Chinese canteen at 7:00 AM and depart, with a planned return trip on the 24th (2 people).',X:2},
 {D:'2026-02-24',V:'Samuel',P:'AGA 5395',C:'朱磊、杨杰、瀑布城机场到达，上午8.30办公室出发（2人）',E:'Zhu Lei, Yang Jie, and others arrived at Waterfall City Airport and departed from the office at 8:30 AM (2 people).',X:2},
@@ -1034,80 +1100,80 @@ function importHistData(){
 {D:'2026-02-28',V:'Nkala',P:'AGE 2915',C:'贾立、李丽、罗浩楠、胥骏原、杨鹏飞、徐福-瀑布城机场到达，两台车上午8点办公室外集合出发（6人）',E:'Jia Li, Li Li, Luo Haonan, Xu Junyuan, Yang Pengfei, and Xu Fu arrived at Waterfall City Airport. Two cars will meet outside the office at 8:00 AM to depart (6 people).',X:6},
 {D:'2026-02-28',V:'Samuel',P:'AGA 5395',C:'',E:'',X:1},
 {D:'2026-03-03',V:'Nkala',P:'AGA 5395',C:'曹杰、瀑布城机场到达，返程途中采购食材，上午8点办公室停车场出发（1人）',E:'Cao Jie arrived at Waterfall City Airport. On the way back, he purchased groceries and departed from the office parking lot at 8:00 AM (1 person).',X:1},
-{D:'2026-03-04',V:'Samuel',P:'AGA 5395',C:'综合部-MOYO出发万基参加会议、根据指令取回礼物，上午10点办公室汇合出发，返程时购买餐厅食材（1人）',E:'General Affairs Department - MOYO departs for Wanji to attend a meeting, retrieves gifts as instructed, meets at the office at 10:00 AM to depart, and purchases restaurant ingredients on the return trip (1 person).',X:1},
+{D:'2026-03-04',V:'Samuel',P:'AGA 5395',C:'综合部-MOYO出发万基参加会议、根据指令取回礼物，上午10点办公室汇合出发，返程时购买餐厅食材（1人）',E:'General Affairs Department - MOYO departs for Hwange to attend a meeting, retrieves gifts as instructed, meets at the office at 10:00 AM to depart, and purchases restaurant ingredients on the return trip (1 person).',X:1},
 {D:'2026-03-05',V:'Nkala',P:'AGA 5395',C:'尹恒、罗发元、洪一寒瀑布城机场到达，上午8点出发，返程途中采购打草机使用汽油（3人）',E:'Yin Heng, Luo Fayuan, and Hong Yihan arrived at Waterfall City Airport and departed at 8:00 AM. On the return trip, they purchased gasoline for a lawnmower (3 people).',X:3},
 {D:'2026-03-06',V:'Reginald',P:'AGN 9991',C:'陆海晶-瀑布城机场出发、余炳均-瀑布城机场到达，上午8点30办公室出发（出发1人、到达1人）',E:'Lu Haijing departs from Waterfall City Airport, and Yu Bingjun arrives at Waterfall City Airport. They will depart from the office at 8:30 AM (1 person departing, 1 person arriving).',X:1},
-{D:'2026-03-06',V:'Samuel',P:'AGA 5395',C:'综合部-万基劳工部接回3人 , 上午9点送到公司，上午7点30出发，下午4点出发送回万基。（3人）',E:'The General Affairs Department and the Wanji Labor Department picked up three people, dropped them off at the company at 9:00 AM, departed at 7:30 AM, and sent them back to Wanji at 4:00 PM. (3 people)',X:3},
+{D:'2026-03-06',V:'Samuel',P:'AGA 5395',C:'综合部-万基劳工部接回3人 , 上午9点送到公司，上午7点30出发，下午4点出发送回万基。（3人）',E:'The General Affairs Department and the Hwange Labor Department picked up three people, dropped them off at the company at 9:00 AM, departed at 7:30 AM, and sent them back to Hwange at 4:00 PM. (3 people)',X:3},
 {D:'2026-03-07',V:'Unknown',P:'',C:'单俊男-瀑布城机场到达，整合瑞龙车辆顺路接回（1人）',E:'Shan Junnan arrived at Waterfall City Airport and was picked up by Ruilong vehicles along the way (1 person).',X:1},
-{D:'2026-03-08',V:'Nkala',P:'AGA 5395',C:'唐情轩-瀑布城机场出发、梁德喜、高玉莹同行万基电力局，上午7.30中方食堂外集合出发（出发3人，返程2人）',E:'Tang Qingxuan - Departing from Waterfall City Airport, Liang Dexi and Gao Yuying will accompany Wanji Power Bureau. Meet outside the Chinese canteen at 7:30 AM for departure (3 people departing, 2 people returning).',X:3},
+{D:'2026-03-08',V:'Nkala',P:'AGA 5395',C:'唐情轩-瀑布城机场出发、梁德喜、高玉莹同行万基电力局，上午7.30中方食堂外集合出发（出发3人，返程2人）',E:'Tang Qingxuan - Departing from Waterfall City Airport, Liang Dexi and Gao Yuying will accompany Hwange Power Bureau. Meet outside the Chinese canteen at 7:30 AM for departure (3 people departing, 2 people returning).',X:3},
 {D:'2026-03-10',V:'Nkala',P:'AGE 2915',C:'刘铭洋、李波、白宗山、瀑布城机场到达；李蒙-瀑布城业务办理，贺永玲-瀑布城机场出发哈拉雷；上午8.30中方食堂外集合出发（出发2人、返程4人）',E:'Liu Mingyang, Li Bo, Bai Zongshan, and others arrived at Fallstown Airport; Li Meng handled business in Fallstown; He Yongling departed from Fallstown Airport for Harare; 8:30 AM, meet outside the Chinese canteen for departure (2 people departing, 4 people returning).',X:2},
 {D:'2026-03-10',V:'Samuel',P:'AGA 5395',C:'刘思龙-检查省道、新国道、社区道路维修情况，上午8.30，办公室集合出发；',E:'Liu Silong - Inspect the repair status of provincial highways, new national highways, and community roads. Meet at the office at 8:30 AM to depart.',X:1},
-{D:'2026-03-11',V:'Samuel',P:'AGA 5395',C:'高玉莹-选厂相关88KV、33KV线路巡线万基方向，上午8.30办公室外集合出发、（2人）',E:'Gao Yuying - Patrol of 88KV and 33KV power lines related to the ore dressing plant in the Wanji direction. Meet outside the office at 8:30 AM and depart; (2 people)',X:2},
-{D:'2026-03-12',V:'Nkala',P:'AGN 9991',C:'赵泽奎、瀑布城机场到达，上午8点出发（1人）',E:'Zhao Zekui, arrival at Waterfall City Airport, departure at 8:00 a.m. (1 homo sapiens)',X:1},
-{D:'2026-03-13',V:'Samuel',P:'AGN 9991',C:'李晓磊-万基环保局办理业务，上午8.30办公室外集合出发；（3人）',E:'prunus salicina Xiaolei - Wanji Environmental Protection Bureau to handle business, gather outside the office at 8:30 a.m. and depart; (3 homo sapiens)',X:3},
-{D:'2026-03-13',V:'Nkala',P:'AGA 5395',C:'李蒙-上午11.00办公室集合出发，瀑布城机场出发（1人）',E:'prunus salicina Meng - Assemble at the office at 11:00 AM for departure, departing from Waterfall City Airport (1 homo sapiens)',X:1},
+{D:'2026-03-11',V:'Samuel',P:'AGA 5395',C:'高玉莹-选厂相关88KV、33KV线路巡线万基方向，上午8.30办公室外集合出发、（2人）',E:'Gao Yuying - Patrol of 88KV and 33KV power lines related to the ore dressing plant in the Hwange direction. Meet outside the office at 8:30 AM and depart; (2 people)',X:2},
+{D:'2026-03-12',V:'Nkala',P:'AGN 9991',C:'赵泽奎、瀑布城机场到达，上午8点出发（1人）',E:'Zhao Zekui, arrival at Waterfall City Airport, departure at 8:00 a.m. (1 person)',X:1},
+{D:'2026-03-13',V:'Samuel',P:'AGN 9991',C:'李晓磊-万基环保局办理业务，上午8.30办公室外集合出发；（3人）',E:'Li Xiaolei - Hwange Environmental Protection Bureau to handle business, gather outside the office at 8:30 a.m. and depart; (3 people)',X:3},
+{D:'2026-03-13',V:'Nkala',P:'AGA 5395',C:'李蒙-上午11.00办公室集合出发，瀑布城机场出发（1人）',E:'Li Meng - Assemble at the office at 11:00 AM for departure, departing from Waterfall City Airport (1 person)',X:1},
 {D:'2026-03-14',V:'Samuel',P:'AGA 5395',C:'购买生日会蛋糕',E:'Purchase birthday party cake',X:1},
-{D:'2026-03-17',V:'Reginald',P:'AGN 9991',C:'朱元波、瀑布城机场到达、返程时采购生活物资（1人）',E:'Zhu Yuanbo, arrival at Waterfall City Airport, purchasing daily necessities on the return trip (1 homo sapiens)',X:1},
+{D:'2026-03-17',V:'Reginald',P:'AGN 9991',C:'朱元波、瀑布城机场到达、返程时采购生活物资（1人）',E:'Zhu Yuanbo, arrival at Waterfall City Airport, purchasing daily necessities on the return trip (1 person)',X:1},
 {D:'2026-03-17',V:'Ishmael',P:'AFU 9345',C:'出发哈拉雷，上午8.00综合库收集装载物资完成后出发；',E:'Depart for Harare, set off at 8:00 AM after completing the collection and loading of materials at the comprehensive warehouse.',X:1},
-{D:'2026-03-18',V:'Samuel',P:'AGA 5395',C:'薛旭强-中午13.00点办公室汇合出发布拉瓦约办理业务，19日返程。（出发1人，返程2人）',E:'Xue Xuqiang - Meet at the office at 13:00 noon to depart for Bulawayo to handle business, return on the 19th. (Departure: 1 homo sapiens, Return: 2 homo sapiens)',X:1},
-{D:'2026-03-18',V:'Nkala',P:'AGE 2915',C:'白宗山、曹资睿、赵泽奎-哈拉雷办理签证，上午6.30中方食堂外集合出发，预计20号返回（3人）',E:'Bai Zongshan, Cao Zirui, Zhao Zekui - Visa processing in Harare, assemble and depart outside the Chinese canteen at 6:30 a.m., expected to return on the 20th (3 Homo sapiens).',X:3},
-{D:'2026-03-19',V:'Reginald',P:'AGN 9991',C:'刘军、杨启帆、瀑布城机场到达、返程时采购后勤物资（2人）',E:'Liu Jun, Yang Qifan, Waterfall City Airport arrival, procurement of logistical supplies for the return trip (2 Homo sapiens)',X:2},
-{D:'2026-03-20',V:'Unknown',P:'0964',C:'刘思龙-上午10点-11点，本地路政相关人员、省道维修检查验收',E:'Liu Silong - 10:00 AM to 11:00 AM, local road administration-related Homo sapiens personnel, provincial highway maintenance inspection and acceptance',X:1},
+{D:'2026-03-18',V:'Samuel',P:'AGA 5395',C:'薛旭强-中午13.00点办公室汇合出发布拉瓦约办理业务，19日返程。（出发1人，返程2人）',E:'Xue Xuqiang - Meet at the office at 13:00 noon to depart for Bulawayo to handle business, return on the 19th. (Departure: 1 person, Return: 2 people)',X:1},
+{D:'2026-03-18',V:'Nkala',P:'AGE 2915',C:'白宗山、曹资睿、赵泽奎-哈拉雷办理签证，上午6.30中方食堂外集合出发，预计20号返回（3人）',E:'Bai Zongshan, Cao Zirui, Zhao Zekui - Visa processing in Harare, assemble and depart outside the Chinese canteen at 6:30 a.m., expected to return on the 20th (3 people).',X:3},
+{D:'2026-03-19',V:'Reginald',P:'AGN 9991',C:'刘军、杨启帆、瀑布城机场到达、返程时采购后勤物资（2人）',E:'Liu Jun, Yang Qifan, Waterfall City Airport arrival, procurement of logistical supplies for the return trip (2 people)',X:2},
+{D:'2026-03-20',V:'Unknown',P:'0964',C:'刘思龙-上午10点-11点，本地路政相关人员、省道维修检查验收',E:'Liu Silong - 10:00 AM to 11:00 AM, local road administration-related personnel, provincial highway maintenance inspection and acceptance',X:1},
 {D:'2026-03-20',V:'Nkala',P:'AGE 2915',C:'哈拉雷办理签证未返程',E:'Harare visa processing without return trip',X:1},
 {D:'2026-03-20',V:'Samuel',P:'AGA 5395',C:'综合部-瀑布城业务未返程',E:'General Department - Waterfall City Business Not Returned',X:1},
-{D:'2026-03-21',V:'Reginald',P:'AGN 9991',C:'贺永玲-瀑布城机场到达（1人）',E:'He Yongling - Arrival at Waterfall City Airport (1 Homo sapiens)',X:1},
-{D:'2026-03-22',V:'Nkala',P:'AGA 5395',C:'曹资瑞、卢天伟、瀑布城机场出发，上午8.30，中方食堂外集合出发（2人）',E:'Cao Zirui, Lu Tianwei, departure from Waterfall City Airport, assemble and depart outside the Chinese canteen at 8:30 a.m. (2 Homo sapiens)',X:2},
+{D:'2026-03-21',V:'Reginald',P:'AGN 9991',C:'贺永玲-瀑布城机场到达（1人）',E:'He Yongling - Arrival at Waterfall City Airport (1 person)',X:1},
+{D:'2026-03-22',V:'Nkala',P:'AGA 5395',C:'曹资瑞、卢天伟、瀑布城机场出发，上午8.30，中方食堂外集合出发（2人）',E:'Cao Zirui, Lu Tianwei, departure from Waterfall City Airport, assemble and depart outside the Chinese canteen at 8:30 a.m. (2 people)',X:2},
 {D:'2026-03-24',V:'Reginald',P:'AGN 9991',C:'唐情轩-瀑布城机场到达，上午8.30办公室出发，返程途中采购食材（1人）',E:'Tang Qingxuan - Maes Awyr Ddŵr-y-Bach yn dod, 8.30am o\'r swyddfa i\'w ddechrau, yn brynhawn oedd yn brynhawn yn cael cynnyrch bwyd (1 person)',X:1},
 {D:'2026-03-24',V:'Samuel',P:'AGA 5395',C:'刘思龙-检查省道、社区道路维修情况检查，上午9.00，办公室集合出发；',E:'Liu Sulong - Golygu stâd y ffordd dyfed, golygu y ffordd gymunedol ar gyfer gwelliant, 9.00am, cyngor y swyddfa ar gyfer y daith;',X:1},
 {D:'2026-03-25',V:'Samuel',P:'AGA 5395',C:'安全生产部-现场取样，上午8.30办公室外集合，（2人）',E:'Safety Production Department - On-site sampling, meet outside the office at 8:30 AM (2 people)',X:2},
 {D:'2026-03-26',V:'Nkala',P:'AGA 5395',C:'吴双勇、杨光跃，瀑布城机场出发。返程接回机电部分包商-曹威（出发2人，返程1人）上午8点30分中方食堂外集合出发',E:'Wu Shuangyong, Yang Guangyue, depart from Waterfall City Airport. Return trip to pick up electromechanical subcontractor - Cao Wei (2 people departing, 1 person returning) Gather outside the Chinese canteen at 8:30 AM for departure.',X:2},
 {D:'2026-03-26',V:'Reginald',P:'AGN 9991',C:'刘思龙-上午8点出发，巡查省道维修进展。',E:'Liu Silong - Departed at 8:00 AM to inspect the progress of provincial highway repairs.',X:1},
-{D:'2026-03-27',V:'Reginald',P:'AGA 5395',C:'曹威-瀑布城机场出发（1人）',E:'Cao Wei - Departure from Niagara Falls Airport (1 person)',X:1},
+{D:'2026-03-27',V:'Reginald',P:'AGA 5395',C:'曹威-瀑布城机场出发（1人）',E:'Cao Wei - Departure from Waterfall City Airport (1 person)',X:1},
 {D:'2026-03-28',V:'Samuel',P:'AGN 9991',C:'黄卓文、瑞龙1人、瀑布城机场出发（2人）',E:'Huang Zhuowen, Ruilong (1 person), departing from Waterfall City Airport (2 people)',X:2},
-{D:'2026-03-29',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场到达（5人）',E:'General Yi and accompanying homo sapiens members, arrival at Waterfall City Airport (5 homo sapiens)',X:5},
+{D:'2026-03-29',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场到达（5人）',E:'General Yi and accompanying staff members, arrival at Waterfall City Airport (5 people)',X:5},
 {D:'2026-03-29',V:'Ishmael',P:'AGA 5395',C:'',E:'',X:1},
-{D:'2026-03-30',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场出发，上午11.00办公室外集合出发（4人）',E:'General Yi and accompanying homo sapiens members, departing from Waterfall City Airport (4 homo sapiens)',X:4},
-{D:'2026-03-30',V:'Samuel',P:'AGA 5395',C:'安全生产部-上午8.00出发万基（1人）',E:'Safety Production Department - Depart for Wanji at 8:00 AM (1 Homo sapiens)',X:1},
+{D:'2026-03-30',V:'Nkala',P:'AGE 2915',C:'易总、及随行人员，瀑布城机场出发，上午11.00办公室外集合出发（4人）',E:'General Yi and accompanying staff members, departing from Waterfall City Airport (4 people)',X:4},
+{D:'2026-03-30',V:'Samuel',P:'AGA 5395',C:'安全生产部-上午8.00出发万基（1人）',E:'Safety Production Department - Depart for Hwange at 8:00 AM (1 person)',X:1},
 {D:'2026-03-31',V:'Samuel',P:'AGA 5395',C:'陈文康、瀑布城机场到达（1人）',E:'Liu Silong - Community round-trip shuttle service, gather outside the office at 8:20 a.m.',X:1},
 {D:'2026-03-31',V:'Ishmael',P:'AFU 9345',C:'出发哈拉雷收集运输本地采购及其他到场相关物资，Nkala同行，驾驶委外维修车辆（0693）预计3月3日返程；',E:'Depart for Harare to collect and transport locally procured materials and other relevant supplies on-site, accompanied by Nkala, driving the outsourced maintenance vehicle (0693), expected to return on March 3rd;',X:1},
 {D:'2026-03-31',V:'Reginald',P:'AGN 9991',C:'程传贵-食堂食材采购，（预约供应商现场确认牛羊肉品质、议价）',E:'Cheng Chuangui - Canteen food procurement (arranging on-site confirmation of beef and mutton quality and price negotiation with suppliers)',X:1},
-{D:'2026-04-01',V:'Samuel',P:'AGA 5395',C:'机电部-外出万基建材调研业务，上午9点办公室集合出发（3人）',E:'Mechanical and Electrical Department - Business trip to Wanji Building Materials. Meet at the office at 9:00 AM to depart (3 people).',X:3},
+{D:'2026-04-01',V:'Samuel',P:'AGA 5395',C:'机电部-外出万基建材调研业务，上午9点办公室集合出发（3人）',E:'Mechanical and Electrical Department - Business trip to Hwange Building Materials. Meet at the office at 9:00 AM to depart (3 people).',X:3},
 {D:'2026-04-01',V:'Reginald',P:'AGN 9991',C:'程传贵-牛肉付款、屠宰、运输',E:'Cheng Chuangui - Beef Payment, Slaughter, and Transportation',X:1},
 {D:'2026-04-01',V:'Nkala',P:'AFK 0693',C:'车辆维修返程费用',E:'Vehicle repair return trip costs',X:1},
 {D:'2026-04-02',V:'Samuel',P:'AGA 5395',C:'杨亚、陈佳豪-瀑布城机场出发；杨波、张祥、瀑布城机场到达（出发2人、到达2人）',E:'Yang Ya and Chen Jiahao depart from Waterfall City Airport; Yang Bo and Zhang Xiang arrive at Waterfall City Airport (2 departing, 2 arriving).',X:2},
 {D:'2026-04-02',V:'Reginald',P:'AGN 9991',C:'食堂食材采购，屠宰场运输牛肉',E:'Food procurement for the canteen, beef transportation from the slaughterhouse',X:1},
 {D:'2026-04-07',V:'Nkala',P:'AFK 0693',C:'薛旭强-哈拉雷办理签证，陈文康随行返程哈拉雷，上午7.00中方食堂外集合出发。同行0693车辆汇达修理厂返修（2人）',E:'Xue Xuqiang will process his visa in Harare, and Chen Wenkang will accompany him on the return trip to Harare. We will meet at 7:00 AM outside the Chinese canteen and depart. Vehicle 0693 will be returned to Huida Repair Shop for repairs (2 people).',X:2},
-{D:'2026-04-07',V:'Reginald',P:'AGE 2915',C:'梁德喜-瀑布城机场出发，上午11.00办公室集合出发（1人）返程购买生活物资及食材',E:'Liang Dexi - Departs from Niagara Falls Airport. Meet at the office at 11:00 AM for departure (1 person) to purchase daily necessities and groceries on the return trip.',X:1},
-{D:'2026-04-08',V:'Ishmael',P:'New car',C:'乘坐大巴车出发哈拉雷，业务部协调本地汽修专业人员完成技术验收、薛旭强-同行押车，Nkala、ishmae、Reggie三台车同行安全行驶返回矿山现场（4人）',E:'We departed for Harare by bus. The business department coordinated with local auto repair professionals to complete the technical inspection. Xue Xuqiang accompanied the team, and Nkala, Ishmae, and Reggie drove safely back to the mine site (4 people).',X:4},
-{D:'2026-04-08',V:'Reginald',P:'New car',C:'',E:'',X:1},
+{D:'2026-04-07',V:'Reginald',P:'AGE 2915',C:'梁德喜-瀑布城机场出发，上午11.00办公室集合出发（1人）返程购买生活物资及食材',E:'Liang Dexi - Departs from Waterfall City Airport. Meet at the office at 11:00 AM for departure (1 person) to purchase daily necessities and groceries on the return trip.',X:1},
+{D:'2026-04-08',V:'Ishmael',P:'',C:'乘坐大巴车出发哈拉雷，业务部协调本地汽修专业人员完成技术验收、薛旭强-同行押车，Nkala、ishmae、Reggie三台车同行安全行驶返回矿山现场（4人）',E:'We departed for Harare by bus. The business department coordinated with local auto repair professionals to complete the technical inspection. Xue Xuqiang accompanied the team, and Nkala, Ishmae, and Reggie drove safely back to the mine site (4 people).',X:4},
+{D:'2026-04-08',V:'Reginald',P:'',C:'',E:'',X:1},
 {D:'2026-04-09',V:'Samuel',P:'AGA 5395',C:'陆海晶-瀑布城机场到达；(1人)',E:'Lu Haijing arrived at Waterfall City Airport. (1 person)',X:1},
-{D:'2026-04-11',V:'Samuel',P:'AGA 5395',C:'曹资瑞、瀑布城机场到达，返程时购买食材。（1人）',E:'Cao Zirui arrived at Niagara Falls Airport and purchased groceries on his return trip. (1 person)',X:1},
+{D:'2026-04-11',V:'Samuel',P:'AGA 5395',C:'曹资瑞、瀑布城机场到达，返程时购买食材。（1人）',E:'Cao Zirui arrived at Waterfall City Airport and purchased groceries on his return trip. (1 person)',X:1},
 {D:'2026-04-12',V:'Samuel',P:'AGA 5395',C:'苟小勇、阮胤-瀑布城机场出发；罗发元-预约3人到达（出发2人，到达3人）',E:'Gou Xiaoyong and Ruan Yin - departing from Waterfall City Airport; Luo Fayuan - 3 people scheduled to arrive (2 departing, 3 arriving).',X:3},
-{D:'2026-04-13',V:'Nkala',P:'AGN 9991',C:'罗发元-预约，瀑布城机场到达（3人）返程途中采购食材。上午8点出发',E:'Luo Fayuan - by appointment, arriving at Niagara Falls Airport (3 people), purchasing groceries on the return trip. Departing at 8:00 AM.',X:3},
-{D:'2026-04-13',V:'Reginald',P:'AGE 2915',C:'梁德喜-瀑布城机场出发（1人）上午11点办公室集合出发',E:'Liang Dexi - Departure from Niagara Falls Airport (1 person) Meet at the office at 11:00 AM for departure.',X:1},
+{D:'2026-04-13',V:'Nkala',P:'AGN 9991',C:'罗发元-预约，瀑布城机场到达（3人）返程途中采购食材。上午8点出发',E:'Luo Fayuan - by appointment, arriving at Waterfall City Airport (3 people), purchasing groceries on the return trip. Departing at 8:00 AM.',X:3},
+{D:'2026-04-13',V:'Reginald',P:'AGE 2915',C:'梁德喜-瀑布城机场出发（1人）上午11点办公室集合出发',E:'Liang Dexi - Departure from Waterfall City Airport (1 person) Meet at the office at 11:00 AM for departure.',X:1},
 {D:'2026-04-13',V:'Samuel',P:'AGA 5395',C:'上午7.20，办公室集合，接送机电部瓜衣河临时工人，返程后联系MOYO，社区用车；',E:'Meet at the office at 7:20 AM to pick up and drop off the temporary workers from the Electromechanical Department at Guayihe. After returning, contact MOYO for community transportation.',X:1},
 {D:'2026-04-14',V:'Samuel',P:'AGA 5395',C:'廖辉-瀑布城机场出发，上午8.00食堂外出发（1人）',E:'Liao Hui - Departing from Waterfall City Airport, departing outside the canteen at 8.00 am (1 person)',X:1},
-{D:'2026-04-14',V:'Reginald',P:'AGN 9991',C:'刘思龙-万基运输鸡苗及饲料；返程后购买食材牛羊肉；上午8.30办公室出发',E:'Liu Silong-Wanji transports chicken seedlings and feed; After the return trip, buy ingredients beef and mutton; Departure from the office at 8.30 a.m',X:1},
+{D:'2026-04-14',V:'Reginald',P:'AGN 9991',C:'刘思龙-万基运输鸡苗及饲料；返程后购买食材牛羊肉；上午8.30办公室出发',E:'Liu Silong-Hwange transports chicken seedlings and feed; After the return trip, buy ingredients beef and mutton; Departure from the office at 8.30 a.m',X:1},
 {D:'2026-04-15',V:'Nkala',P:'AGE 2915',C:'常磊坡、贾帅辉、余洪川、罗从兵、柴思冒出发哈拉雷办理签证录入指纹，ishmae同行返程时驾驶0693委外维修车辆共同返回；上午7.00中方食堂外集合出发；',E:'Chang Leipo, Jia Shuaihui, Yu Hongchuan, Luo Congbing, and Chai Simao departed for Harare to process visas and have their fingerprints taken. Ishmae accompanied them on the return trip, driving the outsourced maintenance vehicle 0693. They met outside the Chinese canteen at 7:00 AM to depart.',X:1},
 {D:'2026-04-15',V:'Ishmael',P:'',C:'',E:'',X:1},
 {D:'2026-04-15',V:'Samuel',P:'AGA 5395',C:'安生部-预约现场转运灭火器；上午8.30,办公室外集合',E:'Safety and Health Department - Schedule on-site transfer of fire extinguishers; Meet outside the office at 8:30 AM.',X:1},
 {D:'2026-04-15',V:'Reginald',P:'AGN 9991',C:'食堂食材采购-购买羊肉，协调牛肉屠宰事宜；',E:'Canteen food procurement - purchasing mutton and coordinating beef slaughtering matters;',X:1},
-{D:'2026-04-16',V:'Samuel',P:'3102',C:'王世伟、张腾达-瀑布城机场出发，上午8.30，中方食堂集合出发；返程时取回机场滞留行李箱；（2人）',E:'Wang Shiwei and Zhang Tengda will depart from Niagara Falls Airport at 8:30 AM, meeting at the Chinese canteen; they will retrieve their luggage left at the airport on their return trip. (2 people)',X:2},
+{D:'2026-04-16',V:'Samuel',P:'3102',C:'王世伟、张腾达-瀑布城机场出发，上午8.30，中方食堂集合出发；返程时取回机场滞留行李箱；（2人）',E:'Wang Shiwei and Zhang Tengda will depart from Waterfall City Airport at 8:30 AM, meeting at the Chinese canteen; they will retrieve their luggage left at the airport on their return trip. (2 people)',X:2},
 {D:'2026-04-16',V:'Nkala',P:'AGE 2915',C:'哈拉雷签证办理途中（5人）',E:'Harare visa application in progress (5 people)',X:5},
 {D:'2026-04-16',V:'Kuda',P:'AGA 5395',C:'刘思龙-社区业务',E:'Liu Silong - Community Business',X:1},
 {D:'2026-04-16',V:'Reginald',P:'3101',C:'采购周六聚餐蔬菜、羊肉采购；',E:'Purchase vegetables and lamb for Saturday\'s gathering;',X:1},
 {D:'2026-04-17',V:'Samuel',P:'AGA 5395',C:'罗发元-三方厂家现场技术指导人员瀑布城机场出发，上午8.30中方食堂外集合出发（3人）',E:'Luo Fayuan – Technical advisors from the third-party manufacturer will depart from Waterfall City Airport; meet outside the Chinese canteen at 8.30 am to set off (3 people)',X:3},
-{D:'2026-04-17',V:'Reginald',P:'3101',C:'西二号、Billy、瀑布城机场到达；上午7.30出发（2人）',E:'Arrival at West Terminal 2, Billy, and Falls City Airport; departure at 7.30 am (2 people)',X:2},
+{D:'2026-04-17',V:'Reginald',P:'3101',C:'西二号、Billy、瀑布城机场到达；上午7.30出发（2人）',E:'Arrival at West Terminal 2, Billy, and Waterfall City Airport; departure at 7.30 am (2 people)',X:2},
 {D:'2026-04-17',V:'Nkala',P:'AGE 2915',C:'哈拉雷签证办理途中未返程（5人）',E:'Harare visa application in progress (5 people)',X:5},
 {D:'2026-04-18',V:'Samuel',P:'3102',C:'卢天伟、瀑布城机场到达，上午8.30办公室集合出发（1人）',E:'Lu Tianwei, arriving at Waterfall City Airport; meet at the office at 8.30 am to set off (1 person)',X:1},
 {D:'2026-04-18',V:'Kuda',P:'AGA 5395',C:'刘思龙-irma相关检查组人员到场检查，负责现场接送任务；',E:'Liu Silong – members of the Irma inspection team arrived on site to carry out inspections; he was responsible for on-site transport arrangements;',X:1},
 {D:'2026-04-18',V:'Reginald',P:'3101',C:'',E:'',X:1},
 {D:'2026-04-19',V:'Nkala',P:'3102',C:'柴思茂、苏澜-瀑布城机场出发，上午8.30中方食堂外集合出发；（2人）',E:'Chai Simao and Su Lan – departing from Waterfall City Airport; meet outside the Chinese canteen at 8.30 am; (2 people)',X:2},
 {D:'2026-04-20',V:'Reginald',P:'AEC 2489',C:'食堂食材、生活物资采购，牛肉议价',E:'Procurement of food and daily necessities for the canteen; negotiating the price of beef',X:1},
-{D:'2026-04-20',V:'Samuel',P:'3102',C:'综合部-万基劳工部人事相关业务；业务部-瀑布城机场业务；上午7.30办公室集合出发。路线相同，车辆外出资源整合（4人）',E:'General Affairs Department – personnel-related matters for the Wanji Labour Department; Operations Department – operations at Waterfall City Airport; meet at the office at 7.30 am to depart. Same route; consolidation of transport resources (4 people)',X:4},
+{D:'2026-04-20',V:'Samuel',P:'3102',C:'综合部-万基劳工部人事相关业务；业务部-瀑布城机场业务；上午7.30办公室集合出发。路线相同，车辆外出资源整合（4人）',E:'General Affairs Department – personnel-related matters for the Hwange Labour Department; Operations Department – operations at Waterfall City Airport; meet at the office at 7.30 am to depart. Same route; consolidation of transport resources (4 people)',X:4},
 {D:'2026-04-20',V:'Nkala',P:'AGE 2915',C:'车辆清洗、底盘整备',E:'Vehicle washing and undercarriage preparation',X:1},
 {D:'2026-04-21',V:'Samuel',P:'3102',C:'周意人、赵迎磊、杨亚、陈佳豪-瀑布城机场到达。上午8.30办公室集合出发（4人）',E:'Zhou Yiren, Zhao Yinglei, Yang Ya and Chen Jiahao – arriving at Waterfall City Airport. Meet at the office at 8.30 am to set off (4 people)',X:4},
-{D:'2026-04-21',V:'Nkala',P:'3103',C:'万基采购接待物资，上午8点办公室出发',E:'Wanji is collecting supplies; we will leave the office at 8 am',X:1},
+{D:'2026-04-21',V:'Nkala',P:'3103',C:'万基采购接待物资，上午8点办公室出发',E:'Hwange is collecting supplies; we will leave the office at 8 am',X:1},
 {D:'2026-04-21',V:'Reginald',P:'AEC 2489',C:'牛肉采购付款、屠宰、运输',E:'Payment for beef procurement, slaughter and transport',X:1},
 {D:'2026-04-23',V:'Nkala',P:'AGE 2915',C:'石秋迅、贺永玲瀑布城机场出发，上午8.30中方食堂外集合出发；叶建国、谢书林及自投集团矿山考察团队，瀑布城机场到达同行带领返程；（出发2人）',E:'Shi Qiuxun and He Yongling will depart from Waterfall City Airport; they are to assemble outside the Chinese canteen at 8.30 am before setting off. Ye Jianguo, Xie Shulin and the mining inspection team from the Zitou Group will arrive at Waterfall City Airport and be escorted back by a local guide; (2 people departing)',X:2},
 {D:'2026-04-23',V:'Samuel',P:'AGA 5395',C:'机电部-万基BaobabHotel酒店接回海王旋流器厂家技术人员，联系电话0787926667，上午8点办公室出发（2人）',E:'Mechanical and Electrical Department – Please collect the technical staff from the Haiwang Cyclone manufacturer at the Baobab Hotel. Contact number: 0787 926667. Departure from the office at 8.00 am (2 people).',X:2},
@@ -1125,37 +1191,37 @@ function importHistData(){
 {D:'2026-05-18',V:'Nkala',P:'',C:'刘青云-瀑布城机场到达；',E:'Lau Ching-wan – Arrival at Waterfall City Airport;',X:1},
 {D:'2026-05-18',V:'Samuel',P:'',C:'姜宏佳-瀑布城机场出发',E:'Jiang Hongjia – Departure from Waterfall City Airport',X:1},
 {D:'2026-05-18',V:'Reginald',P:'3101',C:'苏澜-瀑布城机场到达，顺路返程采购食材（1人）',E:'Arrived at Su Lan-Watertown Airport; made a stop along the way to buy groceries (for 1 person).',X:1},
-{D:'2026-05-18',V:'Samuel',P:'AGE 8267',C:'机电部-重庆安装人员出发万基（3人）',E:'Electromechanical Department – Chongqing installation personnel depart for Wanjie (3 people)',X:3},
+{D:'2026-05-18',V:'Samuel',P:'AGE 8267',C:'机电部-重庆安装人员出发万基（3人）',E:'Electromechanical Department – Chongqing installation personnel depart for Hwange (3 people)',X:3},
 {D:'2026-05-18',V:'Nkala',P:'3103',C:'沈世宇-易文斌，瀑布城机场出发；王世伟、张腾达、彭恩明-朱永成、瀑布城机场到达（出发2人、到达4人）上午8.30中方餐厅外集合出发；',E:'Shen Shiyu and Yi Wenbin depart from Waterfall City Airport; Wang Shiwei, Zhang Tengda, Peng Enming and Zhu Yongcheng arrive at Waterfall City Airport (2 departures, 4 arrivals). The group will assemble outside the Chinese restaurant at 8:30 AM and proceed from there.',X:2},
 {D:'2026-05-18',V:'Reginald',P:'3101',C:'重庆安装公司人员瀑布城机场出发；上午8.30办公室外集合出发；（3人）',E:'Staff from Chongqing Installation Company depart from Waterfall City Airport; assemble outside the office at 8:30 AM and proceed (3 people).',X:3},
 {D:'2026-05-21',V:'Unknown',P:'',C:'WENBIN YI-瀑布城机场出发',E:'WENBIN YI - Waterfall City Airport Departure',X:1},
-{D:'2026-05-22',V:'Samuel',P:'3102',C:'安生部-外出万基参加防火安全会议；上午8点办公室外集合出发（2人）',E:'Safety Department – Attend the fire safety meeting at Wanji; assemble outside the office at 8:00 AM and depart (2 participants).',X:2},
+{D:'2026-05-22',V:'Samuel',P:'3102',C:'安生部-外出万基参加防火安全会议；上午8点办公室外集合出发（2人）',E:'Safety Department – Attend the fire safety meeting at Hwange; assemble outside the office at 8:00 AM and depart (2 participants).',X:2},
 {D:'2026-05-23',V:'Nkala',P:'3103',C:'王林-瀑布城机场出发；贺永玲-瀑布城机场到达，出发1人，到达1人，上午8.30中方餐厅外集合出发；',E:'Departure from Wanglin-Watertown Airport; arrival at He Yongling Waterfall City Airport; assembly outside the Chinese restaurant at 8:00 AM and departure.',X:1},
-{D:'2026-05-25',V:'Reginald',P:'3101',C:'徐晓、薛旭强-瀑布城机场到达,上午8.30办公室出发,(2人)',E:'Xu Xiao and Xue Xuqiang – Arrived at Falls City Airport; Departed from the office at 8:30 AM (2 people)',X:2},
+{D:'2026-05-25',V:'Reginald',P:'3101',C:'徐晓、薛旭强-瀑布城机场到达,上午8.30办公室出发,(2人)',E:'Xu Xiao and Xue Xuqiang – Arrived at Waterfall City Airport; Departed from the office at 8:30 AM (2 people)',X:2},
 {D:'2026-05-25',V:'Reginald',P:'3102',C:'机电部预约1人机场出发；赵迎磊-瀑布城机场到达，上午9.00办公室出发；（出发1人，到达1人）',E:'The Mechanical and Electrical Department has scheduled one person to depart from the airport; Zhao Yinglei will arrive at Waterfall City Airport and depart from the office at 9:00 AM (one person departs, one person arrives).',X:1},
-{D:'2026-05-28',V:'Reginald',P:'3101',C:'谢澜宜-瀑布城机场到达；上午8点办公室出发；（1人）',E:'Xie Lanyi-Arrived at Falls City Airport; Departed from the office at 8:00 AM; (1 person)',X:1},
+{D:'2026-05-28',V:'Reginald',P:'3101',C:'谢澜宜-瀑布城机场到达；上午8点办公室出发；（1人）',E:'Xie Lanyi-Arrived at Waterfall City Airport; Departed from the office at 8:00 AM; (1 person)',X:1},
 {D:'2026-05-28',V:'Nkala',P:'AGE 2915',C:'出发瀑布城移民局办理签证相关事宜，出发时间待定，（5人）',E:'Proceed to the Waterfall City Immigration Office to handle visa-related matters; departure time to be determined (for 5 people).',X:5},
 {D:'2026-05-28',V:'Nkala',P:'AGE 2915',C:'叶建国-瀑布城机场到达；上午7点出发。（1人）',E:'Ye Jianguo – Arrived at Waterfall City Airport; Departed at 7:00 AM (1 person).',X:1},
 {D:'2026-06-02',V:'Nkala',P:'AGE 2915',C:'张峻、杨云鹏-瀑布城机场到达，上午8.30办公室出发；（2人）',E:'Zhang Jun and Yang Yunpeng – Arrived at Waterfall City Airport; Departing from the office at 8:30 AM (2 person).',X:2},
-{D:'2026-06-02',V:'Samuel',P:'3103',C:'机电部-88千伏线路巡检，出发万基方向，上午8.00办公室外集合出发，（2人）；',E:'Electromechanical Department – 88 kV line inspection mission: Departing from the Wanji direction; assembly outside the office at 8:00 AM (2 personnel).',X:2},
+{D:'2026-06-02',V:'Samuel',P:'3103',C:'机电部-88千伏线路巡检，出发万基方向，上午8.00办公室外集合出发，（2人）；',E:'Electromechanical Department – 88 kV line inspection mission: Departing from the Hwange direction; assembly outside the office at 8:00 AM (2 personnel).',X:2},
 {D:'2026-06-02',V:'Nkala',P:'3101',C:'徐全生-瀑布城机场到达，上午8.30办公室集合出发，返程购买食材、生活物资；（1人）',E:'Xu Quansheng – Arrives at Waterfall City Airport; meets at the office at 8:30 AM for departure; returns to purchase food ingredients and daily necessities (1 person).',X:1},
-{D:'2026-06-05',V:'Reginald',P:'3103',C:'布拉瓦约矿业部接待任务执行中，未返程；',E:'The delegation from the Bravayo Mining Department was on a mission and did not return.',X:1},
+{D:'2026-06-05',V:'Reginald',P:'3103',C:'布拉瓦约矿业部接待任务执行中，未返程；',E:'The delegation from the Bulawayo Mining Department was on a mission and did not return.',X:1},
 {D:'2026-06-05',V:'Unknown',P:'',C:'梁总参与布拉瓦约矿业部接待任务，相关费用196美金；',E:'Mr Liang took part in a reception organised by the Bulawayo Department of Mines, at a cost of US$196;',X:1},
-{D:'2026-06-05',V:'Nkala',P:'3101',C:'安全生产部-中午12.00点办公室集合出发万基，参加NSSA会议；（2人）',E:'Work Safety Department – Meet at the office at 12:00 noon to travel to Wanji to attend the NSSA meeting; (2 people)',X:2},
+{D:'2026-06-05',V:'Nkala',P:'3101',C:'安全生产部-中午12.00点办公室集合出发万基，参加NSSA会议；（2人）',E:'Work Safety Department – Meet at the office at 12:00 noon to travel to Hwange to attend the NSSA meeting; (2 people)',X:2},
 {D:'2026-06-06',V:'Samuel',P:'3101',C:'罗从斌-瀑布城机场出发，上午8.30中餐厅外集合出发；（1人）',E:'Lu Congbin – Departing from Waterfall City Airport; meeting point outside the Chinese restaurant at 8:30 AM; (1 person)',X:1},
 {D:'2026-06-06',V:'Unknown',P:'AGE 2915',C:'车辆底盘整备，前轮内球头更换中（待更新）',E:'Vehicle chassis is being prepared; the inner ball joints of the front wheels are being replaced (to be updated).',X:1},
-{D:'2026-06-06',V:'Reginald',P:'3103',C:'布拉瓦约矿业部接待任务执行中，未返程；',E:'The delegation from the Bravayo Mining Department was on a mission and did not return.',X:1},
+{D:'2026-06-06',V:'Reginald',P:'3103',C:'布拉瓦约矿业部接待任务执行中，未返程；',E:'The delegation from the Bulawayo Mining Department was on a mission and did not return.',X:1},
 {D:'2026-06-07',V:'Nkala',P:'AGE 2915',C:'叶建国、MPOFU-瀑布城机场出发，上午8.30办公室集合出发，飞机起飞时间12.15；（2人）',E:'Ye Jianguo will depart from MPOFU Waterfall City Airport, gathering at the office at 8:30 AM for departure; flight departure time is 12:15 (for 2 people).',X:2},
 {D:'2026-06-07',V:'Samuel',P:'3102',C:'布拉瓦约矿业部相关接待任务，未返程；（8人）',E:'Those responsible for reception duties at the Blavayo Mining Department did not return; (8 people)',X:8},
 {D:'2026-06-07',V:'Reginald',P:'3103',C:'',E:'',X:1},
-{D:'2026-06-07',V:'Kuda',P:'3101',C:'矿业部接待任务相关万基业务，未返程（3人）',E:'The Ministry of Mining handled all related business matters for the Wanji team and did not return (3 individuals).',X:3},
+{D:'2026-06-07',V:'Kuda',P:'3101',C:'矿业部接待任务相关万基业务，未返程（3人）',E:'The Ministry of Mining handled all related business matters for the Hwange team and did not return (3 individuals).',X:3},
 {D:'2026-06-08',V:'Samuel',P:'3101',C:'贺永玲-瀑布城机场出发，上午11.00办公室集合出发，返程采购食材；（1人）',E:'He Yongling – Departing from Waterfall City Airport; meeting at the office at 11:00 AM before departure (1 person).',X:1},
-{D:'2026-06-08',V:'Nkala',P:'3102',C:'布拉瓦约接待任务，现场接送及外出或待命；',E:'Bravayo is responsible for reception duties, on-site transportation, and deployment or standby assignments.',X:1},
+{D:'2026-06-08',V:'Nkala',P:'3102',C:'布拉瓦约接待任务，现场接送及外出或待命；',E:'Bulawayo is responsible for reception duties, on-site transportation, and deployment or standby assignments.',X:1},
 {D:'2026-06-08',V:'Reginald',P:'3103',C:'',E:'',X:1},
 {D:'2026-06-09',V:'Nkala',P:'3101',C:'殷永珠、程传贵-瀑布城机场出发，上午8.30中餐厅外集合出发；（2人）',E:'He Yongling – Departing from Waterfall City Airport; meeting at the office at 11:00 AM before departure; returning to purchase food ingredients (1 person).',X:2},
 {D:'2026-06-09',V:'Samuel',P:'3102',C:'上午7点中餐厅外出发，布拉瓦约接待任务，现场接送及外出或待命；',E:'We will depart outside the Chinese restaurant at 7:00 AM for the Blavayo reception mission, including on-site transportation and standby arrangements.',X:1},
 {D:'2026-06-09',V:'Reginald',P:'3103',C:'',E:'',X:1},
-{D:'2026-06-10',V:'Samuel',P:'3103',C:'薛旭强、Tshuma-上午8点办公室集合出发万基ZHRC拜访（2人）',E:'Xue Xuqiang and Tshuma – meet at the office at 8 am to visit Wanji ZHRC (2 people)',X:2},
+{D:'2026-06-10',V:'Samuel',P:'3103',C:'薛旭强、Tshuma-上午8点办公室集合出发万基ZHRC拜访（2人）',E:'Xue Xuqiang and Tshuma – meet at the office at 8 am to visit Hwange ZHRC (2 people)',X:2},
 {D:'2026-06-10',V:'Nkala',P:'AGE 2915',C:'梁德喜-下午13.30办公室集合出发safari lodge（矿业部接待任务）',E:'Liang Dexi – Meet at the office at 1:30 PM; then depart for Safari Lodge (for a reception task assigned by the Ministry of Mining).',X:1},
 {D:'2026-06-10',V:'Reginald',P:'3102',C:'刘思龙-社区业务，跟车待命；',E:'Liu Silong – Community operations; monitoring vehicles and remaining on standby.',X:1},
 {D:'2026-06-11',V:'Nkala',P:'AGE 2915',C:'文志军、赵迎磊-瀑布城机场出发，易文斌、崔茂培、潘雨阳、罗胜清、瀑布城机场到达，上午8.00中餐厅外集合出发；（2人出发，4人到达）',E:'Wen Zhijun and Zhao Yinglei – departing from Waterfall City Airport; Yi Wenbin, Cui Maopei, Pan Yuyang and Luo Shengqing – arriving at Waterfall City Airport; meet outside the Chinese restaurant at 08:00 and depart; (2 departing, 4 arriving)',X:2},
@@ -1170,13 +1236,13 @@ function importHistData(){
 {D:'2026-06-13',V:'Kuda',P:'3103',C:'',E:'',X:1},
 {D:'2026-06-15',V:'Nkala',P:'3101',C:'刘思龙-国家博物馆与纪念碑管理中心NMMZ办事，采购食堂蔬菜、预约委外汽修店车辆四轮定位；（1人）',E:'Liu Silong – Works at the National Museum and Monument Management Center (NMMZ), responsible for purchasing vegetables for the cafeteria and scheduling four-wheel alignment services at an outsourced auto repair shop; (1 person)',X:1},
 {D:'2026-06-15',V:'Reginald',P:'',C:'矿山周边牛肉议价、采购羊肉；',E:'Negotiate prices for beef and purchase mutton near the mine;',X:1},
-{D:'2026-06-16',V:'Nkala',P:'AGE 2915',C:'刘林田-瀑布城机场出发；徐晓、郭瀚文-瀑布城移民局办理签证录入指纹；上午8.30中方餐厅外集合出发；（出发3人、返程2人）',E:'Liu Lintian – departing from Falls City Airport; Xu Xiao and Guo Hanwen – attending the Falls City Immigration Office to have their visas processed and fingerprints taken; meet outside the Chinese restaurant at 8.30 am to depart; (3 departing, 2 returning)',X:3},
-{D:'2026-06-16',V:'Samuel',P:'3102',C:'薛旭强-万基劳工部相关业务，上午9.00办公室出发；（2人）',E:'Xue Xuqiang – Matters relating to the Ministry of Labour at Wanji; departs from the office at 9.00 am; (2 people)',X:2},
-{D:'2026-06-17',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，次日返回；上午10.30办公室出发（2人）',E:'Jiali – Travel to Bravayo to conduct a survey of the transportation route for finished lithium sulfate products; return the following day; depart from the office at 10:30 AM (2 personnel).',X:2},
+{D:'2026-06-16',V:'Nkala',P:'AGE 2915',C:'刘林田-瀑布城机场出发；徐晓、郭瀚文-瀑布城移民局办理签证录入指纹；上午8.30中方餐厅外集合出发；（出发3人、返程2人）',E:'Liu Lintian – departing from Waterfall City Airport; Xu Xiao and Guo Hanwen – attending the Waterfall City Immigration Office to have their visas processed and fingerprints taken; meet outside the Chinese restaurant at 8.30 am to depart; (3 departing, 2 returning)',X:3},
+{D:'2026-06-16',V:'Samuel',P:'3102',C:'薛旭强-万基劳工部相关业务，上午9.00办公室出发；（2人）',E:'Xue Xuqiang – Matters relating to the Ministry of Labour at Hwange; departs from the office at 9.00 am; (2 people)',X:2},
+{D:'2026-06-17',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，次日返回；上午10.30办公室出发（2人）',E:'Jiali – Travel to Bulawayo to conduct a survey of the transportation route for finished lithium sulfate products; return the following day; depart from the office at 10:30 AM (2 personnel).',X:2},
 {D:'2026-06-17',V:'Reginald',P:'3101',C:'兽医现场验证、警局办理屠宰许可证、屠宰、运输；',E:'On-site verification by veterinarians; issuance of slaughter permits by the police department; slaughter and transportation procedures.',X:1},
 {D:'2026-06-17',V:'Samuel',P:'3102',C:'Cross dete接崔总、赵迎磊，具体时间待定；',E:'Cross Dete will meet with Mr.Cui and Zhao Yinglei; the specific date has yet to be determined.',X:1},
 {D:'2026-06-17',V:'Kuda',P:'3103',C:'矿山现场接待总统办公室人员，待命；',E:'On-site personnel at the mine shall receive staff from the Presidential Office and remain on standby.',X:1},
-{D:'2026-06-18',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，未返程；',E:'Jia Li – traveled to Bravayo to conduct a survey of the transportation route for finished lithium sulfate products; did not return.',X:1},
+{D:'2026-06-18',V:'Nkala',P:'AGE 2915',C:'贾立-出行布拉瓦约，硫酸锂产成品运输路线勘察，未返程；',E:'Jia Li – traveled to Bulawayo to conduct a survey of the transportation route for finished lithium sulfate products; did not return.',X:1},
 {D:'2026-06-18',V:'Reginald',P:'3103',C:'吴祥迁、郭瀚文-瀑布城机场出发；黄卓文-2人万基办理业务；返程采购生活保障物资；上午8.30办公室外集合出发；（出发2人、返程2人）',E:'Wu Xiangqian and Guo Hanwen – Depart from Waterfall City Airport; Huang Zhuowen – Two individuals will handle administrative procedures at Wanjí; return trip to procure essential supplies; assembly outside the office at 8:30 AM for departure (two departing personnel, two returning personnel).',X:2},
 {D:'2026-06-18',V:'Samuel',P:'3102',C:'梁德喜-现场接待总统办公室人员，待命；',E:'On-site personnel at the mine shall receive staff from the Presidential Office and remain on standby.',X:1},
 {D:'2026-06-19',V:'Reginald',P:'3102',C:'贺永玲-瀑布城机场到达，上午7点30出发；返程采购餐厅食材；（1人）',E:'He Yongling – Arrival at Waterfall City Airport, departing at 7.30 am; purchasing ingredients for the restaurant on the return journey; (1 person)',X:1},
@@ -1184,7 +1250,7 @@ function importHistData(){
 {D:'2026-06-19',V:'Unknown',P:'AGE 2915',C:'预约修理厂检查车辆底盘，刹车系统；',E:'Book an appointment at a garage to have the vehicle’s chassis and braking system checked;',X:1},
 {D:'2026-06-22',V:'Nkala',P:'3101',C:'周涛建-瀑布城机场到达；上午8.30办公室出发；返程采购食堂食材；（1人）',E:'Zhou Tianjian – Arrived at Waterfall City Airport; Departed from the office at 8:30 AM (1 person).',X:1},
 {D:'2026-06-22',V:'Samuel',P:'3102',C:'梁德喜-矿业部社区检查、参观，接待任务；',E:'Liang Dexi – Responsible for community inspections, visits, and reception tasks at the Ministry of Mining;',X:1},
-{D:'2026-06-22',V:'Reginald',P:'3103',C:'黄卓文-万基办税务局办事；上午9.00办公室集合出发；（2人）',E:'Huang Zhuowen – Handling matters at the Wanjiban Tax Bureau; Meeting and departure from the office at 9:00 AM (2 people).',X:2},
+{D:'2026-06-22',V:'Reginald',P:'3103',C:'黄卓文-万基办税务局办事；上午9.00办公室集合出发；（2人）',E:'Huang Zhuowen – Handling matters at the Hwange Tax Bureau; Meeting and departure from the office at 9:00 AM (2 people).',X:2},
 {D:'2026-06-23',V:'Reginald',P:'3101',C:'财务部Billy瀑布城机场到达，上午8.00办公室出发；到达时间11.40；（1人）',E:'Financial Department: Billy arrives at Buffalo Airport; departs from the office at 8:00 AM; arrival time: 11:40 AM (1 person).',X:1},
 {D:'2026-06-23',V:'Samuel',P:'AFX 6895',C:'安全生产部-三方机构在矿区内的2季度检测和年度职业健康监测；上午9点办公室出发，机动车辆，根据需求沟通用车时间，同时保障安保检查与送餐（3-4人）',E:'Department of Work Safety – Conducts third-party inspections during the second quarter and annual occupational health monitoring within the mining area; departs from the office at 9:00 AM using motor vehicles, with vehicle availability arranged as needed, while ensuring security checks and meal delivery (for 3–4 personnel).',X:4},
 {D:'2026-06-23',V:'Nkala',P:'3103',C:'预约汽修厂车辆里程到期保养；',E:'Book a vehicle maintenance service at the repair shop when the mileage limit for your car has been reached.',X:1},
@@ -1200,8 +1266,8 @@ function importHistData(){
 {D:'2026-06-27',V:'Samuel',P:'',C:'乘坐巴士出发哈拉雷，驾驶0693车辆返程；',E:'Depart for Harare by bus and return in vehicle 0693;',X:1},
 {D:'2026-06-28',V:'Reginald',P:'3103',C:'宋雨峰-瀑布城机场出发；返程接回业务部对接承运商人员1人，上午8.30中餐厅外出发;(出发2人、返程1人)',E:'Song Yufeng – Departing from Waterfall City Airport; picking up one representative from the Business Department to coordinate with the carrier during the return trip, departing outside the Chinese restaurant at 8:30 AM (two people for departure, one person for return).',X:1},
 {D:'2026-06-28',V:'Nkala',P:'3102',C:'送叶总出发布拉瓦约、暂未返程；',E:'Mr.Ye has been dispatched to Lava Yao and has not yet returned.',X:1},
-{D:'2026-06-28',V:'Unknown',P:'AGA 5395',C:'安全生产部-万基动物园团建；（4-5人）',E:'Safety Production Department – Team-building activity at Wanji Zoo (for 4–5 participants)',X:5},
-{D:'2026-06-28',V:'Unknown',P:'AGE 8267',C:'高玉莹-88KV、33KV线路巡线万基方向，上午8.30办公室外集合出发、（2人）',E:'Gao Yuying – Responsible for inspecting the 88KV and 33KV power lines related to the processing plant, heading towards Wanji. The team will assemble outside the office at 8:30 AM and depart (two members).',X:2},
+{D:'2026-06-28',V:'Unknown',P:'AGA 5395',C:'安全生产部-万基动物园团建；（4-5人）',E:'Safety Production Department – Team-building activity at Hwange Zoo (for 4–5 participants)',X:5},
+{D:'2026-06-28',V:'Unknown',P:'AGE 8267',C:'高玉莹-88KV、33KV线路巡线万基方向，上午8.30办公室外集合出发、（2人）',E:'Gao Yuying – Responsible for inspecting the 88KV and 33KV power lines related to the processing plant, heading towards Hwange. The team will assemble outside the office at 8:30 AM and depart (two members).',X:2},
 {D:'2026-06-29',V:'Nkala',P:'AGE 2915',C:'Tapiwa、billy 瀑布城机场出发；邓全凤、陈和平、黄淦、殷永珠、曾艺娟-瀑布城机场到达；（出发2人，返程5人）',E:'Departed from Tapiwa Waterfall City Airport; arrived at Deng Quanfeng, Chen Heping, Huang Gan, Yin Yongzhu, and Zeng Yijuan – Waterfall City Airport (2 person departing, 5 people returning).',X:2},
 {D:'2026-06-29',V:'Reginald',P:'3103',C:'',E:'',X:1},
 {D:'2026-06-29',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
@@ -1218,7 +1284,7 @@ function importHistData(){
 {D:'2026-07-04',V:'Nkala',P:'AGE 2915',C:'崔总、姜宏佳、马稚雨-瀑布城机场出发；上午7.30中餐厅外集合出发；（出发3人）',E:'Mr Cui, Jiang Hongjia and Ma Zhiyu – departing from Waterfall City Airport; meet outside the Chinese restaurant at 7.30 am to set off; (3 people travelling)',X:3},
 {D:'2026-07-04',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-05',V:'Nkala',P:'AGE 2915',C:'业务部-承运商1人出发瀑布城机场；财务部-集团信息化领导瀑布城景区（5人）；上午8点办公室出发；（6人）',E:'Business Department – 1 carrier representative departing from Waterfall City Airport; Finance Department – Group IT leadership team (5 members) for the Waterfall City scenic area; Departing from the office at 8:00 AM (total: 6 members).',X:5},
-{D:'2026-07-05',V:'Pardon',P:'AGA 5395',C:'机电部、采矿部万基动物园团建，上午8点办公室出发；（9人）',E:'Team-building activity organized by the Electromechanical Department and Mining Department for Wanji Zoo staff, departing from the office at 8:00 AM (for 9 participants).',X:9},
+{D:'2026-07-05',V:'Pardon',P:'AGA 5395',C:'机电部、采矿部万基动物园团建，上午8点办公室出发；（9人）',E:'Team-building activity organized by the Electromechanical Department and Mining Department for Hwange Zoo staff, departing from the office at 8:00 AM (for 9 participants).',X:9},
 {D:'2026-07-05',V:'Samuel',P:'3103',C:'',E:'',X:1},
 {D:'2026-07-07',V:'Nkala',P:'AGE 2915',C:'张峻、刘凯凯-瀑布城机场出发，上午11点办公室集合出发；（2人）',E:'Zhang Jun – Departing from Waterfall City Airport; meet at the office at 11.00 am to set off; (1 person)',X:2},
 {D:'2026-07-07',V:'Reginald',P:'3103',C:'刘清云维多利亚边境返程（11点到达）；返程购买食材及生活物资（返程1人）',E:'Liu Qingyun returned from Victoria Border (arrived at 11:00); purchased food ingredients and daily necessities during the return trip (one person).',X:1},
@@ -1231,11 +1297,11 @@ function importHistData(){
 {D:'2026-07-09',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-10',V:'Samuel',P:'3102',C:'机电部-下午13.30办公室出发binga砖厂走访；（3人）',E:'Mechanical and Electrical Department – Departure from the office at 13.30 this afternoon for a visit to the Binga Brickworks; (3 people)',X:3},
 {D:'2026-07-10',V:'Milion',P:'0630',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
-{D:'2026-07-11',V:'Nkala',P:'AGE 2915',C:'财务部-万基动物园团建分两次出发，上午9.00办公室集合出发；中午11.00办公室集合出发；返程时间视实际情况待定，等待通知；（12人）',E:'Finance Department – The Wanji Zoo team-building activity will be conducted in two sessions: departure from the office at 9:00 AM and again at 11:00 AM; the return time will be determined based on actual circumstances and subject to further notification (for a group of 12 participants).',X:12},
+{D:'2026-07-11',V:'Nkala',P:'AGE 2915',C:'财务部-万基动物园团建分两次出发，上午9.00办公室集合出发；中午11.00办公室集合出发；返程时间视实际情况待定，等待通知；（12人）',E:'Finance Department – The Hwange Zoo team-building activity will be conducted in two sessions: departure from the office at 9:00 AM and again at 11:00 AM; the return time will be determined based on actual circumstances and subject to further notification (for a group of 12 participants).',X:12},
 {D:'2026-07-11',V:'Samuel',P:'3102',C:'',E:'',X:1},
 {D:'2026-07-11',V:'Milion',P:'AGE 8267',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-11',V:'Reginald',P:'3103',C:'曹杰、瀑布城机场出发；梁德喜、马稚宇-瀑布城机场10.00落地；上午7.30中方食堂集合出发；返程采购生活物资及食材（出发1人、返程2人）',E:'Cao Jie departs from Waterfall City Airport; Liang Dexi and Ma Zhiyu arrive at Waterfall City Airport at 10:00 AM; they will gather at the Chinese cafeteria at 7:30 AM before departing; on the return trip, they will purchase daily necessities and ingredients (one person departs for the trip, two return).',X:1},
-{D:'2026-07-12',V:'Samuel',P:'3102',C:'业务部-承运商矿山外派人员瀑布城机场出发1人，到达1人；机电部-四川明宇供应商瀑布城机场到达1人；上午9.00招待所出发。（出发1人、返程2人）',E:'Business Department - 1 person departing from Falls City Airport for a mine assignment with the carrier, 1 person arriving; Mechanical & Electrical Department - 1 person arriving at Falls City Airport from Sichuan Mingyu supplier; departing from the guesthouse at 9:00 a.m. (1 person departing, 2 returning).',X:1},
+{D:'2026-07-12',V:'Samuel',P:'3102',C:'业务部-承运商矿山外派人员瀑布城机场出发1人，到达1人；机电部-四川明宇供应商瀑布城机场到达1人；上午9.00招待所出发。（出发1人、返程2人）',E:'Business Department - 1 person departing from Waterfall City Airport for a mine assignment with the carrier, 1 person arriving; Mechanical & Electrical Department - 1 person arriving at Waterfall City Airport from Sichuan Mingyu supplier; departing from the guesthouse at 9:00 a.m. (1 person departing, 2 returning).',X:1},
 {D:'2026-07-12',V:'Nkala',P:'AGE 2915',C:'生产车间-瀑布城景区团建，当日返程，上午8.30中方食堂外集合出发；（6人）',E:'Production Workshop Team-Building Activity at Puzhui Waterfall Scenic Area – Same-Day Return   Meeting Point: Outside the Chinese Staff Canteen at 8:30 AM   Group Size: 6 participants',X:6},
 {D:'2026-07-14',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-14',V:'Samuel',P:'AFX 6895',C:'安全生产部-第三方机构现场指导硫酸锂基线调研。对接人钟铉阳：0789125335，电话沟通具体时间，合理安排灵活调整，保障现场接送、安保及车间送餐任务；',E:'Work Safety Department – On-site guidance from a third-party organisation regarding the baseline survey for lithium sulphate. Contact person: Zhong Xianyang: 0789125335. Please arrange a specific time by telephone; we will make reasonable and flexible arrangements to ensure on-site transport, security and meal delivery to the workshop.',X:1},
@@ -1243,7 +1309,7 @@ function importHistData(){
 {D:'2026-07-14',V:'Nkala',P:'AGE 2915',C:'集团信息化领导-邓全凤、黄凎、段亮亮；瀑布城机场出发，上午8.30中方食堂外集合出发；（3人）',E:'Group IT Leaders – Deng Quanfeng, Huang Liao and Duan Liangliang; departing from Waterfall City Airport; meet outside the Chinese canteen at 8.30 am to set off; (3 people)',X:3},
 {D:'2026-07-15',V:'Nkala',P:'AGE 2915',C:'单俊男-瀑布城机场出发，叶总-瀑布城机场到达，飞机落地时间（14.55），上午8.30中方餐厅外集合出发；（出发1人，返程1人）',E:'Shan Junnan – Departing from Waterfall City Airport; meet outside the Chinese restaurant at 8.30 am to set off; Mr Ye – Arriving at Waterfall City Airport; flight landing time (14.55) (1 person departing, 1 person returning)',X:1},
 {D:'2026-07-15',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
-{D:'2026-07-15',V:'Samuel',P:'3103',C:'机电部-外出万基方向砖厂、调研。（3人）',E:'Electromechanical Department – Visited the Wanji Direction Brick Factory for research purposes (3 personnel).',X:3},
+{D:'2026-07-15',V:'Samuel',P:'3103',C:'机电部-外出万基方向砖厂、调研。（3人）',E:'Electromechanical Department – Visited the Hwange Direction Brick Factory for research purposes (3 personnel).',X:3},
 {D:'2026-07-15',V:'Reginald',P:'AEC 2489',C:'羊肉采购、牛肉议价、鸡蛋果蔬、生活物资采购；',E:'Procurement of lamb; price negotiation for beef; purchase of eggs, fruits and vegetables; acquisition of daily necessities.',X:1},
 {D:'2026-07-16',V:'Nkala',P:'AGE 2915',C:'王朝明、高玉莹、杨毓品、朱元波、余炳均、罗发元、吴志林，瀑布城移民局签证办理；高文、机电部预约1人瀑布城机场出发；上午8.00中方食堂外集合出发；（出发9人，返程7人）',E:'Wang Chaoming, Gao Yuying, Yang Yupin, Zhu Yuanbo, Yu Bingjun, Luo Fayuan and Wu Zhilin: visa processing at the Waterfall City Immigration Bureau; Gao Wen: one person to be booked by the Mechanical and Electrical Department for departure from Waterfall City Airport; meet outside the Chinese canteen at 08:00 for departure; (9 people departing, 7 returning)',X:1},
 {D:'2026-07-16',V:'Samuel',P:'3103',C:'',E:'',X:1},
@@ -1252,11 +1318,11 @@ function importHistData(){
 {D:'2026-07-17',V:'Nkala',P:'AGE 2915',C:'崔总-瀑布城机场到达；贺永玲-瀑布城机场出发；上午8.30办公室集合出发；（出发1人，返程1人）',E:'Mr.Cui – Arrives at Waterfall City Airport; Ms.He Yongling – Departs from Waterfall City Airport; Meets at the office at 8:30 AM and departs (one person departing, one person returning).',X:1},
 {D:'2026-07-17',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-17',V:'Samuel',P:'0630',C:'机修车间跟进机电部3034车辆恢复，待车辆恢复后移交0630，车辆检查移交，清洗整备；',E:'The mechanical repair workshop is coordinating with the Electromechanical Department to restore Vehicle 3034; once operational, it will be handed over to Unit 0630 for inspection, cleaning, and preparation.',X:1},
-{D:'2026-07-17',V:'Unknown',P:'AGE 8267',C:'万基汽修店维修，四轮定位等项目；',E:'Wanji Auto Repair Shop provides services such as maintenance, four-wheel alignment and other items.',X:1},
-{D:'2026-07-18',V:'Nkala',P:'AGE 2915',C:'刘军、高德强-瀑布城机场出发，李庆-瀑布城机场到达；上午8.30中餐厅外集合出发；（出发2人、到达1人）',E:'Liu Jun and Gao Deqiang depart from Falls City Airport; Li Qing arrives at Falls City Airport. The group will assemble outside the Chinese restaurant at 8:30 AM and proceed together (two departing members, one arriving member).',X:2},
+{D:'2026-07-17',V:'Unknown',P:'AGE 8267',C:'万基汽修店维修，四轮定位等项目；',E:'Hwange Auto Repair Shop provides services such as maintenance, four-wheel alignment and other items.',X:1},
+{D:'2026-07-18',V:'Nkala',P:'AGE 2915',C:'刘军、高德强-瀑布城机场出发，李庆-瀑布城机场到达；上午8.30中餐厅外集合出发；（出发2人、到达1人）',E:'Liu Jun and Gao Deqiang depart from Waterfall City Airport; Li Qing arrives at Waterfall City Airport. The group will assemble outside the Chinese restaurant at 8:30 AM and proceed together (two departing members, one arriving member).',X:2},
 {D:'2026-07-18',V:'Milion',P:'3102',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-18',V:'Samuel',P:'0630',C:'机修车间跟进机电部3034车辆恢复，待车辆恢复后移交0630，车辆检查移交，清洗整备；',E:'The mechanical repair workshop is coordinating with the Electromechanical Department to restore Vehicle 3034; once operational, it will be handed over to Unit 0630 for inspection, cleaning, and preparation.',X:1},
-{D:'2026-07-19',V:'Nkala',P:'AGE 2915',C:'选厂共5人出发瀑布成景区，上午8.30中方食堂集合出发，当日返程；',E:'A total of 10 Homo sapiens from the concentrator will depart for the waterfall scenic area for team building. Gather at the Chinese canteen at 8:30 a.m. and return on the same day;',X:5},
+{D:'2026-07-19',V:'Nkala',P:'AGE 2915',C:'选厂共5人出发瀑布城景区，上午8.30中方食堂集合出发，当日返程；',E:'A total of 5 people from the concentrator will depart for the waterfall scenic area for team building. Gather at the Chinese canteen at 8:30 a.m. and return on the same day;',X:5},
 {D:'2026-07-19',V:'Samuel',P:'3102',C:'',E:'',X:1},
 {D:'2026-07-20',V:'Nkala',P:'AGE 2915',C:'选厂共5人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；',E:'A total of five staff members from the processing plant participated in a team-building activity at Waterfall City Scenic Area. They gathered at the Chinese cafeteria at 8:30 AM and departed; they returned on the same day.',X:5},
 {D:'2026-07-20',V:'Milion',P:'0630',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
@@ -1265,7 +1331,7 @@ function importHistData(){
 {D:'2026-07-21',V:'Milion',P:'0630',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-21',V:'Samuel',P:'AGE 8267',C:'综合部-协助社区工作相关现场接送任务；',E:'General Department – Assists with on-site transportation tasks related to community work activities.',X:1},
 {D:'2026-07-22',V:'Reginald',P:'AGE 2915',C:'选厂共6人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；',E:'A total of 6 people from the beneficiation plant will set off for a team building activity at the Waterfall City Scenic Area. Gather at the Chinese canteen at 8:30 a.m. for departure, and return on the same day.',X:6},
-{D:'2026-07-22',V:'Nkala',P:'3103',C:'朱元波、杨毓品瀑布城移民局办理签证录入指纹；返程采购后勤生活物资及食材，上午8.30办公室出发；（2人）',E:'Zhu Yuanbo and Yang Yupin went to the Immigration Bureau of Falls City to handle visa procedures and record fingerprints; on the return trip, they will purchase logistical living supplies and food ingredients, and set off from the office at 8:30 a.m.; (2 people）',X:2},
+{D:'2026-07-22',V:'Nkala',P:'3103',C:'朱元波、杨毓品瀑布城移民局办理签证录入指纹；返程采购后勤生活物资及食材，上午8.30办公室出发；（2人）',E:'Zhu Yuanbo and Yang Yupin went to the Immigration Bureau of Waterfall City to handle visa procedures and record fingerprints; on the return trip, they will purchase logistical living supplies and food ingredients, and set off from the office at 8:30 a.m.; (2 people）',X:2},
 {D:'2026-07-22',V:'Milion',P:'0630',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-22',V:'Samuel',P:'3102',C:'万基采购生活物资、食材等；上午8.30办公室出发；（2人）',E:'The procurement team purchases daily necessities and food ingredients; departs from the office at 8:30 AM (2 personnel).',X:2},
 {D:'2026-07-23',V:'Nkala',P:'AGE 2915',C:'宋雨峰、津方获奖员工4人-瀑布城机场到达；梁德喜、李懿展-瀑布城机场出发；曾艺娟-瀑布城机场出发下午15.00起飞；上午8.30中方食堂外集合出发；双车共同出发，返程时根据实际情况灵活调整；（出发3人、到达5人）',E:'Song Yufeng and four award-winning employees from Tianjin will arrive at Fallstown Airport; Liang Dexi and Li Yizhan will depart from Fallstown Airport; Zeng Yijuan will depart from Fallstown Airport at 3:00 PM; the group will meet outside the Chinese canteen at 8:30 AM and depart together in two vehicles, with adjustments made flexibly based on actual circumstances on the return trip; (3 departing, 5 arriving)',X:4},
@@ -1281,10 +1347,10 @@ function importHistData(){
 {D:'2026-07-27',V:'Reginald',P:'AEC 2489',C:'采购生活物资、牛羊肉等食材；',E:'Purchasing daily necessities, beef, mutton, and other food ingredients;',X:1},
 {D:'2026-07-27',V:'Samuel',P:'3103',C:'预约汽修厂-安装调试车辆行车记录仪。',E:'Schedule an appointment at an auto repair shop to install and test your vehicle\'s dashcam.',X:1},
 {D:'2026-07-27',V:'Milion',P:'0630',C:'机动车辆，联系电话：0785374314；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles, contact number: 0785374314; dedicated motor vehicles, bookings by telephone; on-site pick-up and drop-off services;',X:1},
-{D:'2026-07-28',V:'Samuel',P:'3103',C:'李丽-瀑布城机场出发，（13.05起飞）；赵迎磊-瀑布城机场出发；（15.00起飞）；上午8.30中方食堂外集合出发；2人',E:'Li Li – departing from Falls City Airport (departure at 13.05); Zhao Yinglei – departing from Falls City Airport (departure at 15.00); meet outside the Chinese canteen at 8.30 am to depart (2 people );',X:2},
+{D:'2026-07-28',V:'Samuel',P:'3103',C:'李丽-瀑布城机场出发，（13.05起飞）；赵迎磊-瀑布城机场出发；（15.00起飞）；上午8.30中方食堂外集合出发；2人',E:'Li Li – departing from Waterfall City Airport (departure at 13.05); Zhao Yinglei – departing from Waterfall City Airport (departure at 15.00); meet outside the Chinese canteen at 8.30 am to depart (2 people );',X:2},
 {D:'2026-07-28',V:'Reginald',P:'AEC 2489',C:'牛肉疫检，证件办理及屠宰等全流程完成牛肉采购；',E:'The entire beef procurement process, including veterinary inspections, the processing of documentation and slaughter, has been completed;',X:1},
 {D:'2026-07-28',V:'Tshuma',P:'3102',C:'刘思龙-布拉瓦约参加相关会议，未返程（3人）',E:'Liu Silong – attended a relevant meeting in Bulawayo and has not yet returned (3 people)',X:3},
-{D:'2026-07-28',V:'Milion',P:'AGE 8267',C:'机电部-万基方向线路巡查，综合部-采购并带回小鸡鸡苗，上午7.30办公室出发；（共5人）',E:'Mechanical and Electrical Department – Route inspection in the Wanji area; General Affairs Department – Purchase and collection of day-old chicks; departure from the office at 7.30 am; (3 people in total)',X:5},
+{D:'2026-07-28',V:'Milion',P:'AGE 8267',C:'机电部-万基方向线路巡查，综合部-采购并带回小鸡鸡苗，上午7.30办公室出发；（共5人）',E:'Mechanical and Electrical Department – Route inspection in the Hwange area; General Affairs Department – Purchase and collection of day-old chicks; departure from the office at 7.30 am; (3 people in total)',X:5},
 {D:'2026-07-28',V:'Kuda',P:'0630',C:'机动车辆，联系电话：07749653358；专职机动车辆，电话预约；现场接送任务；',E:'Motor vehicles available; contact number: 07749653358; dedicated motor vehicles available by phone appointment; on-site pick-up and drop-off service available.',X:1},
 {D:'2026-07-29',V:'Reginald',P:'3102',C:'预约汽修厂，车辆底盘、减震检查，车辆整备；',E:'Book an appointment at a garage for an inspection of the vehicle’s chassis and suspension, and general servicing;',X:1},
 {D:'2026-07-29',V:'Samuel',P:'AEC 2489',C:'综合部-修路业务转运工器具及人员上下班通勤，及现场接送、（需沟通确定具体工作任务及用车时间段，非全程跟车）安保送餐等随机任务；（联系电话0773879123）',E:'General Affairs Department – Transporting tools and equipment for road construction projects, commuting staff to and from work, on-site pick-ups and drop-offs (specific tasks and vehicle usage times to be confirmed via discussion; does not involve accompanying the vehicle for the entire journey), and ad hoc tasks such as security staff meal deliveries; (Contact number: 0773 879 123)',X:1},
@@ -1293,13 +1359,13 @@ function importHistData(){
 {D:'2026-07-30',V:'Samuel',P:'AGE 8267',C:'刘思龙-跟车参与社区工作任务（8.00-12.00），13.00后预约修理厂安装车辆行车记录仪；',E:'Liu Silong – Accompany the vehicle on community work assignments, time slot (8.00–12.00); after 13.00, book an appointment at a garage to have a dashcam fitted to the vehicle;',X:1},
 {D:'2026-07-30',V:'Milion',P:'0630',C:'联系电话：0785374314；专职机动车辆，仅安全送达约定工作地点后返程，电话预约，现场接送任务；',E:'Telephone: 0785374314; Specialising in motor vehicles; returns only after safely delivering passengers to the agreed destination; telephone bookings required; on-site pick-up and drop-off services;',X:1},
 {D:'2026-07-30',V:'Kuda',P:'AEC 2489',C:'联系电话：07749653358；专职机动车辆，仅安全送达约定工作地点后返程，电话预约，现场接送任务，（覆盖保安接送餐等固定任务）；',E:'Telephone number: 07749653358; dedicated to motor vehicle services; returns only after safely delivering passengers to the agreed destination; telephone bookings required; on-site pick-up and drop-off services (including fixed tasks such as security staff meal deliveries);',X:1},
-{D:'2026-07-31',V:'Samuel',P:'3102',C:'薛建-调研走访碎石场和万基水泥厂，上午7.30办公室出发（3人）',E:'Xue Jian – Site visit to the gravel pit and Wanji Cement Works; departure from the office at 7.30 am (3 people)',X:3},
+{D:'2026-07-31',V:'Samuel',P:'3102',C:'薛建-调研走访碎石场和万基水泥厂，上午7.30办公室出发（3人）',E:'Xue Jian – Site visit to the gravel pit and Hwange Cement Works; departure from the office at 7.30 am (3 people)',X:3},
 {D:'2026-07-31',V:'Milion',P:'0630',C:'联系电话：0785374314；专职机动车辆，仅安全送达约定工作地点后返程，电话预约，现场接送任务；',E:'Telephone: 0785374314; Specialising in motor vehicles; returns only after safely delivering passengers to the agreed destination; telephone bookings required; on-site pick-up and drop-off services;',X:1},
-{D:'2026-08-01',V:'Reginald',P:'AGE 2915',C:'李晓磊-瀑布城机场出发，安生部医院办事4人；（出发5人，万基医院下车4人，业务完成后电话预约kuda电话号码：07749653358）上午8.00点办公室出发；硫酸锂项目重庆安装公司人员瀑布城机场到达；（返程4人）；返程途中购买三台新车道路通行三证；',E:'Li Xiaolei - Departed from Waterfall City Airport, 4 people went to Anshengbu Hospital for business; (5 people departed, 4 people got off at Wanji Hospital, after the business was completed, make an appointment by phone at Kuda phone number: 07749653358) Departed from the office at 8:00 am; Lithium sulfate project Chongqing installation company personnel arrived at Waterfall City Airport; (4 people returned); Purchased three new vehicle road permits on the return trip.',X:4},
+{D:'2026-08-01',V:'Reginald',P:'AGE 2915',C:'李晓磊-瀑布城机场出发，安生部医院办事4人；（出发5人，万基医院下车4人，业务完成后电话预约kuda电话号码：07749653358）上午8.00点办公室出发；硫酸锂项目重庆安装公司人员瀑布城机场到达；（返程4人）；返程途中购买三台新车道路通行三证；',E:'Li Xiaolei - Departed from Waterfall City Airport, 4 people went to Anshengbu Hospital for business; (5 people departed, 4 people got off at Hwange Hospital, after the business was completed, make an appointment by phone at Kuda phone number: 07749653358) Departed from the office at 8:00 am; Lithium sulfate project Chongqing installation company personnel arrived at Waterfall City Airport; (4 people returned); Purchased three new vehicle road permits on the return trip.',X:4},
 {D:'2026-08-01',V:'Milion',P:'3102',C:'联系电话：0785374314；专职机动车辆，仅安全送达约定工作地点后返程，电话预约，现场接送任务；',E:'Telephone: 0785374314; Specialising in motor vehicles; returns only after safely delivering passengers to the agreed destination; telephone bookings required; on-site pick-up and drop-off services;',X:1},
-{D:'2026-08-01',V:'Samuel',P:'AGE 8267',C:'薛建-调研走访碎石场和万基水泥厂，上午7.30办公室出发（3人）',E:'Xue Jian – Site visit to the gravel pit and Wanji Cement Works; departure from the office at 7.30 am (3 people)',X:3},
+{D:'2026-08-01',V:'Samuel',P:'AGE 8267',C:'薛建-调研走访碎石场和万基水泥厂，上午7.30办公室出发（3人）',E:'Xue Jian – Site visit to the gravel pit and Hwange Cement Works; departure from the office at 7.30 am (3 people)',X:3},
 {D:'2026-08-01',V:'Kuda',P:'AGA 5395',C:'现场机动车辆+万基医院办事人员接回；联系电话：07749653358；专职机动车辆，现场接送任务；',E:'On-site mobile vehicles will pick up passengers from Wanjí Hospital; Contact number: 07749653358; Dedicated mobile vehicles available for on-site pickup and drop-off services.',X:1},
-{D:'2026-08-03',V:'Nkala',P:'AGE 2915',C:'选厂共4人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；（4人）',E:'A group of four people from the plant went on a team-building trip to the Falls City scenic area. They met at the Chinese canteen at 8:30 am and departed on the same day. (4 people)',X:4},
+{D:'2026-08-03',V:'Nkala',P:'AGE 2915',C:'选厂共4人出发瀑布城景区团建，上午8.30中方食堂集合出发，当日返程；（4人）',E:'A group of four people from the plant went on a team-building trip to the Waterfall City scenic area. They met at the Chinese canteen at 8:30 am and departed on the same day. (4 people)',X:4},
 {D:'2026-08-03',V:'Milion',P:'0630',C:'专职机动车辆，仅安全送达约定工作地点后返程（需沟通确定具体工作任务及用车时间段，非全程跟车）安保送餐等随机任务；（联系电话联系电话：0785374314）',E:'Dedicated vehicle for safe delivery to the agreed work location and return trip (specific work tasks and time periods need to be communicated and confirmed; not full-time escort); random tasks such as security and food delivery; (Contact number: 0785374314)',X:1},
 {D:'2026-08-03',V:'Samuel',P:'3102',C:'赵迎磊、段亮亮-瀑布城机场到达，上午7.00办公室出发；（2人）',E:'Zhao Yinglei – Arrival at Wushuicheng Airport; departure from the office at 7:00 AM; (1 person)',X:2},
 {D:'2026-08-03',V:'Reginald',P:'AEC 2489',C:'采购生活物资、牛羊肉等食材；',E:'Purchasing daily necessities, beef, mutton, and other food ingredients;',X:1},
@@ -1308,13 +1374,13 @@ function importHistData(){
 {D:'2026-08-04',V:'Milion',P:'0630',C:'专职机动车辆，仅安全送达约定工作地点后返程（需沟通确定具体工作任务及用车时间段，非全程跟车）安保送餐等随机任务；（联系电话联系电话：0785374314）',E:'Dedicated vehicle for safe delivery to the agreed work location and return trip (specific work tasks and time periods need to be communicated and confirmed; not full-time escort); random tasks such as security and food delivery; (Contact number: 0785374314)',X:1},
 {D:'2026-08-04',V:'Samuel',P:'3102',C:'专职机动车辆，仅安全送达约定工作地点后返程（需沟通确定具体工作任务及用车时间段，非全程跟车）安保送餐等随机任务；（联系电话联系电话：0773879123）',E:'Dedicated vehicle for safe delivery to the agreed work location and return trip (specific work tasks and time periods need to be communicated and confirmed; not full-time escort); random tasks such as security and food delivery; (Contact number: 0773879123)',X:1},
 {D:'2026-08-05',V:'Nkala',P:'AGE 2915',C:'陈永康、李朝茂、刘健、王文洪、徐强、杨朝-瀑布城机场到达，综合部-矿山经理1人接机；业务部-承运商1人送机；',E:'Chen Yongkang, Li Chaomao, Liu Jian, Wang Wenhong, Xu Qiang, and Yang Chao – arriving at Wushuicheng Airport; the General Department\'s Mine Manager will greet the passengers; the Business Department\'s Carrier representative will see the passengers off.',X:1},
-{D:'2026-08-06',V:'Reginald',P:'3103',C:'王鹏翔-瀑布城机场出发（13.05起飞）；陈和平-瀑布城机场出发（13.05起飞）；高德强-瀑布城机场到达（12.10到达）；上午8:00中方食堂外集合出发；出发2人到达1人；',E:'Wang Pengxiang departing from Falls City Airport (13.05); Chen Heping departing from Falls City Airport (13.05); Gao Deqiang arriving at Falls City Airport (12.10); meet outside Chinese canteen at 8:00 AM, depart together (2 departing, 1 arriving);',X:2},
+{D:'2026-08-06',V:'Reginald',P:'3103',C:'王鹏翔-瀑布城机场出发（13.05起飞）；陈和平-瀑布城机场出发（13.05起飞）；高德强-瀑布城机场到达（12.10到达）；上午8:00中方食堂外集合出发；出发2人到达1人；',E:'Wang Pengxiang departing from Waterfall City Airport (13.05); Chen Heping departing from Waterfall City Airport (13.05); Gao Deqiang arriving at Waterfall City Airport (12.10); meet outside Chinese canteen at 8:00 AM, depart together (2 departing, 1 arriving);',X:2},
 {D:'2026-08-06',V:'Nkala',P:'AGE 2915',C:'预约修理厂车辆整备、左后减震器更换',E:'Appointment at a repair shop for vehicle overhaul and replacement of the left rear shock absorber',X:1},
 {D:'2026-08-06',V:'Milion',P:'0630',C:'硫酸锂项目专职司机，全程保障现场人员接送通勤；（联系电话联系电话：0785374314）',E:'Full-time driver for the Lithium Sulfate Project, responsible for providing round-the-clock transportation services for on-site personnel; (Contact number: 0785374314)',X:1},
 {D:'2026-08-06',V:'Samuel',P:'3102',C:'专职机动车辆，仅安全送达约定工作地点后返程（需沟通确定具体工作任务及用车时间段，非全程跟车）安保送餐等随机任务；（联系电话联系电话：0773879123）',E:'Dedicated vehicle for safe delivery to the agreed work location and return trip (specific work tasks and time periods need to be communicated and confirmed; not full-time escort); random tasks such as security and food delivery; (Contact number: 0773879123)',X:1},
 {D:'2026-08-07',V:'Nkala',P:'AGE 2915',C:'叶总、张一  -瀑布城机场到达，飞机10.40落地，上午7.00办公室出发；（2人）',E:'Mr.Ye and Zhang Yi – Arrived at Wushuicheng Airport; aircraft landed at 10:40 AM; departure from the office at 7:00 AM; (2 people)',X:2},
 {D:'2026-08-07',V:'Milion',P:'0630',C:'硫酸锂项目专职司机，全程保障现场人员接送通勤；（联系电话联系电话：0785374314）',E:'Full-time driver for the Lithium Sulfate Project, responsible for providing round-the-clock transportation services for on-site personnel; (Contact number: 0785374314)',X:1},
-{D:'2026-08-07',V:'Samuel',P:'AGA 5395',C:'机电部-88千伏线路巡检，出发万基方向，上午7.40办公室外集合出发，（3人）；',E:'Electromechanical Department – 88 kV line inspection: Departing toward Wanji; assembly at the office premises at 7:40 AM; (2 persons)',X:3},
+{D:'2026-08-07',V:'Samuel',P:'AGA 5395',C:'机电部-88千伏线路巡检，出发万基方向，上午7.40办公室外集合出发，（3人）；',E:'Electromechanical Department – 88 kV line inspection: Departing toward Hwange; assembly at the office premises at 7:40 AM; (2 persons)',X:3},
 {D:'2026-08-07',V:'Reginald',P:'AGE 8267',C:'万基RDC，上午10点30分出发，中午返程（1人）',E:'Wanjí RDC: Departure at 10:30 AM, return trip at noon (for 1 person).',X:1},
 {D:'2026-08-08',V:'Nkala',P:'3103',C:'夏海斌、刘军-瀑布城机场到达（12.10到达）；罗发元-瀑布城机场出发（13.05起飞）；上午8:30中方食堂外集合出发；到达2人出发1人；',E:'Xia Haibin and Liu Jun – Arrival at Waterfall City Airport (arrived on 12.10); Luo Fayuan – Departure from Waterfall City Airport (took off at 13:05); Assembly outside the Chinese restaurant at 8:30 AM; 2 people arriving, 1 person departing.',X:2},
 {D:'2026-08-08',V:'Milion',P:'0630',C:'硫酸锂项目专职司机，全程保障现场人员接送通勤；（联系电话联系电话：0785374314）',E:'Full-time driver for the Lithium Sulfate Project, responsible for providing round-the-clock transportation services for on-site personnel; (Contact number: 0785374314)',X:1},
@@ -1335,7 +1401,7 @@ function importHistData(){
 {D:'2026-08-13',V:'Milion',P:'0630',C:'硫酸锂项目专职司机，全程保障现场人员接送通勤；（联系电话联系电话：0785374314）',E:'Full-time driver for the Lithium Sulfate Project, responsible for providing round-the-clock transportation services for on-site personnel; (Contact number: 0785374314)',X:1},
 {D:'2026-08-13',V:'Reginald',P:'AGE 8267',C:'安全生产部-跟车随行公司月度安全检查；下午跟车第三方生物监测机构；',E:'Safety Production Department – Monthly safety inspection at the vehicle-following company; in the afternoon: third-party biological monitoring agency at the vehicle site',X:1},
 {D:'2026-08-14',V:'Chada',P:'AGA 5395',C:'杨开华-瀑布城机场出发；上午8.30以前出发，同行瀑布城移民局相关业务；（出发1人）',E:'Yang Kaihua – Departing from Waterfall City Airport; departure before 8:30 AM; accompanying relevant services from the Waterfall City Immigration Bureau; (1 person departing)',X:1},
-{D:'2026-08-14',V:'Nkala',P:'AGE 2915',C:'薛建-万基方向本地碎石场材料调研及运输线路勘察，上午7:30办公室集合出发；（4人）',E:'Xuejian–Wanjī direction: Material survey at a local crushed stone yard and investigation of the transportation route; departure from the office at 7:30 AM (4 people).',X:4},
+{D:'2026-08-14',V:'Nkala',P:'AGE 2915',C:'薛建-万基方向本地碎石场材料调研及运输线路勘察，上午7:30办公室集合出发；（4人）',E:'Xuejian–Hwange direction: Material survey at a local crushed stone yard and investigation of the transportation route; departure from the office at 7:30 AM (4 people).',X:4},
 {D:'2026-08-14',V:'Milion',P:'0630',C:'硫酸锂项目专职司机，全程保障现场人员接送通勤；（联系电话联系电话：0785374314）',E:'Full-time driver for the Lithium Sulfate Project, responsible for providing round-the-clock transportation services for on-site personnel; (Contact number: 0785374314)',X:1},
 {D:'2026-08-14',V:'Reginald',P:'3101',C:'贺永玲-瀑布城机场11.40到达，汇合后继续等待，下午15.35财务部新招聘员工瀑布城机场到达，上午8.30办公室出发；返程采购餐厅食材及物资。（返程2人）',E:'He Yongling – Arrived at Waterfall City Airport at 11:40; after meeting up, continue waiting; at 15:35 in the afternoon, new employees from the Finance Department will arrive at Waterfall City Airport; departure from the office at 08:30 AM; on the return trip, procurement of restaurant ingredients and supplies will be conducted (2 people on the return trip).',X:2},
 {D:'2026-08-15',V:'Nkala',P:'AGE 2915',C:'梁德喜、田睿-瀑布城机场到达，上午8.30办公室集合出发；返程购买食材及生活物资；（返程2人）',E:'Liang Dexi and Tian Rui – Arrival at Waterfall City Airport; assembly at the office at 8:30 AM for departure; purchase of groceries and daily necessities on the return trip (2 people returning).',X:2},
@@ -1394,7 +1460,7 @@ function importOrgUsers(){
 
 const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),sigData:'',tapCount:0,unlockUntil:0,
   fFrom:'',fTo:'',fDepts:[],fVeh:'',fStatus:'all',fSubmitter:'',fPaxMin:0,fPaxMax:99,fKeywordPool:'',pLang:'cn',nLang:'cn',dLang:'cn',
-  recKeyword:'',recDriver:'',recSort:'date-desc'};
+  recKeyword:'',recDriver:'',recSort:'date-desc',recLimit:30,dispDate:'',dailyFrom:'',dailyTo:'',dailyDepts:[]};
 
 // Tap counter for hidden admin unlock
 function setupTapCounter(){
@@ -1562,8 +1628,8 @@ function renderUserInfo(){
     '<div class="pcu-row">'
     +'<div class="pcu-avatar">'+avatar+'</div>'
     +'<div class="pcu-meta">'
-      +'<div class="pcu-name">'+S.user.name+'</div>'
-      +'<div class="pcu-dept">'+dShow(S.user.department)+'</div>'
+      +'<div class="pcu-name">'+esc(S.user.name)+'</div>'
+      +'<div class="pcu-dept">'+esc(dShow(S.user.department))+'</div>'
     +'</div></div>'
     +(showAdmin
       ?'<div class="pcu-badge">'+(isAdmin()?'ADMIN':'UNLOCKED')+'</div>'
@@ -1635,14 +1701,31 @@ function renderPage(){
   }catch(e){
     html='<div style="color:red;padding:20px"><h3>Render Error</h3><pre>'+e.message+'\n'+e.stack+'</pre></div>';
   }
-  if(m1)m1.innerHTML=html;
-  if(m2)m2.innerHTML=html;
+  // 只渲染到当前可见的容器，另一个清空。否则 DOM 里出现重复 id，getElementById 会返回隐藏容器里的元素，
+  // 导致 PC 上点签字按钮/填表时操作错位（签字面板"打不开"的根因）
+  if(window.innerWidth>=769){
+    if(m2)m2.innerHTML=html;
+    if(m1)m1.innerHTML='';
+  }else{
+    if(m1)m1.innerHTML=html;
+    if(m2)m2.innerHTML='';
+  }
   // Init passenger fields for submit page
   if(S.tab==='submit'){
     setTimeout(updatePurposeStatus,80);
     setTimeout(()=>{['step-1','step-2','step-3','step-4','step-5','step-6'].forEach(id=>checkFilled(id));},120);
   }
 }
+
+// 窗口跨过 PC/移动断点（769px）时重新渲染，避免切到空容器
+let _lastIsPC=window.innerWidth>=769;
+window.addEventListener('resize',()=>{
+  const nowPC=window.innerWidth>=769;
+  if(nowPC!==_lastIsPC){
+    _lastIsPC=nowPC;
+    if(S.user)renderPage();
+  }
+});
 
 // ==================== SUBMIT ====================
 // Mark required field as "filled" — turns border red→green and badge gradient red→green
@@ -1788,6 +1871,42 @@ function doTranslate(field){
     .finally(()=>{if(btn){btn.disabled=false;btn.textContent='🔄 翻译到 '+(srcLang==='zh-CN'?'EN':'CN');}});
 }
 
+// 双栏互译：取非空的一侧为源，翻译到另一侧（双栏同时可见，无需切 Tab）
+function doTranslatePair(field){
+  const map={purpose:['rq-purpose','rq-purposeEn'],dest:['rq-dest','rq-destEn'],notes:['rq-notes','rq-notesEn']};
+  const ids=map[field];if(!ids)return;
+  const cnEl=document.getElementById(ids[0]),enEl=document.getElementById(ids[1]);
+  if(!cnEl||!enEl)return toast('字段错误 / Field error');
+  let srcEl,dstEl,srcLang,tgtLang;
+  if(cnEl.value.trim()){srcEl=cnEl;dstEl=enEl;srcLang='zh-CN';tgtLang='en-US';}
+  else if(enEl.value.trim()){srcEl=enEl;dstEl=cnEl;srcLang='en-US';tgtLang='zh-CN';}
+  else return toast(L==='zh'?'请先在任一语言框输入内容':'Please enter content first');
+  const srcText=srcEl.value.trim();
+  const btn=event&&event.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳';}
+  toast('🔄 翻译中...');
+  fetch('https://api.mymemory.translated.net/get?langpair='+srcLang+'|'+tgtLang+'&q='+encodeURIComponent(srcText))
+    .then(r=>r.json())
+    .then(data=>{
+      let translated='';
+      if(data&&data.responseStatus===200&&data.responseData&&data.responseData.translatedText)translated=data.responseData.translatedText;
+      if(translated){dstEl.value=translated;toast('✅ 翻译完成 / Translation complete');refreshPairStatus(field);}
+      else{dstEl.value=srcText;toast('⚠ 翻译失败，已复制原文');}
+    })
+    .catch(()=>{dstEl.value=srcText;toast('⚠ 网络失败，已复制原文');})
+    .finally(()=>{if(btn){btn.disabled=false;btn.textContent='🔄';}});
+}
+
+// 刷新双栏状态指示（✓ / ❌）
+function refreshPairStatus(field){
+  const map={purpose:['rq-purpose','rq-purposeEn'],dest:['rq-dest','rq-destEn'],notes:['rq-notes','rq-notesEn']};
+  const ids=map[field];if(!ids)return;
+  ['cn','en'].forEach((lang,i)=>{
+    const el=document.getElementById(ids[i]);
+    const st=document.getElementById('pair-st-'+field+'-'+lang);
+    if(el&&st){const ok=el.value.trim().length>0;st.textContent=ok?'✓':'❌';st.className='pair-status '+(ok?'ok':'miss');}
+  });
+}
+
 
 // Phrase dictionary helper
 function addPhrase(field,lang,phrase){
@@ -1874,14 +1993,20 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<div class="field-hint"><span class="ic tip">👥</span><span><b>'+bi('点 ± 调整乘车人数','Click ± to adjust count')+'</b>。'+bi('填好人数后点"生成乘车人员名单"按人填写姓名','After setting count, click "Generate Passenger List" to fill in names')+'。</span></div></div>';
 
   // Destination field
-  html+='<div class="fld fld-required" id="step-4"><label><span class="step-badge">4</span><span>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span></span></label>'
-    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
-    +'<div class="lt-btn"><button class="'+(S.dLang=='cn'?'active':'')+'" onclick="S.dLang=\'cn\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
-    +'<button class="'+(S.dLang=='en'?'active':'')+'" onclick="S.dLang=\'en\';switchDestLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
-    +'<button type="button" onclick="doTranslate(\'dest\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.dLang=='cn'?'EN':'CN')+'</button></div>'
-    +'<input type="text" id="rq-dest" list="dest-list" placeholder="'+(S.dLang=='cn'?'例如：Kamativi 矿区 → 维多利亚瀑布城机场':'e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="checkFilled(\'step-4\',this.value)">'
+  html+='<div class="fld fld-required" id="step-4">'
+    +'<label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">4</span><span>📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span> <span style="font-size:11px;color:var(--tx-dim);font-weight:400">'+bi('中英双语必填 · 🔄 一键互译','CN+EN required · 🔄 one-click translate')+'</span></span></label>'
+    +'<div class="pair-row">'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇨🇳 '+bi('中文','Chinese')+' <span class="pair-status miss" id="pair-st-dest-cn">❌</span></div>'
+        +'<input type="text" id="rq-dest" class="pair-input" list="dest-list" placeholder="'+bi('例如：Kamativi 矿区 → 维多利亚瀑布城机场','e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="refreshPairStatus(\'dest\');checkFilled(\'step-4\',this.value)">'
+      +'</div>'
+      +'<button type="button" class="pair-translate" onclick="doTranslatePair(\'dest\')" title="'+bi('一键互译','One-click translate')+'">🔄</button>'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇬🇧 '+bi('English','English')+' <span class="pair-status miss" id="pair-st-dest-en">❌</span></div>'
+        +'<input type="text" id="rq-destEn" class="pair-input" placeholder="'+bi('e.g., Kamativi Mine → Victoria Falls Airport','e.g., Kamativi Mine → Victoria Falls Airport')+'" oninput="refreshPairStatus(\'dest\');checkFilled(\'step-4\',this.value)">'
+      +'</div>'
+    +'</div>'
     +'<datalist id="dest-list">'+COMMON_DESTS.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</datalist>'
-    +'<input type="text" id="rq-destEn" style="display:none">'
     +'<div class="field-hint"><span class="ic tip">📍</span><span><b>'+bi('明确标注出发地 → 目的地','Specify origin → destination')+'</b>。'+bi('例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回','e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected')+'。</span></div></div>';
 
   html+='<div class="card" style="padding:14px;background:#fefce8;border:1px solid #fbbf24;margin-bottom:14px">'
@@ -1893,16 +2018,20 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +bi('4. 目的地必须是明确地点名称，不可填「外出」等模糊描述。','4. Destination must be specific, no vague terms like \"outing\".')
     +'</div></div>';
 
-  html+='<div class="fld fld-required" id="step-5"><label><span class="step-badge">5</span><span>'+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span> <span style="font-weight:400;font-size:11px;color:#dc2626">'+bi('（中英双语必填）','(CN+EN required)')+'</span></span></label>'
-    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">'
-    +'<div class="lt-btn"><button class="'+(S.pLang==='cn'?'active':'')+'" onclick="S.pLang=\'cn\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
-    +'<button class="'+(S.pLang==='en'?'active':'')+'" onclick="S.pLang=\'en\';switchPurposeLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
-    +'<button type="button" onclick="doTranslate(\'purpose\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.pLang==='cn'?'EN':'CN')+'</button>'
-    +'<span style="font-size:11px;color:#2563eb;font-weight:600">'+bi('当前编辑','Editing')+': '+(S.pLang==='cn'?'中文':'English')+'</span></div>'
-    +'<textarea id="rq-purpose" placeholder="'+(S.pLang==='cn'?'中文描述外出事由（点翻译自动复制到英文框）':'Describe purpose in English (click translate to auto-copy to CN)')+'" style="min-height:80px" oninput="updatePurposeStatus();checkFilled(\'step-5\',this.value)"></textarea>'
-    +'<textarea id="rq-purposeEn" style="display:none" oninput="updatePurposeStatus()"></textarea>'
-    +'<div id="purpose-status" style="font-size:11px;margin-top:4px"></div>'
-    +'<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap"><span style="font-size:11px;color:#64748b;align-self:center">📚 '+bi('常用短语','Common phrases')+':</span>'
+  html+='<div class="fld fld-required" id="step-5">'
+    +'<label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">5</span><span>'+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span> <span style="font-size:11px;color:var(--tx-dim);font-weight:400">'+bi('中英双语必填 · 🔄 一键互译','CN+EN required · 🔄 one-click translate')+'</span></span></label>'
+    +'<div class="pair-row">'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇨🇳 '+bi('中文','Chinese')+' <span class="pair-status miss" id="pair-st-purpose-cn">❌</span></div>'
+        +'<textarea id="rq-purpose" class="pair-input" placeholder="'+bi('中文描述外出事由','Describe purpose in Chinese')+'" oninput="refreshPairStatus(\'purpose\');checkFilled(\'step-5\',this.value)"></textarea>'
+      +'</div>'
+      +'<button type="button" class="pair-translate" onclick="doTranslatePair(\'purpose\')" title="'+bi('一键互译','One-click translate')+'">🔄</button>'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇬🇧 '+bi('English','English')+' <span class="pair-status miss" id="pair-st-purpose-en">❌</span></div>'
+        +'<textarea id="rq-purposeEn" class="pair-input" placeholder="'+bi('Describe purpose in English','Describe purpose in English')+'" oninput="refreshPairStatus(\'purpose\');checkFilled(\'step-5\',this.value)"></textarea>'
+      +'</div>'
+    +'</div>'
+    +'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap"><span style="font-size:11px;color:#64748b;align-self:center">📚 '+bi('常用短语','Common phrases')+':</span>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'机场接送\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">机场接送</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'矿区巡视\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">矿区巡视</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'cn\',\'参加外部会议\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">参加外部会议</button>'
@@ -1910,17 +2039,21 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Site inspection\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Site inspection</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Business meeting\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Business meeting</button>'
     +'</div>'
-    +'<div class="field-hint"><span class="ic danger">⚠️</span><span><b>'+bi('必填中英双语','Both CN & EN required')+'</b>。'+bi('中文框填写后，点"翻译到 EN"自动复制；或直接双语手填','Fill CN, click "Translate to EN" to auto-copy; or fill manually')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic danger">⚠️</span><span><b>'+bi('必填中英双语','Both CN & EN required')+'</b>。'+bi('填写当前语言后点 🔄 自动翻译并切换到另一种语言；或直接双语手填','Fill active language, click 🔄 to auto-translate and switch; or fill manually')+'。</span></div></div>';
 
   html+='<div class="fld"><label>'+bi('备注','Notes')+'<small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small><br><small style="font-weight:400;color:#dc2626">'
     +bi('【责任须知】选填项。未在备注重明确标注外出人员及其职级的，默认费用由申请部门自行承担。职级差异报销标准参照财务制度执行。','[Liability Notice] Optional. If passengers and their ranks are NOT noted here, costs default to requesting department. Rank-based reimbursement per finance policy.')+'</small></label>'
-    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
-    +'<div class="lt-btn"><button class="'+(S.nLang==='cn'?'active':'')+'" onclick="S.nLang=\'cn\';switchNotesLang()" style="padding:5px 12px;font-size:13px">🇨🇳 中文</button>'
-    +'<button class="'+(S.nLang==='en'?'active':'')+'" onclick="S.nLang=\'en\';switchNotesLang()" style="padding:5px 12px;font-size:13px">🇬🇧 English</button></div>'
-    +'<button type="button" onclick="doTranslate(\'notes\')" style="padding:5px 12px;border-radius:6px;border:1px solid #059669;background:#f0fdf4;color:#059669;font-size:12px;font-weight:600;cursor:pointer">🔄 '+bi('翻译到','Translate to')+' '+(S.nLang==='cn'?'EN':'CN')+'</button>'
-    +'<span style="font-size:11px;color:#2563eb;font-weight:600">'+bi('当前编辑','Editing')+': '+(S.nLang==='cn'?'中文':'English')+'</span></div>'
-    +'<input type="text" id="rq-notes" placeholder="'+(S.nLang==='cn'?'中文备注（选填）':'English notes (optional)')+'">'
-    +'<input type="text" id="rq-notesEn" style="display:none"></div>';
+    +'<div class="pair-row">'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇨🇳 '+bi('中文','Chinese')+' <span class="pair-status" id="pair-st-notes-cn">❌</span></div>'
+        +'<input type="text" id="rq-notes" class="pair-input" placeholder="'+bi('中文备注（选填）','Chinese notes (optional)')+'" oninput="refreshPairStatus(\'notes\')">'
+      +'</div>'
+      +'<button type="button" class="pair-translate" onclick="doTranslatePair(\'notes\')" title="'+bi('一键互译','One-click translate')+'">🔄</button>'
+      +'<div class="pair-cell">'
+        +'<div class="pair-head">🇬🇧 '+bi('English','English')+' <span class="pair-status" id="pair-st-notes-en">❌</span></div>'
+        +'<input type="text" id="rq-notesEn" class="pair-input" placeholder="'+bi('English notes (optional)','English notes (optional)')+'" oninput="refreshPairStatus(\'notes\')">'
+      +'</div>'
+    +'</div>';
 
   html+='<div class="fld fld-required" id="step-6"><label><span class="step-badge">6</span><span>🖋️ '+bi('部门负责人签字 / Signature','Department Head Signature')+' <span style="color:#dc2626">* '+bi('必填','Required')+'</span></span></label>'
     +'<button type="button" class="bt bt-o bt-b" onclick="toggleSig()" id="sig-btn" style="border:2px dashed var(--bd-hi);justify-content:flex-start;text-align:left;padding-left:16px;height:48px">🖊️ <span id="sig-btn-text">'+T('submit_sign')+'</span></button>'
@@ -1957,8 +2090,8 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
   else reqs.forEach(r=>{
     const sl=r.status==='pending'?T('stat_pending'):T('stat_dispatched');
     const tc=r.status==='pending'?'tg-p':'tg-d';
-    const show=L==='zh'?r.purpose:(r.purposeEn||r.purpose);
-    const showE=(L==='en'&&r.purpose)?r.purpose:((L==='zh'&&r.purposeEn)?r.purposeEn:'');
+    const show=esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose));
+    const showE=esc((L==='en'&&r.purpose)?r.purpose:((L==='zh'&&r.purposeEn)?r.purposeEn:''));
     // Edit/Delete buttons only visible to admin or unlocked user
     const canEdit=(isAdmin()||(S.unlockUntil>Date.now()))&&r.status==='pending';
     html+='<div class="rr" style="cursor:default"><div class="rr-b"><div class="rr-t">'+show+' <span class="tag '+tc+'">'+sl+'</span>'
@@ -1966,8 +2099,8 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
       +(canEdit?' <a class="edb" style="color:#dc2626" onclick="delReq(\''+r.id+'\')">'+T('del')+'</a>':'')
       +'</div>'
       +(showE?'<div class="rr-e">'+showE+'</div>':'')
-      +'<div class="rr-m"><span>📅 '+fmtL(r.date)+' ('+r.date+') '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div>'
-      +(r.paxNames&&r.paxNames.length?'<div style="font-size:12px;color:#2563eb;margin-top:3px;font-weight:500">🚗 '+bi('乘车人','Passengers')+': '+r.paxNames.filter(Boolean).join('、')+'</div>':'')
+      +'<div class="rr-m"><span>📅 '+fmtL(r.date)+' ('+r.date+') '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+esc(dShow(r.department))+'</span><span>👤 '+esc(r.submitter)+'</span></div>'
+      +(r.paxNames&&r.paxNames.length?'<div style="font-size:12px;color:#2563eb;margin-top:3px;font-weight:500">🚗 '+bi('乘车人','Passengers')+': '+esc(r.paxNames.filter(Boolean).join('、'))+'</div>':'')
       +'</div></div>';
   });
   html+='</div></div>';
@@ -1992,8 +2125,8 @@ function openEditReq(id){
     +'<button type="button" onclick="adjustEditPax(1)" class="pax-btn" style="width:36px;height:36px;border-radius:8px;border:2px solid var(--ac);background:rgba(91,138,245,0.1);color:var(--ac);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none">+</button>'
     +'<input type="hidden" id="er-pax" value="'+r.passengers+'">'
     +'</div></div>'
-    +'<div class="fld"><label>Purpose CN</label><textarea id="er-p" style="min-height:60px">'+r.purpose+'</textarea></div>'
-    +'<div class="fld"><label>Purpose EN</label><textarea id="er-pe" style="min-height:60px">'+r.purposeEn+'</textarea></div>'
+    +'<div class="fld"><label>Purpose CN</label><textarea id="er-p" style="min-height:60px">'+esc(r.purpose)+'</textarea></div>'
+    +'<div class="fld"><label>Purpose EN</label><textarea id="er-pe" style="min-height:60px">'+esc(r.purposeEn)+'</textarea></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">Cancel</button> <button class="bt bt-p bt-sm" onclick="saveEditReq(\''+id+'\')">Save</button></div>',true);
 }
 function saveEditReq(id){
@@ -2091,10 +2224,15 @@ function toggleSig(){
   const panel=document.getElementById('sig-panel');
   const btnText=document.getElementById('sig-btn-text');
   if(!panel)return;
-  if(panel.style.display==='none'||!panel.style.display){
+  const isHidden=panel.style.display==='none'||!panel.style.display;
+  if(isHidden){
     panel.style.display='block';
     if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('重新签字','Re-sign'):'✖ '+bi('收起','Collapse');
-    setTimeout(initSig,150);
+    // PC 上 150ms 太短，canvas offsetWidth 还没 reflow 完成；延长到 250ms 并滚到视口中心
+    setTimeout(()=>{
+      initSig();
+      try{panel.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
+    },250);
   }else{
     panel.style.display='none';
     if(btnText)btnText.textContent=S.sigData?'✏️ '+bi('已签字','Signed'):'🖊 '+T('submit_sign');
@@ -2136,14 +2274,18 @@ function sigSave(){
 
 // ==================== DISPATCH ====================
 function renderDispatch(){
-  const _t=today();
+  const _t=S.dispDate||today();
   const ds=DB.dispatches.get().filter(d=>d.date===_t);
   let html='<div class="act">'
     +'<div class="act-title"><span class="ic">🚐</span><span>'+fmtL(_t)+' '+T('dispatch_title')+'</span></div>'
-    +'<div class="act-spacer"></div>';
+    +'<div class="act-spacer"></div>'
+    +'<div class="act-group">'
+      +'<input type="date" id="disp-date" value="'+_t+'" onchange="S.dispDate=this.value;renderPage()" style="padding:7px 10px;border:1.5px solid rgba(0,0,0,.08);border-radius:8px;font-size:.92em;background:rgba(255,255,255,.85);">'
+      +'<button class="bt bt-o bt-sm" onclick="S.dispDate=\'\';renderPage()">📅 '+bi('今天','Today')+'</button>'
+      +'</div>';
   if(isAdmin()){
     html+='<div class="act-group">'
-      +'<button class="bt bt-p bt-sm" onclick="expImg()">📸 '+bi('导出 PNG','Export PNG')+'</button>'
+      +'<button class="bt bt-p bt-sm" onclick="expImg()">📸 '+bi('一键导出 PNG','Export PNG')+'</button>'
       +'<button class="bt bt-o bt-sm" onclick="expCSV()">📥 CSV</button>'
       +'</div>';
   }
@@ -2161,11 +2303,11 @@ function renderDispatch(){
 function buildDC(d){
   const rl=DB.requests.get().filter(r=>d.requestIds.includes(r.id));
   const pax=rl.reduce((s,r)=>s+r.passengers,0);
-  const depts=[...new Set(rl.map(r=>r.department))].join('、');
-  const prps=[...new Set(rl.map(r=>r.purpose))].filter(Boolean).join('； ');
-  const prpsE=[...new Set(rl.map(r=>r.purposeEn))].filter(Boolean).join('; ');
-  const dnotesCn=d.notes||'';
-  const dnotesEn=d.notesEn||'';
+  const depts=esc([...new Set(rl.map(r=>r.department))].join('、'));
+  const prps=esc([...new Set(rl.map(r=>r.purpose))].filter(Boolean).join('； '));
+  const prpsE=esc([...new Set(rl.map(r=>r.purposeEn))].filter(Boolean).join('; '));
+  const dnotesCn=esc(d.notes||'');
+  const dnotesEn=esc(d.notesEn||'');
   const paxNames=[];
   rl.forEach(r=>{if(r.paxNames)r.paxNames.forEach(n=>{if(n)paxNames.push(n);});});
   if(!paxNames.length)rl.forEach(r=>paxNames.push(r.submitter));
@@ -2177,21 +2319,21 @@ function buildDC(d){
     +'<div><div class="dc2-title">'+T('dispatch_title')+'</div>'
     +'<div class="dc2-date">'+fmtL(d.date)+' <span style="font-size:13px;color:var(--tx-dim);font-weight:500">'+d.date+'</span></div>'
     +'</div>'
-    +'<div class="dc2-plate"><span class="dc2-plate-icon">🚗</span><span class="dc2-plate-num">'+d.vehicle+'</span></div>'
+    +'<div class="dc2-plate"><span class="dc2-plate-icon">🚗</span><span class="dc2-plate-num">'+esc(d.vehicle)+'</span></div>'
     +'</div></div>'
     +'<div class="dc2-b">'
     +'<div class="dc2-driver"><div class="dc2-avatar">'+driverInit+'</div>'
-    +'<div><div class="dc2-driver-name">'+d.driver+'</div>'
+    +'<div><div class="dc2-driver-name">'+esc(d.driver)+'</div>'
     +'<div class="dc2-driver-role">🚙 '+T('driver_label')+' / Driver</div></div></div>'
     +'<div class="dc2-grid">'
     +'<div class="dc2-stat"><div class="dc2-stat-label">👥 '+T('pax')+' / Pax</div><div class="dc2-stat-val">'+pax+' '+bi('人','ppl')+'</div></div>'
     +'<div class="dc2-stat"><div class="dc2-stat-label">🏢 '+T('dept')+' / Dept</div><div class="dc2-stat-val">'+depts+'</div></div>'
-    +(d.meetingPoint?'<div class="dc2-stat"><div class="dc2-stat-label">📍 '+T('meeting_point')+' / Point</div><div class="dc2-stat-val">'+d.meetingPoint+'</div></div>':'')
+    +(d.meetingPoint?'<div class="dc2-stat"><div class="dc2-stat-label">📍 '+T('meeting_point')+' / Point</div><div class="dc2-stat-val">'+esc(d.meetingPoint)+'</div></div>':'')
     +'</div>'
     +'<div class="dc2-pax">'
     +'<div class="dc2-pax-avatars">'+avatars+more+'</div>'
     +'<span class="dc2-pax-count">'+pax+' '+bi('人','ppl')+'</span>'
-    +'<span class="dc2-pax-names">'+paxNames.join('、')+'</span>'
+    +'<span class="dc2-pax-names">'+esc(paxNames.join('、'))+'</span>'
     +'</div>'
     +(prps?'<div class="dc2-purpose"><div class="dc2-purpose-label">📋 '+T('purpose')+'</div>'
       +prps+(prpsE?'<div class="dc2-purpose-en">'+prpsE+'</div>':'')
@@ -2206,12 +2348,12 @@ function buildDC(d){
     +'</div>'
     +'</div></div>';
 }
-function editDispatch(id){toast('🚧 '+bi('编辑派车单功能开发中','Edit dispatch feature coming soon'));}
+function editDispatch(id){editD(id);}
 function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);toast(L==='zh'?'已删除':'Deleted');renderPage();}
 
 function expImg(){
   if(!isAdmin())return;
-  const _t=today();const ds=DB.dispatches.get().filter(d=>d.date===_t);
+  const _t=S.dispDate||today();const ds=DB.dispatches.get().filter(d=>d.date===_t);
   if(!ds.length)return toast(T('common_no'));
   const cvs=document.createElement('canvas');cvs.width=420;cvs.height=120+ds.length*155;
   const ctx=cvs.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cvs.width,cvs.height);
@@ -2249,7 +2391,6 @@ function expCSV(){
 function expXLS(){
   // Excel-compatible export (HTML table .xls, Chinese-safe) - details + summary
   const rs=DB.requests.get(),ds=DB.dispatches.get();
-  const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   let h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>台账明细</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet><x:ExcelWorksheet><x:Name>统计汇总</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
 
   // Sheet 1: Details
@@ -2331,18 +2472,18 @@ function expPDF(){
     md.forEach(d=>{
       const rl=rs.filter(r=>d.requestIds.includes(r.id));
       const pax=rl.reduce((s,r)=>s+r.passengers,0);
-      const depts=[...new Set(rl.map(r=>dShow(r.department)))].join(' / ');
-      const prpsCn=[...new Set(rl.map(r=>r.purpose))].join('；');
-      const prpsEn=[...new Set(rl.map(r=>r.purposeEn||''))].join('; ');
+      const depts=esc([...new Set(rl.map(r=>dShow(r.department)))].join(' / '));
+      const prpsCn=esc([...new Set(rl.map(r=>r.purpose))].join('；'));
+      const prpsEn=esc([...new Set(rl.map(r=>r.purposeEn||''))].join('; '));
       const sigImgs=rl.filter(r=>r.signature).map(r=>'<img class="sig-img" src="'+r.signature+'">').join(' ')||'—';
-      h+='<div class="rec"><div class="rec-h"><div>'+fmtL(d.date)+' ('+d.date+') · '+d.driver+'</div><div class="rh-p">'+d.vehicle+'</div></div>';
+      h+='<div class="rec"><div class="rec-h"><div>'+fmtL(d.date)+' ('+d.date+') · '+esc(d.driver)+'</div><div class="rh-p">'+esc(d.vehicle)+'</div></div>';
       h+='<div class="row"><span class="rl">Pax / 人数</span><span class="rv">'+pax+'</span></div>';
       h+='<div class="row"><span class="rl">Dept / 部门</span><span class="rv">'+depts+'</span></div>';
-      h+='<div class="row"><span class="rl">Point / 集合点</span><span class="rv">'+(d.meetingPoint||'—')+'</span></div>';
+      h+='<div class="row"><span class="rl">Point / 集合点</span><span class="rv">'+esc(d.meetingPoint||'—')+'</span></div>';
       h+='<div class="row"><span class="rl">Purpose / 事由</span><span class="rv">'+prpsCn+'<br><small style="color:#666">'+prpsEn+'</small></span></div>';
-      h+='<div class="row"><span class="rl">Pax / 乘车人</span><span class="rv">'+rl.map(r=>r.submitter+'('+dShow(r.department)+')').join('、')+'</span></div>';
+      h+='<div class="row"><span class="rl">Pax / 乘车人</span><span class="rv">'+esc(rl.map(r=>r.submitter+'('+dShow(r.department)+')').join('、'))+'</span></div>';
       h+='<div class="row"><span class="rl">Sign / 签字</span><span class="rv">'+sigImgs+'</span></div>';
-      if(d.notes)h+='<div class="row"><span class="rl">Notes / 备注</span><span class="rv">'+d.notes+'</span></div>';
+      if(d.notes)h+='<div class="row"><span class="rl">Notes / 备注</span><span class="rv">'+esc(d.notes)+'</span></div>';
       h+='</div>';
     });
   });
@@ -2452,8 +2593,8 @@ function renderPool(){
     pending.forEach(r=>{
       const apv=r.approved?('<span class="tag '+(r.approved==='yes'?'tg-d':'tg-r')+'" style="margin-left:4px">'+(r.approved==='yes'?'✓':'✗')+'</span>'):'';
       html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
-        +(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
-        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+dShow(r.department)+'</span><span>👤 '+r.submitter+'</span></div></div></div>';
+        +esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
+        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+esc(dShow(r.department))+'</span><span>👤 '+esc(r.submitter)+'</span></div></div></div>';
     });
     html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()" disabled>🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
   }
@@ -2463,9 +2604,9 @@ function renderPool(){
     html+='<div class="sec-title">✅ '+bi('已派车','Dispatched')+' ('+dispatched.length+')</div>';
     const g={};dispatched.forEach(r=>{const k=r.mergedToDispatchId||'?';if(!g[k])g[k]=[];g[k].push(r);});
     Object.entries(g).forEach(([k,grp])=>{const dd=DB.dispatches.get().find(d=>d.id===k);
-      html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?dd.vehicle:'?')+' · '+(dd?dd.driver:'?')+' · '+fmtL(grp[0].date)+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
-        +grp.map(r=>'<div style="font-size:13px;padding:4px 0">'+dShow(r.department)+' '+r.submitter+': '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' ('+r.timeSlot+', '+r.passengers+'pax)</div>').join('')
-        +(dd&&dd.meetingPoint?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📍 '+dd.meetingPoint+'</div>':'')+'</div>';
+      html+='<div class="card"><div class="card-h"><div>🚗 '+(dd?esc(dd.vehicle):'?')+' · '+(dd?esc(dd.driver):'?')+' · '+fmtL(grp[0].date)+'</div><div class="cha"><button class="bt bt-o bt-sm" onclick="editD(\''+k+'\')">'+T('edit')+'</button><button class="bt bt-d bt-sm" onclick="cancelD(\''+k+'\')">'+T('cancel')+'</button></div></div>'
+        +grp.map(r=>'<div style="font-size:13px;padding:4px 0">'+esc(dShow(r.department))+' '+esc(r.submitter)+': '+esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' ('+r.timeSlot+', '+r.passengers+'pax)</div>').join('')
+        +(dd&&dd.meetingPoint?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📍 '+esc(dd.meetingPoint)+'</div>':'')+'</div>';
     });
   }
 
@@ -2500,8 +2641,8 @@ function showDisp(){
   const vs=DB.vehicles.get(),ds=DB.drivers.get(),rl=DB.requests.get().filter(r=>S.selReqs.has(r.id));
   const pax=rl.reduce((s,r)=>s+r.passengers,0);
   showModal('<h3>🚗 '+T('pool_merge')+'</h3><p style="font-size:13px;color:#64748b">'+S.selReqs.size+' requests, '+pax+' pax</p>'
-    +'<div class="fld"><label>Vehicle</label><select id="md-v">'+vs.map(v=>'<option>'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Driver</label><select id="md-d">'+ds.map(d=>'<option>'+d.name+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Vehicle</label><select id="md-v">'+vs.map(v=>'<option>'+esc(v.plate)+' - '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Driver</label><select id="md-d">'+ds.map(d=>'<option>'+esc(d.name)+'</option>').join('')+'</select></div>'
     +'<div class="fld"><label>Departure Time</label><input type="text" id="md-t" placeholder="07:00"></div>'
     +'<div class="fld"><label>Meeting Point</label><input type="text" id="md-p" placeholder="Location"></div>'
     +'<div class="fld"><label>Notes</label><input type="text" id="md-nt" placeholder="Notes"></div>'
@@ -2518,11 +2659,11 @@ function doDisp(){const rIds=[...S.selReqs];const v=document.getElementById('md-
 function editD(did){const dd=DB.dispatches.get().find(d=>d.id===did);if(!dd)return;
   const vs=DB.vehicles.get(),ds=DB.drivers.get();
   showModal('<h3>Edit Dispatch</h3>'
-    +'<div class="fld"><label>Vehicle</label><select id="me-v">'+vs.map(v=>'<option value="'+v.plate+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+v.plate+' - '+(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Driver</label><select id="me-d">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+d.name+'</option>').join('')+'</select></div>'
-    +'<div class="fld"><label>Departure</label><input type="text" id="me-t" value="'+(dd.departureTime||'')+'"></div>'
-    +'<div class="fld"><label>Meeting Point</label><input type="text" id="me-p" value="'+(dd.meetingPoint||'')+'"></div>'
-    +'<div class="fld"><label>Notes</label><input type="text" id="me-nt" value="'+(dd.notes||'')+'"></div>'
+    +'<div class="fld"><label>Vehicle</label><select id="me-v">'+vs.map(v=>'<option value="'+esc(v.plate)+'" '+(v.plate===dd.vehicle?'selected':'')+'>'+esc(v.plate)+' - '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Driver</label><select id="me-d">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>Departure</label><input type="text" id="me-t" value="'+esc(dd.departureTime||'')+'"></div>'
+    +'<div class="fld"><label>Meeting Point</label><input type="text" id="me-p" value="'+esc(dd.meetingPoint||'')+'"></div>'
+    +'<div class="fld"><label>Notes</label><input type="text" id="me-nt" value="'+esc(dd.notes||'')+'"></div>'
     +'<div style="text-align:right;margin-top:12px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveD(\''+did+'\')">'+T('common_save')+'</button></div>',true);
 }
 function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did);if(!dd)return;
@@ -2542,15 +2683,26 @@ function cancelD(did){if(!confirm('Revert?'))return;
 // ==================== DAILY SUMMARY ====================
 function renderDaily(){
   if(!isAdmin()&&!(S.unlockUntil>Date.now()))return '<div class="emp">Admin only</div>';
-  const dt=S.selDate||tmrw();
-  const rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date===dt);
+  const dtFrom=S.dailyFrom||S.selDate||tmrw();
+  const dtTo=S.dailyTo||dtFrom;
+  let rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date>=dtFrom&&r.date<=dtTo);
+  if(S.dailyDepts.length)rs=rs.filter(r=>S.dailyDepts.includes(r.department));
   // Group by department
   const deptGroups={};
   rs.forEach(r=>{const d=r.department||(L==='zh'?'未知':'Unknown');if(!deptGroups[d])deptGroups[d]=[];deptGroups[d].push(r);});
+  const allDepts=[...new Set(DB.requests.get().map(r=>r.department))].filter(Boolean).sort();
+  const deptChips=allDepts.map(d=>{
+    const sel=S.dailyDepts.includes(d);
+    return '<button type="button" onclick="togDailyDept(\''+d+'\')" style="padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1.5px solid '+(sel?'#2563eb':'#e5e7eb')+';background:'+(sel?'#eff6ff':'#fff')+';color:'+(sel?'#2563eb':'#64748b')+';font-weight:'+(sel?'600':'400')+'">'+esc(dShow(d))+'</button>';
+  }).join('');
   
-  let html='<div class="card"><div class="card-h">📋 '+bi('每日汇总','Daily Summary')+' · '+fmtL(dt)+'</div>';
-  html+='<div class="fld"><label>📅 '+bi('选择日期','Select Date')+'</label>'
-    +'<input type="date" value="'+dt+'" onchange="S.selDate=this.value;renderPage()" style="padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)"></div>';
+  let html='<div class="card"><div class="card-h">📋 '+bi('每日汇总','Daily Summary')+'</div>';
+  html+='<div class="fld"><label>📅 '+bi('日期范围','Date Range')+'</label><div style="display:flex;gap:6px;align-items:center">'
+    +'<input type="date" value="'+dtFrom+'" onchange="S.dailyFrom=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px">'
+    +'<span style="color:var(--tx-dim)">→</span>'
+    +'<input type="date" value="'+dtTo+'" onchange="S.dailyTo=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid var(--bd);border-radius:8px;font-size:14px">'
+    +'</div></div>';
+  html+='<div class="fld"><label>🏢 '+bi('部门筛选','Dept Filter')+'</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips+'</div></div>';
   
   const totalDepartments=Object.keys(deptGroups).length;
   const totalRequests=rs.length;
@@ -2560,6 +2712,10 @@ function renderDaily(){
     +'<div class="st" style="flex:1"><div class="st-n">'+totalRequests+'</div><div class="st-l">'+bi('需求数','Requests')+'</div></div>'
     +'<div class="st" style="flex:1"><div class="st-n">'+totalPax+'</div><div class="st-l">👥 '+bi('总人数','Total Pax')+'</div></div>'
     +'<div class="st" style="flex:1"><div class="st-n">'+totalDepartments+'</div><div class="st-l">🏢 '+bi('涉及部门','Depts')+'</div></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px">'
+    +'<button class="bt bt-p bt-sm" onclick="expDailyImg()">📸 '+bi('导出汇总 PNG','Export PNG')+'</button>'
+    +'<button class="bt bt-o bt-sm" onclick="expDailyPdf()">📄 '+bi('导出 PDF','Export PDF')+'</button>'
     +'</div></div>';
 	
   if(!rs.length){
@@ -2576,18 +2732,80 @@ function renderDaily(){
       html+='<div class="card"><div class="card-h">'+dept+' <span style="font-weight:400;font-size:11px;color:var(--tx-dim)">('+items.length+' '+bi('项','items')+')</span></div>';
       items.forEach(r=>{
         html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);font-size:13px;gap:8px">'
-          +'<div style="flex:1"><div style="font-weight:600;color:var(--tx);line-height:1.5">'+r.submitter+'</div>'
-          +'<div style="color:var(--tx-dim);margin-top:2px">📍 '+(L==='zh'?r.destination:(r.destinationEn||r.destination))+'</div>'
-          +'<div style="color:var(--tx-dim)">🖊 '+(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+'</div></div>'
-          +'<div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--ac);font-size:14px">'+r.timeSlot+'</div>'
+          +'<div style="flex:1"><div style="font-weight:600;color:var(--tx);line-height:1.5">'+esc(r.submitter)+'</div>'
+          +'<div style="color:var(--tx-dim);margin-top:2px">📍 '+esc(L==='zh'?r.destination:(r.destinationEn||r.destination))+'</div>'
+          +'<div style="color:var(--tx-dim)">🖊 '+esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0"><div style="font-weight:700;color:var(--ac);font-size:14px">'+esc(r.timeSlot)+'</div>'
           +'<div style="color:var(--tx-dim);font-size:11px">👥 '+r.passengers+' pax</div>'
-          +(r.notes?'<div style="color:var(--tx-dim);font-size:10px;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 '+r.notes+'</div>':'')
+          +(r.notes?'<div style="color:var(--tx-dim);font-size:10px;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 '+esc(r.notes)+'</div>':'')
           +'</div></div>';
       });
       html+='</div>';
     });
   }
   return html;
+}
+
+function togDailyDept(d){
+  const i=S.dailyDepts.indexOf(d);
+  if(i>=0)S.dailyDepts.splice(i,1);else S.dailyDepts.push(d);
+  renderPage();
+}
+
+function expDailyImg(){
+  const dtFrom=S.dailyFrom||S.selDate||tmrw();
+  const dtTo=S.dailyTo||dtFrom;
+  let rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date>=dtFrom&&r.date<=dtTo);
+  if(S.dailyDepts.length)rs=rs.filter(r=>S.dailyDepts.includes(r.department));
+  if(!rs.length)return toast(T('common_no'));
+  const groups={};
+  rs.forEach(r=>{const d=r.department||'未知';if(!groups[d])groups[d]=[];groups[d].push(r);});
+  const depts=Object.keys(groups);
+  const cvs=document.createElement('canvas');
+  cvs.width=520;cvs.height=130+depts.length*84+30;
+  const ctx=cvs.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,cvs.width,cvs.height);
+  ctx.fillStyle='#0f172a';ctx.font='bold 22px sans-serif';ctx.textAlign='center';
+  ctx.fillText('KMC Daily Summary',260,38);
+  ctx.fillStyle='#64748b';ctx.font='13px sans-serif';
+  ctx.fillText(dtFrom+' ~ '+dtTo,260,58);
+  ctx.fillStyle='#2563eb';ctx.font='bold 18px sans-serif';
+  ctx.fillText('Total: '+rs.length+' requests · '+rs.reduce((s,r)=>s+(r.passengers||1),0)+' pax · '+depts.length+' depts',260,80);
+  let y=98;
+  depts.forEach(dept=>{
+    const items=groups[dept];
+    ctx.fillStyle='#f8fafc';ctx.fillRect(16,y,488,66);
+    ctx.strokeStyle='#e5e7eb';ctx.strokeRect(16,y,488,66);
+    ctx.fillStyle='#1e293b';ctx.font='bold 14px sans-serif';ctx.textAlign='left';
+    ctx.fillText(dept+' ('+items.length+')',28,y+24);
+    ctx.fillStyle='#64748b';ctx.font='12px sans-serif';
+    ctx.fillText(items.reduce((s,r)=>s+(r.passengers||1),0)+' pax · '+items.map(r=>r.submitter).join(', ').slice(0,40),28,y+46);
+    y+=84;
+  });
+  ctx.fillStyle='#94a3b8';ctx.font='10px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Dispatcher: '+S.user.name,260,y+14);
+  cvs.toBlob(b=>{const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Daily_'+dtFrom+'.png';a.click();URL.revokeObjectURL(u);toast('Exported');},'image/png');
+}
+
+function expDailyPdf(){
+  const dtFrom=S.dailyFrom||S.selDate||tmrw();
+  const dtTo=S.dailyTo||dtFrom;
+  let rs=DB.requests.get().filter(r=>r.status==='pending'&&r.date>=dtFrom&&r.date<=dtTo);
+  if(S.dailyDepts.length)rs=rs.filter(r=>S.dailyDepts.includes(r.department));
+  if(!rs.length)return toast(T('common_no'));
+  const groups={};
+  rs.forEach(r=>{const d=r.department||'未知';if(!groups[d])groups[d]=[];groups[d].push(r);});
+  const depts=Object.keys(groups);
+  const rows=depts.map(dept=>{
+    const items=groups[dept];
+    return '<tr><td>'+esc(dept)+'</td><td>'+items.length+'</td><td>'+items.reduce((s,r)=>s+(r.passengers||1),0)+'</td><td>'+esc(items.map(r=>r.submitter).join('、'))+'</td></tr>';
+  }).join('');
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>KMC Daily Summary</title><meta charset="utf-8"><style>body{font-family:sans-serif;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin-top:12px}td,th{border:1px solid #ccc;padding:6px 10px;font-size:13px;text-align:left}th{background:#f1f5f9}</style></head><body>'
+    +'<h1>KMC 每日汇总 / Daily Summary</h1><p>'+dtFrom+' ~ '+dtTo+' · 总计 '+rs.length+' 需求 · '+rs.reduce((s,r)=>s+(r.passengers||1),0)+' 人</p>'
+    +'<table><tr><th>部门</th><th>需求数</th><th>人数</th><th>提交人</th></tr>'+rows+'</table>'
+    +'<script>setTimeout(function(){window.print();},500);<\/script></body></html>');
+  w.document.close();
 }
 
 
@@ -2626,8 +2844,8 @@ function renderRecords(){
     +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+deptChips
     +(S.fDepts.length?'<button onclick="S.fDepts=[];renderPage()" style="padding:5px 10px;border-radius:16px;font-size:12px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;cursor:pointer">'+T('reset')+'</button>':'')
     +'</div></div>';
-  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'
-  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div>'
+  html+='<div class="fld"><label>🚗 '+T('all_vehicles')+' / Vehicle</label><select id="ft-v" onchange="S.fVeh=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+T('all_vehicles')+' / All Vehicles</option>'+vs.map(v=>'<option '+(S.fVeh===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></div>'
+  +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select onchange="S.recDriver=this.value;renderPage()" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"><option value="">'+bi('全部司机','All Drivers')+'</option>'+[...new Set(DB.dispatches.get().map(d=>d.driver))].filter(Boolean).map(d=>'<option '+(S.recDriver===d?'selected':'')+'>'+esc(d)+'</option>').join('')+'</select></div>'
   // New: Status filter
   +'<div class="fld"><label>🔄 '+bi('状态','Status')+'</label><div style="display:flex;gap:6px">'
   +['all','pending','dispatched','longterm'].map(v=>{
@@ -2666,23 +2884,39 @@ function renderRecords(){
   // New filter: pax range
   if(S.fPaxMin>0||S.fPaxMax<99)fd=fd.filter(d=>{const pax=rs.filter(r=>d.requestIds.includes(r.id)).reduce((s,r)=>s+(r.passengers||1),0);return pax>=S.fPaxMin&&pax<=S.fPaxMax;});
   if(!fd.length)html+='<div class="emp">'+T('no_match')+'</div>';
-  else{html+=fd.map(d=>{
+  else{const shown=fd.slice(0,S.recLimit);
+    html+=shown.map(d=>{
     const rl=rs.filter(r=>d.requestIds.includes(r.id));const pax=rl.reduce((s,r)=>s+r.passengers,0);
-    const depts=[...new Set(rl.map(r=>r.department))];
-    const prps=L==='zh'?[...new Set(rl.map(r=>r.purpose))].join('；'):[...new Set(rl.map(r=>r.purposeEn||r.purpose))].join('; ');
-    const prpsE=L==='zh'&&rl.some(r=>r.purposeEn)?[...new Set(rl.map(r=>r.purposeEn))].join('; '):'';
-    return '<div class="card"><div class="card-h"><div>📅 '+fmtL(d.date)+' ('+d.date+') · 🚗 '+d.vehicle+' · 👤 '+d.driver+'</div><button class="bt bt-o bt-sm" onclick="editD(\''+d.id+'\')">'+T('edit')+'</button></div>'
-      +'<div style="font-size:13px;color:#64748b">'+T('pax')+': '+pax+' · '+T('dept')+': '+depts.map(dShow).join(' / ')+' · '+T('meeting_point')+': '+(d.meetingPoint||'—')+'</div>'
-      +'<div style="font-size:14px;margin-top:4px;color:#0f172a">'+prps+'</div>'
-      +(prpsE?'<div style="font-size:13px;color:#64748b;font-style:italic;margin-top:2px">'+prpsE+'</div>':'')
-      +(d.notes?'<div style="font-size:12px;color:#94a3b8;margin-top:4px">📝 '+T('notes')+': '+d.notes+'</div>':'')
+    const prps=esc(L==='zh'?[...new Set(rl.map(r=>r.purpose))].join('；'):[...new Set(rl.map(r=>r.purposeEn||r.purpose))].join('; '));
+    const prpsE=esc(L==='zh'&&rl.some(r=>r.purposeEn)?[...new Set(rl.map(r=>r.purposeEn))].join('; '):'');
+    return '<div class="card rec-card"><div class="card-bd" style="padding:13px 18px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">'
+      +'<span style="font-weight:800;font-size:16px;letter-spacing:.5px">'+esc(d.vehicle)+'</span>'
+      +'<span style="font-size:13px;color:var(--tx-muted)">'+esc(d.driver)+'</span>'
+      +'<span style="font-size:12px;color:var(--tx-dim)">'+fmtL(d.date)+'</span>'
+      +'</div>'
+      +'<div style="font-size:14px;margin-top:5px;line-height:1.5;color:var(--tx)">'+prps+(prpsE?' <span style="color:var(--tx-dim);font-size:12px;font-style:italic">'+prpsE+'</span>':'')+'</div>'
+      +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;font-size:12px;color:var(--tx-muted)">'
+      +'<span>👥 '+pax+' '+bi('人','ppl')+'</span>'
+      +(d.meetingPoint?'<span>📍 '+esc(d.meetingPoint)+'</span>':'')
+      +(d.notes?'<span>📝 '+esc(d.notes)+'</span>':'')
+      +'</div>'
+      +'</div>'
+      +'<button class="bt bt-o bt-sm" onclick="editD(\''+d.id+'\')" style="flex-shrink:0">✏️</button>'
+      +'</div>'
       +'</div>';
-  }).join('');}
+    }).join('');
+    if(fd.length>S.recLimit){
+      html+='<div style="text-align:center;margin:16px 0"><button class="bt bt-o" onclick="S.recLimit+=30;renderPage()">📄 '+bi('加载更多','Load More')+' ('+shown.length+'/'+fd.length+')</button></div>';
+    }
+  }
   return html;
 }
 
 function resetRecFilters(){
-  S.fFrom='';S.fTo='';S.fDepts=[];S.fVeh='';S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;renderPage();
+  S.fFrom='';S.fTo='';S.fDepts=[];S.fVeh='';S.fStatus='all';S.fSubmitter='';S.fPaxMin=0;S.fPaxMax=99;S.recLimit=30;renderPage();
 }
 
 // ==================== SETTINGS ====================
@@ -2816,9 +3050,9 @@ function addV(){const p=document.getElementById('nv-p').value.trim(),t=document.
   if(!p||!t)return;const vs=DB.vehicles.get();vs.push({plate:p,type:t,typeEn:te||t,seats:s});DB.vehicles.set(vs);sbSyncOne('vehicles',DB.vehicles.get());toast('Added');renderPage();}
 function editV(i){const v=DB.vehicles.get()[i];
   showModal('<h3>'+T('edit')+' '+T('vehicles')+'</h3>'
-    +'<div class="fld"><label>'+bi('车牌','Plate')+'</label><input id="ev-p" value="'+v.plate+'"></div>'
-    +'<div class="fld"><label>'+bi('车型 CN','Type CN')+'</label><input id="ev-t" value="'+v.type+'"></div>'
-    +'<div class="fld"><label>'+bi('车型 EN','Type EN')+'</label><input id="ev-te" value="'+(v.typeEn||'')+'"></div>'
+    +'<div class="fld"><label>'+bi('车牌','Plate')+'</label><input id="ev-p" value="'+esc(v.plate)+'"></div>'
+    +'<div class="fld"><label>'+bi('车型 CN','Type CN')+'</label><input id="ev-t" value="'+esc(v.type)+'"></div>'
+    +'<div class="fld"><label>'+bi('车型 EN','Type EN')+'</label><input id="ev-te" value="'+esc(v.typeEn||'')+'"></div>'
     +'<div class="fld"><label>'+T('seats')+'</label><input id="ev-s" type="number" value="'+v.seats+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveV('+i+')">'+T('common_save')+'</button></div>',true);}
 function saveV(i){const vs=DB.vehicles.get();vs[i].plate=document.getElementById('ev-p').value.trim();vs[i].type=document.getElementById('ev-t').value.trim();vs[i].typeEn=document.getElementById('ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt(document.getElementById('ev-s').value)||5;DB.vehicles.set(vs);closeModal();toast('Updated');renderPage();}
@@ -2826,7 +3060,7 @@ function delV(i){if(!confirm(T('common_cancel')+'?'))return;const vs=DB.vehicles
 function addDr(){const n=document.getElementById('nd-n').value.trim();if(!n)return;const ds=DB.drivers.get();ds.push({name:n});DB.drivers.set(ds);sbSyncOne('drivers',DB.drivers.get());toast('Added');renderPage();}
 function editDr(i){const d=DB.drivers.get()[i];
   showModal('<h3>'+T('edit')+' '+T('drivers')+'</h3>'
-    +'<div class="fld"><label>'+bi('司机姓名','Driver Name')+'</label><input id="ed-n" value="'+d.name+'"></div>'
+    +'<div class="fld"><label>'+bi('司机姓名','Driver Name')+'</label><input id="ed-n" value="'+esc(d.name)+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveDr('+i+')">'+T('common_save')+'</button></div>',true);}
 function saveDr(i){const ds=DB.drivers.get();ds[i].name=document.getElementById('ed-n').value.trim();DB.drivers.set(ds);closeModal();toast('Updated');renderPage();}
 function delDr(i){if(!confirm(T('common_cancel')+'?'))return;const ds=DB.drivers.get();const name=ds[i]&&ds[i].name;ds.splice(i,1);DB.drivers.set(ds);if(name)sbDelOne('drivers','name',name);toast('Deleted');renderPage();}
@@ -2850,7 +3084,7 @@ function delUser(i){
 function editUser(i){
   const u=DB.users.get()[i];
   showModal('<h3>'+T('edit')+' '+T('user_name')+'</h3>'
-    +'<div class="fld"><label>'+T('user_name')+' / Name</label><input id="eu-n" value="'+u.name+'"></div>'
+    +'<div class="fld"><label>'+T('user_name')+' / Name</label><input id="eu-n" value="'+esc(u.name)+'"></div>'
     +'<div class="fld"><label>'+T('user_dept')+' / Department</label><select id="eu-d">'+getDepts().map(d=>'<option value="'+d.cn+'" '+(d.cn===u.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+'</select></div>'
     +'<div class="fld"><label>'+T('user_role')+' / Role</label><select id="eu-r"><option value="user" '+(u.role==='user'?'selected':'')+'>User 用户</option><option value="admin" '+(u.role==='admin'?'selected':'')+'>Admin 管理员</option></select></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveUser('+i+')">'+T('common_save')+'</button></div>',true);
