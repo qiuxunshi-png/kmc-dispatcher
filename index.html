@@ -841,9 +841,14 @@ const DB={
       {plate:'3103',type:'矿区内部皮卡（3103）',typeEn:'Internal Mine Pickup (3103)',seats:5,status:'idle'},
       {plate:'0630',type:'矿区内部皮卡（0630）',typeEn:'Internal Mine Pickup (0630)',seats:5,status:'idle'},
     ];
-    // 给所有现有车辆补 status 字段（默认 idle 待命）
+    // 给所有现有车辆补 status + 维保字段
     let statusAdded=false;
-    vs.forEach(v=>{if(!v.status){v.status='idle';statusAdded=true;}});
+    vs.forEach(v=>{
+      if(!v.status){v.status='idle';statusAdded=true;}
+      if(!v.insuranceExpire)v.insuranceExpire='';
+      if(!v.inspectionExpire)v.inspectionExpire='';
+      if(!v.lastServiceKm)v.lastServiceKm='';
+    });
     let addedV=false;
     newVeh.forEach(v=>{if(!vs.find(x=>x.plate===v.plate)){vs.push(v);addedV=true;}});
     if(addedV||statusAdded)this.vehicles.set(vs);
@@ -864,6 +869,41 @@ function vehStatusTag(v){
 function setVehStatus(plate,status){
   const vs=DB.vehicles.get();const v=vs.find(x=>x.plate===plate);if(!v)return;
   v.status=status;DB.vehicles.set(vs);sbSyncOne('vehicles',DB.vehicles.get());toast(bi('已更新','Updated'));renderPage();
+}
+
+// 维保到期提醒（P0）：保险/年检剩 ≤30 天显示黄，已过期显示红
+function daysUntil(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr);if(isNaN(d))return null;
+  return Math.ceil((d-new Date())/86400000);
+}
+function vehMaintenanceTag(v){
+  const tags=[];
+  const ins=daysUntil(v.insuranceExpire);
+  if(ins!==null&&ins<=30){
+    tags.push('<span class="tag '+(ins<0?'tg-r':'tg-p')+'" style="margin-left:4px">🛡 '+bi('保险'+(ins<0?'已过期':'剩'+ins+'天'),'Ins'+(ins<0?' Expired':ins+'d'))+'</span>');
+  }
+  const insp=daysUntil(v.inspectionExpire);
+  if(insp!==null&&insp<=30){
+    tags.push('<span class="tag '+(insp<0?'tg-r':'tg-p')+'" style="margin-left:4px">🔍 '+bi('年检'+(insp<0?'已过期':'剩'+insp+'天'),'Insp'+(insp<0?' Expired':insp+'d'))+'</span>');
+  }
+  return tags.join('');
+}
+function regMaintenance(plate){
+  const v=DB.vehicles.get().find(x=>x.plate===plate);if(!v)return;
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">🛡 '+bi('维保登记','Maintenance')+' · '+esc(plate)+'</h3>'
+    +'<div class="fld"><label>🛡 '+bi('保险到期日','Insurance Expiry')+'</label><input class="pair-input" type="date" id="mv-ins" value="'+(v.insuranceExpire||'')+'"></div>'
+    +'<div class="fld"><label>🔍 '+bi('年检到期日','Inspection Expiry')+'</label><input class="pair-input" type="date" id="mv-insp" value="'+(v.inspectionExpire||'')+'"></div>'
+    +'<div class="fld"><label>🔧 '+bi('上次保养里程 (km)','Last Service Km')+'</label><input class="pair-input" type="number" id="mv-svc" value="'+(v.lastServiceKm||'')+'" placeholder="0" min="0"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveMaintenance(\''+esc(plate)+'\')">✓ '+T('common_save')+'</button></div>',true);
+}
+function saveMaintenance(plate){
+  const vs=DB.vehicles.get();const v=vs.find(x=>x.plate===plate);if(!v)return;
+  v.insuranceExpire=document.getElementById('mv-ins').value||'';
+  v.inspectionExpire=document.getElementById('mv-insp').value||'';
+  v.lastServiceKm=parseInt(document.getElementById('mv-svc').value)||'';
+  DB.vehicles.set(vs);sbSyncOne('vehicles',DB.vehicles.get());
+  closeModal();toast('✅ '+bi('已保存','Saved'));renderPage();
 }
 DB.init();
 
@@ -2376,9 +2416,10 @@ function renderDashboard(){
       }).join('');
       html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd);flex-wrap:wrap">'
         +'<span style="font-weight:700;font-size:14px;min-width:84px">'+esc(v.plate)+'</span>'
-        +vehStatusTag(v)
-        +'<span style="font-size:11px;color:var(--tx-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(L==='zh'?v.type:v.typeEn)+'</span>'
+        +vehStatusTag(v)+vehMaintenanceTag(v)
+        +'<span style="font-size:11px;color:var(--tx-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(L==='zh'?v.type:v.typeEn)+'</span>'
         +'<span style="flex:1"></span>'
+        +(canEdit?'<button class="bt bt-o bt-sm" onclick="regMaintenance(\''+esc(v.plate)+'\')" title="'+bi('维保登记','Maintenance')+'" style="padding:2px 8px;font-size:10px;height:auto">🛡</button>':'')
         +(canEdit?opts:'')
         +'</div>';
     });
@@ -2459,7 +2500,15 @@ function buildDC(d){
       +(dnotesCn?'<div class="dc2-notes-label">📝 '+T('notes')+'</div>'+dnotesCn:'')
       +(dnotesEn&&dnotesEn!==dnotesCn?'<div style="color:var(--tx-muted);font-style:italic;margin-top:3px">'+dnotesEn+'</div>':'')
       +'</div>':'')
+    +((d.startKm||d.endKm||d.fuelL)||d.costFuel||d.costRepair||d.costToll||d.dvirDate?'<div style="display:flex;gap:10px;flex-wrap:wrap;padding:8px 14px 0;font-size:12px;color:var(--tx-dim)">'
+      +(d.startKm||d.endKm?'<span>📏 '+bi('里程','Km')+': '+esc(d.startKm||'—')+' → '+esc(d.endKm||'—')+(d.fuelL?' · ⛽ '+esc(d.fuelL)+'L':'')+'</span>':'')
+      +((d.costFuel||d.costRepair||d.costToll)?'<span>💰 '+bi('费用','Cost')+': '+bi('油','F')+'$'+esc(d.costFuel||0)+(d.costRepair?' · '+bi('修','R')+'$'+esc(d.costRepair):'')+(d.costToll?' · '+bi('过','T')+'$'+esc(d.costToll):'')+'</span>':'')
+      +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
+      +'</div>':'')
     +'<div class="dc2-actions">'
+    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
+    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
+    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regCost(\''+d.id+'\')">💰 '+bi('费用','Cost')+'</button>':'')
     +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+T('edit')+'</button>':'')
     +(isAdmin()?'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+T('delete')+'</button>':'')
     +'</div>'
@@ -2467,6 +2516,75 @@ function buildDC(d){
 }
 function editDispatch(id){editD(id);}
 function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);toast(L==='zh'?'已删除':'Deleted');renderPage();}
+
+// 登记里程油耗（P0）
+function regMileage(did){
+  const dd=DB.dispatches.get().find(x=>x.id===did);if(!dd)return;
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">📏 '+bi('登记里程油耗','Log Mileage & Fuel')+'</h3>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:14px;padding:10px 14px;background:rgba(91,138,245,0.08);border-radius:10px">🚗 '+esc(dd.vehicle)+' · '+esc(dd.driver)+' · '+fmtL(dd.date)+'</p>'
+    +'<div class="fld"><label>📏 '+bi('起始里程 (km)','Start Odometer (km)')+'</label><input class="pair-input" type="number" id="mg-s" value="'+(dd.startKm||'')+'" placeholder="0" min="0"></div>'
+    +'<div class="fld"><label>🏁 '+bi('结束里程 (km)','End Odometer (km)')+'</label><input class="pair-input" type="number" id="mg-e" value="'+(dd.endKm||'')+'" placeholder="0" min="0"></div>'
+    +'<div class="fld"><label>⛽ '+bi('油耗 (L)','Fuel Used (L)')+'</label><input class="pair-input" type="number" id="mg-f" value="'+(dd.fuelL||'')+'" placeholder="0" min="0" step="0.1"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveMileage(\''+did+'\')">✓ '+T('common_save')+'</button></div>',true);
+}
+function saveMileage(did){
+  const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
+  dd.startKm=parseInt(document.getElementById('mg-s').value)||null;
+  dd.endKm=parseInt(document.getElementById('mg-e').value)||null;
+  dd.fuelL=parseFloat(document.getElementById('mg-f').value)||null;
+  DB.dispatches.set(ds);sbSyncOne('dispatches',DB.dispatches.get());
+  closeModal();toast('✅ '+bi('已保存','Saved'));renderPage();
+}
+
+// 出车检查单 DVIR（P1）
+const DVIR_ITEMS=[
+  {k:'tire',cn:'轮胎 / 胎压',en:'Tires / Pressure'},
+  {k:'oil',cn:'机油 / 冷却液',en:'Oil / Coolant'},
+  {k:'light',cn:'灯光 / 转向灯',en:'Lights / Signals'},
+  {k:'brake',cn:'刹车系统',en:'Brakes'},
+  {k:'fuel',cn:'燃油充足',en:'Fuel Level'},
+  {k:'docs',cn:'证件齐全',en:'Docs'},
+  {k:'tool',cn:'随车工具',en:'Toolkit'},
+  {k:'clean',cn:'车辆清洁',en:'Cleanliness'},
+];
+function regDvir(did){
+  const dd=DB.dispatches.get().find(x=>x.id===did);if(!dd)return;
+  const saved=dd.dvir||[];
+  const items=DVIR_ITEMS.map(it=>{
+    const checked=saved.includes(it.k)?'checked':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd);font-size:13px;cursor:pointer"><input type="checkbox" class="dvir-item" value="'+it.k+'" '+checked+' style="width:18px;height:18px;accent-color:var(--gn)"><span>'+bi(it.cn,it.en)+'</span></label>';
+  }).join('');
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">✅ '+bi('出车检查单','Vehicle Inspection')+'</h3>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:8px">🚗 '+esc(dd.vehicle)+' · '+esc(dd.driver)+' · '+fmtL(dd.date)+'</p>'
+    +items
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveDvir(\''+did+'\')">✓ '+bi('确认检查','Confirm')+'</button></div>',true);
+}
+function saveDvir(did){
+  const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
+  dd.dvir=Array.from(document.querySelectorAll('.dvir-item:checked')).map(x=>x.value);
+  dd.dvirDate=today();
+  DB.dispatches.set(ds);sbSyncOne('dispatches',DB.dispatches.get());
+  closeModal();toast('✅ '+bi('检查已保存','Inspection saved'));renderPage();
+}
+
+// 费用登记（P1）
+function regCost(did){
+  const dd=DB.dispatches.get().find(x=>x.id===did);if(!dd)return;
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">💰 '+bi('费用登记','Cost Log')+'</h3>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:14px">🚗 '+esc(dd.vehicle)+' · '+esc(dd.driver)+' · '+fmtL(dd.date)+'</p>'
+    +'<div class="fld"><label>⛽ '+bi('油费 ($)','Fuel Cost ($)')+'</label><input class="pair-input" type="number" id="cs-f" value="'+(dd.costFuel||'')+'" placeholder="0" min="0" step="0.01"></div>'
+    +'<div class="fld"><label>🔧 '+bi('维修费 ($)','Repair Cost ($)')+'</label><input class="pair-input" type="number" id="cs-r" value="'+(dd.costRepair||'')+'" placeholder="0" min="0" step="0.01"></div>'
+    +'<div class="fld"><label>🛣 '+bi('过路费 ($)','Toll ($)')+'</label><input class="pair-input" type="number" id="cs-t" value="'+(dd.costToll||'')+'" placeholder="0" min="0" step="0.01"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveCost(\''+did+'\')">✓ '+T('common_save')+'</button></div>',true);
+}
+function saveCost(did){
+  const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
+  dd.costFuel=parseFloat(document.getElementById('cs-f').value)||null;
+  dd.costRepair=parseFloat(document.getElementById('cs-r').value)||null;
+  dd.costToll=parseFloat(document.getElementById('cs-t').value)||null;
+  DB.dispatches.set(ds);sbSyncOne('dispatches',DB.dispatches.get());
+  closeModal();toast('✅ '+bi('已保存','Saved'));renderPage();
+}
 
 // 派车卡片"事由"一键翻译：找关联 requests 里缺失的语言，自动补全并同步到云端
 function translateDispatch(did){
@@ -3003,6 +3121,32 @@ function renderRecords(){
   }).join('');
 
   let html=(isAdmin_?advHtml:'')+'<div class="stats"><div class="st"><div class="st-n">'+ds.length+'</div><div class="st-l">'+T('total_trips')+' / Total Trips</div></div></div>';
+
+  // 司机出勤统计（P1）
+  const drvStats={};
+  ds.forEach(d=>{
+    const name=d.driver||'未知';
+    if(!drvStats[name])drvStats[name]={trips:0,pax:0,km:0};
+    drvStats[name].trips++;
+    const rl=rs.filter(r=>d.requestIds&&d.requestIds.includes(r.id));
+    drvStats[name].pax+=rl.reduce((s,r)=>s+r.passengers,0);
+    if(d.startKm&&d.endKm)drvStats[name].km+=(d.endKm-d.startKm);
+  });
+  const sortedDrv=Object.entries(drvStats).sort((a,b)=>b[1].trips-a[1].trips);
+  if(sortedDrv.length){
+    html+='<div class="card"><div class="card-h">👤 '+bi('司机出勤','Driver Stats')+'</div>';
+    const maxTrips=sortedDrv[0][1].trips||1;
+    sortedDrv.forEach(([name,s])=>{
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd)">'
+        +'<span style="font-weight:600;font-size:13px;min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(name)+'</span>'
+        +'<span class="tag tg-d">'+s.trips+' '+bi('趟','trips')+'</span>'
+        +'<span class="tag tg-p">'+s.pax+' '+bi('人','pax')+'</span>'
+        +(s.km?'<span class="tag tg-g">'+s.km+' km</span>':'')
+        +'<div style="flex:1;min-width:60px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.round(s.trips/maxTrips*100)+'%;background:linear-gradient(90deg,var(--gn),#34d399);border-radius:3px"></div></div>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
   html+='<div class="card"><div class="card-h">🔍 '+bi('筛选面板','Filter Panel')+'</div>';
   html+='<div class="fld"><label>📅 '+T('date_range')+' / Date Range</label><div style="display:flex;gap:6px;align-items:center">'
     +'<input type="date" id="ft-f" value="'+S.fFrom+'" onchange="S.fFrom=this.value;renderPage()" style="flex:1;padding:9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">'
