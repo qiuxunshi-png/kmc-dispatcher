@@ -641,11 +641,20 @@ function sbInit(){
   try{sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);}catch(e){console.error('sbInit',e);return null;}
   return sbClient;
 }
-// 字段映射：本地数据 -> Supabase 行
-const _mapV=v=>({plate:v.plate,type:v.type||'',typeEn:v.typeEn||'',seats:v.seats||0});
+// 字段映射：本地数据 -> Supabase 行（白名单，防止未知列导致 upsert 失败）
+const _mapV=v=>({plate:v.plate,type:v.type||'',typeEn:v.typeEn||'',seats:v.seats||0,
+  status:v.status||'idle',insuranceExpire:v.insuranceExpire||'',inspectionExpire:v.inspectionExpire||'',lastServiceKm:v.lastServiceKm||''});
 const _mapD=d=>({name:d.name});
 const _mapDt=d=>({cn:d.cn,en:d.en||''});
-const _mapU=u=>({name:u.name,department:u.department,role:u.role||'user',password:u.password||'',firstLogin:u.firstLogin||null,lastLogin:u.lastLogin||null});
+// users 不推送 password 到云端（明文密码仅存本地，避免泄露）
+const _mapU=u=>({name:u.name,department:u.department,role:u.role||'user',firstLogin:u.firstLogin||null,lastLogin:u.lastLogin||null});
+// dispatches 白名单：含 P0/P1 新列（startKm/endKm/fuelL/dvir/dvirDate/costFuel/costRepair/costToll）
+const _mapDp=x=>({id:x.id,date:x.date||'',vehicle:x.vehicle||'',driver:x.driver||'',
+  departureTime:x.departureTime||null,meetingPoint:x.meetingPoint||null,notes:x.notes||'',notesEn:x.notesEn||'',
+  signature:x.signature||'',requestIds:x.requestIds||[],createdAt:x.createdAt||'',
+  startKm:x.startKm!=null?x.startKm:null,endKm:x.endKm!=null?x.endKm:null,fuelL:x.fuelL!=null?x.fuelL:null,
+  dvir:x.dvir||[],dvirDate:x.dvirDate||'',costFuel:x.costFuel!=null?x.costFuel:null,
+  costRepair:x.costRepair!=null?x.costRepair:null,costToll:x.costToll!=null?x.costToll:null});
 
 // 读全部数据（Supabase -> 本地结构）
 async function repoRead(){
@@ -660,7 +669,8 @@ async function repoRead(){
       sb.from('depts').select('*'),
     ]);
     return {
-      vehicles:(v.data||[]).map(x=>({plate:x.plate,type:x.type,typeEn:x.typeEn,seats:x.seats})),
+      vehicles:(v.data||[]).map(x=>({plate:x.plate,type:x.type||'',typeEn:x.typeEn||'',seats:x.seats||0,
+        status:x.status||'idle',insuranceExpire:x.insuranceExpire||'',inspectionExpire:x.inspectionExpire||'',lastServiceKm:x.lastServiceKm||''})),
       drivers:(d.data||[]).map(x=>({name:x.name})),
       users:u.data||[],
       requests:r.data||[],
@@ -671,15 +681,18 @@ async function repoRead(){
 }
 
 // 全量写（upsert 6 张表，按主键合并，多人并发不丢单）
+// 任一表失败都如实返回 false 并收集错误信息，禁止"假成功"
 async function repoWrite(data){
   const sb=sbInit();if(!sb)return false;
+  const errs=[];
   try{
-    if(data.vehicles&&data.vehicles.length){const{error}=await sb.from('vehicles').upsert(data.vehicles.map(_mapV));if(error)console.warn('vehicles',error.message);}
-    if(data.drivers&&data.drivers.length){const{error}=await sb.from('drivers').upsert(data.drivers.map(_mapD));if(error)console.warn('drivers',error.message);}
-    if(data.users&&data.users.length){const{error}=await sb.from('users').upsert(data.users.map(_mapU));if(error)console.warn('users',error.message);}
-    if(data.requests&&data.requests.length){const{error}=await sb.from('requests').upsert(data.requests);if(error)console.warn('requests',error.message);}
-    if(data.dispatches&&data.dispatches.length){const{error}=await sb.from('dispatches').upsert(data.dispatches);if(error)console.warn('dispatches',error.message);}
-    if(data.depts&&data.depts.length){const{error}=await sb.from('depts').upsert(data.depts.map(_mapDt));if(error)console.warn('depts',error.message);}
+    if(data.vehicles&&data.vehicles.length){const{error}=await sb.from('vehicles').upsert(data.vehicles.map(_mapV));if(error)errs.push('vehicles:'+error.message);}
+    if(data.drivers&&data.drivers.length){const{error}=await sb.from('drivers').upsert(data.drivers.map(_mapD));if(error)errs.push('drivers:'+error.message);}
+    if(data.users&&data.users.length){const{error}=await sb.from('users').upsert(data.users.map(_mapU));if(error)errs.push('users:'+error.message);}
+    if(data.requests&&data.requests.length){const{error}=await sb.from('requests').upsert(data.requests);if(error)errs.push('requests:'+error.message);}
+    if(data.dispatches&&data.dispatches.length){const{error}=await sb.from('dispatches').upsert(data.dispatches.map(_mapDp));if(error)errs.push('dispatches:'+error.message);}
+    if(data.depts&&data.depts.length){const{error}=await sb.from('depts').upsert(data.depts.map(_mapDt));if(error)errs.push('depts:'+error.message);}
+    if(errs.length){console.warn('repoWrite errors:',errs);return false;}
     return true;
   }catch(e){console.error('repoWrite',e);return false;}
 }
@@ -694,9 +707,11 @@ async function sbSyncOne(table,data){
     else if(table==='drivers')rows=items.map(_mapD);
     else if(table==='depts')rows=items.map(_mapDt);
     else if(table==='users')rows=items.map(_mapU);
+    else if(table==='dispatches')rows=items.map(_mapDp);
     const{error}=await sb.from(table).upsert(rows);
     if(error)console.warn('sbSyncOne',table,error.message);
-  }catch(e){console.error('sbSyncOne',table,e);}
+    return !error;
+  }catch(e){console.error('sbSyncOne',table,e);return false;}
 }
 
 // 单条删除（撤回需求 / 删司机等）
@@ -748,6 +763,13 @@ async function manualSync(){
 
 
 let syncAvailable=false;
+// 车辆按 plate 字段级合并：以远端为准，远端缺失的字段保留本地（保护维保/状态数据，防止覆盖式同步清空）
+function mergeVehicles(remoteV){
+  const localV=DB.vehicles.get()||[];
+  const merged=remoteV.map(rv=>{const lv=localV.find(x=>x.plate===rv.plate)||{};return Object.assign({},lv,rv);});
+  localV.forEach(lv=>{if(!merged.find(x=>x.plate===lv.plate))merged.push(lv);});
+  return merged;
+}
 async function syncAll(){
   const sb=sbInit();
   if(!sb){syncAvailable=false;return;}
@@ -755,7 +777,7 @@ async function syncAll(){
     const remote=await repoRead();
     if(remote){
       // 远端非空才覆盖本地（避免空远端清空本地）
-      if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles);
+      if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(mergeVehicles(remote.vehicles));
       if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers);
       if(remote.users&&remote.users.length)DB.users.set(remote.users);
       if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
@@ -773,14 +795,15 @@ async function syncAll(){
     const ok=await repoWrite(data);
     syncAvailable=ok;
     if(ok)setupRealtime();
-  }catch(e){console.error('syncAll',e);syncAvailable=false;}
+    return ok;
+  }catch(e){console.error('syncAll',e);syncAvailable=false;return false;}
 }
 
 // 只读刷新（实时订阅触发，不写回，避免循环）
 async function pullFromCloud(){
   const remote=await repoRead();
   if(!remote)return;
-  if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(remote.vehicles);
+  if(remote.vehicles&&remote.vehicles.length)DB.vehicles.set(mergeVehicles(remote.vehicles));
   if(remote.drivers&&remote.drivers.length)DB.drivers.set(remote.drivers);
   if(remote.users&&remote.users.length)DB.users.set(remote.users);
   if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
@@ -1584,8 +1607,9 @@ function showPasswordModal(){
 
 function checkPassword(){
   const pw=document.getElementById('pw-input').value;
-  // Default password: sqx1987923
-  const savedPw=localStorage.getItem('kmc2_admin_pw')||'sqx1987923';
+  // 管理员密码须先在设置页设置，不再提供硬编码默认值（原默认 sqx1987923 已移除，公开仓库不可再暴露）
+  const savedPw=localStorage.getItem('kmc2_admin_pw');
+  if(!savedPw){closeModal();toast('请先以管理员身份在设置页设置管理员密码');return;}
   if(pw===savedPw){
     S.unlockUntil=Date.now()+24*60*60*1000;// 24h unlock
     localStorage.setItem('kmc2_admin_unlock',S.unlockUntil);
@@ -1624,17 +1648,28 @@ function doLogin(){
   const name=document.getElementById('ln').value.trim();
   if(!dept)return toast('Select department / 请选择部门');
   if(!name)return toast('Enter your name / 请输入姓名');
+  const pwEl=document.getElementById('lp');
+  const pw=pwEl?pwEl.value.trim():'';
 
-  // Auto-register or login existing user
+  // 认证：已有账号且设置了密码 → 校验密码；未设置密码/新账号 → 校验邀请码
   const us=DB.users.get()||[];
   const existingUser=us.find(u=>u.name===name&&u.department===dept);
-  if(!existingUser){
+  const invite=DB.invite.get()||'KMC2024';
+  if(existingUser){
+    const ok=existingUser.password?(pw===existingUser.password):(pw===invite);
+    if(!ok)return toast(L==='zh'?'密码或邀请码错误':'Wrong password or invite code');
+    existingUser.lastLogin=new Date().toISOString();
+  }else{
+    if(pw!==invite)return toast(L==='zh'?'请输入正确邀请码（首次登录，见管理员）':'Enter valid invite code (first login)');
     us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:'user',password:''});
-  }else{existingUser.lastLogin=new Date().toISOString();}
+  }
   DB.users.set(us);
-  S.user={name,department:dept,role:(dept==='后勤部'&&name==='石秋迅')?'admin':'user'};
+  // 角色以 users 记录为准（杜绝冒认管理员）
+  const rec=us.find(u=>u.name===name&&u.department===dept);
+  S.user={name,department:dept,role:(rec&&rec.role)||'user'};
+  try{localStorage.setItem('kmc2_last_login',JSON.stringify({dept,name}));}catch(e){}
   DB.user.set(S.user);
-  showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
+  showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{const ok=await syncAll();syncStatus=ok?'ok':'error';if(ok){toast('✅ 已同步');}else{toast('⚠ 同步失败，数据仅存本机');}}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
   }catch(e){
     console.error('doLogin ERR:',e);
     alert('登录失败 / Login error: '+e.message+'\n\n请截图发回开发者');
@@ -1642,6 +1677,7 @@ function doLogin(){
 }
 
 function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
+  let _lastLogin=null;try{_lastLogin=JSON.parse(localStorage.getItem('kmc2_last_login')||'null');}catch(e){}
   // Build login screen content
   document.getElementById('login-screen').innerHTML=
     '<div class="login-box">'+
@@ -1650,12 +1686,14 @@ function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
     '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'部门 / Department':'Department')+'</label>'+
     '<select id="ld" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none">'+
     '<option value="">'+(L==='zh'?'请选择 / Select':'Select')+'</option>'+
-    getDepts().map(d=>'<option value="'+d.cn+'">'+d.cn+' / '+(d.en||'')+'</option>').join('')+
+    getDepts().map(d=>'<option value="'+d.cn+'" '+((_lastLogin&&_lastLogin.dept===d.cn)?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+
     '</select></div>'+
-    '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
-    '<input type="text" id="ln" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
+    '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
+    '<input type="text" id="ln" value="'+((_lastLogin&&_lastLogin.name)||'')+'" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
+    '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'密码 / 邀请码':'Password / Invite Code')+'</label>'+
+    '<input type="password" id="lp" placeholder="'+(L==='zh'?'密码或邀请码':'Password or invite code')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
     '<button class="bt bt-p bt-b" onclick="doLogin()">'+(L==='zh'?'进入系统 / ENTER':'ENTER / Enter')+'</button>'+
-    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'选择部门并输入姓名即可登录':'Select department & enter your name')+'</div>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'设置过密码的用密码登录；首次登录用邀请码（KMC2024 或管理员改后）':'Use your password if set; first login uses the invite code')+'</div>'+
     '</div>';
   document.getElementById('login-screen').classList.remove('hide');
   document.getElementById('app-mob').classList.add('hide');
@@ -1676,6 +1714,7 @@ function changeMyPw(){
     firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:S.user.role});}
   else{u.password=newPw;}
   DB.users.set(us);
+  sbSyncOne('users',us); // 同步账号信息（密码明文仅存本地，不上云）
   document.getElementById('my-old-pw').value='';
   document.getElementById('my-new-pw').value='';
   toast('Password updated / 密码已更新 — next login use new password');
@@ -1688,7 +1727,7 @@ function showApp(){
   document.getElementById('mt-info').textContent=S.user.department+' · '+S.user.name;
   renderUserInfo();
   renderNav();
-  S.tab='dashboard';switchTab('dashboard');
+  S.tab=(S.user&&S.user.role==='admin')?'dashboard':'submit';switchTab(S.tab);
 }
 
 function renderUserInfo(){
@@ -2229,7 +2268,9 @@ function doSubmit(){
     });
   }
   const pax=parseInt(document.getElementById('rq-pax').value)||1;
+  // 采集乘车人姓名（genPassengerFields 生成的 pax-name-N 输入框），未填的忽略
   const paxNames=[];
+  for(let i=0;i<pax;i++){const el=document.getElementById('pax-name-'+i);const v=el?el.value.trim():'';if(v)paxNames.push(v);}
   const purpose=document.getElementById('rq-purpose').value.trim();
   const purposeEn=document.getElementById('rq-purposeEn').value.trim();
   const dest=document.getElementById('rq-dest').value.trim();
@@ -2242,6 +2283,8 @@ function doSubmit(){
   }else{
     if(!date||!dep||!ret||!dest||!purpose||!purposeEn)return toast(L==='zh'?'请填写日期、出发返程时间和中英双语外出事由':'Please fill date, departure/return time and bilingual purpose');
   }
+  // 部门负责人签字必填（Q8：标必填就强制执行）
+  if(!S.sigData)return toast(L==='zh'?'请先完成部门负责人签字':'Department head signature required');
   
   // Build full notes including slot notes and extra slots
   let fullNotes=notes||'';
@@ -2283,6 +2326,12 @@ function recallReq(rid){
   const reqs=DB.requests.get();
   const idx=reqs.findIndex(r=>r.id===rid);
   if(idx===-1)return toast('Not found');
+  const r=reqs[idx];
+  // Q10：当日需求过截止时间后不可撤回（与页面文案"截止前可撤回"一致）
+  if(r.date===today()){
+    const hh=parseInt(getCutoff().split(':')[0])||19;
+    if(new Date().getHours()>=hh)return toast(L==='zh'?'已过今日截止时间，无法撤回':'Past today\'s cutoff, cannot recall');
+  }
   reqs.splice(idx,1);
   DB.requests.set(reqs);
   sbDelOne('requests','id',rid); // 同步删除云端
@@ -2515,7 +2564,11 @@ function buildDC(d){
     +'</div></div>';
 }
 function editDispatch(id){editD(id);}
-function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);toast(L==='zh'?'已删除':'Deleted');renderPage();}
+function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);
+  // Q14：同时恢复关联需求为待处理，避免孤儿引用
+  const rs=DB.requests.get();rs.forEach(r=>{if(r.mergedToDispatchId===id){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);
+  sbDelOne('dispatches','id',id);sbSyncOne('requests',rs);
+  toast(L==='zh'?'已删除':'Deleted');renderPage();}
 
 // 登记里程油耗（P0）
 function regMileage(did){
@@ -2911,7 +2964,7 @@ function togDept(d){
   else S.fDepts.push(d);
   renderPage();
 }
-function selAll(){const reqs=DB.requests.get().filter(r=>S.fSubmitter?r.submitter===S.fSubmitter:true);
+function selAll(){
   const allReqs=DB.requests.get().filter(r=>{
     if(r.status!=='pending')return false;
     if(S.fFrom&&r.date<S.fFrom)return false;
@@ -2937,7 +2990,13 @@ function showDisp(){
 function doDisp(){const rIds=[...S.selReqs];const v=document.getElementById('md-v').value.split(' - ')[0];
   const d=document.getElementById('md-d').value,t2=document.getElementById('md-t').value.trim();
   const p=document.getElementById('md-p').value.trim(),n=document.getElementById('md-nt').value.trim();
-  const firstR=DB.requests.get().find(r=>r.id===rIds[0]);const did=uid();
+  const selRs=DB.requests.get().filter(r=>rIds.includes(r.id));
+  // Q11：禁止跨日期合并（不同日期的需求必须分批派车）
+  const dates=[...new Set(selRs.map(r=>r.date))];
+  if(dates.length>1){closeModal();toast(L==='zh'?'所选需求日期不一致，请按日期分批派车':'Selected requests have different dates; dispatch by date');return;}
+  const firstR=selRs[0]||DB.requests.get().find(r=>r.id===rIds[0]);
+  if(!firstR)return closeModal();
+  const did=uid();
   const ds=DB.dispatches.get();ds.push({id:did,date:firstR.date,vehicle:v,driver:d,
     departureTime:t2||null,meetingPoint:p||null,notes:n||'',requestIds:rIds,createdAt:new Date().toISOString()});DB.dispatches.set(ds);
   const rs=DB.requests.get();rs.forEach(r=>{if(rIds.includes(r.id)){r.status='dispatched';r.mergedToDispatchId=did;}});DB.requests.set(rs);DB.dispatches.set(ds);sbSyncOne('requests',DB.requests.get());sbSyncOne('dispatches',DB.dispatches.get());
@@ -2958,7 +3017,7 @@ function saveD(did){const ds=DB.dispatches.get();const dd=ds.find(d=>d.id===did)
   dd.departureTime=document.getElementById('me-t').value.trim()||null;
   dd.meetingPoint=document.getElementById('me-p').value.trim()||null;
   dd.notes=document.getElementById('me-nt').value.trim()||null;
-  DB.dispatches.set(ds);closeModal();toast('Updated');renderPage();}
+  DB.dispatches.set(ds);sbSyncOne('dispatches',ds);closeModal();toast('Updated');renderPage();}
 function cancelD(did){if(!confirm('Revert?'))return;
   const ds=DB.dispatches.get();const i=ds.findIndex(d=>d.id===did);if(i===-1)return;const dd=ds[i];ds.splice(i,1);DB.dispatches.set(ds);
   const rs=DB.requests.get();rs.forEach(r=>{if(dd.requestIds.includes(r.id)){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);
@@ -3245,7 +3304,7 @@ function renderSettings(){
     if(unlocked&&!isAdmin()){
       html+='<button class="bt bt-d bt-sm" onclick="lockAdmin()" style="margin-bottom:8px">🔒 '+T('common_lockedMsg')+'</button>';
     }
-    html+='<div class="fld" style="margin-top:8px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
+    html+='<div class="fld" style="margin-top:8px"><label>'+T('changePw')+' / Change Admin Password</label><input type="password" id="old-pw" placeholder="'+(L==='zh'?'当前密码（首次设置可留空）':'Current password (leave empty if first time)')+'" style="margin-bottom:6px"><input type="password" id="new-pw" placeholder="'+T('newPw')+'"></div>'
       +'<button class="bt bt-p bt-sm" onclick="changeAdminPw()">'+T('common_save')+'</button></div>';
   }else{
     html+='<div class="card" style="background:rgba(37,99,235,.05);border:1px dashed #94a3b8;text-align:center;color:#64748b;font-size:13px"><div style="padding:6px">🔒 '+T('common_locked')+'</div></div>';
@@ -3282,7 +3341,8 @@ function renderSettings(){
       +'</div></div>';
   }
 
-  // Admin feature toggles
+  // Admin feature toggles（仅管理员可见，普通用户无权修改系统开关）
+  if(showAdmin){
     html+='<div class="card"><div class="card-h">⚙️ '+bi('功能开关','Feature Toggles')+'</div>'
       +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
       +'<div style="flex:1"><div style="font-weight:600;font-size:13px">📅 '+bi('日期范围开关','Date Range')+'</div>'
@@ -3293,6 +3353,7 @@ function renderSettings(){
       +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.multiSlot.get()?bi('开启：允许同一路线多组出发/返程','ON: multiple time slots per request'):bi('关闭：每组单时段','OFF: single slot only'))+'</div></div>'
       +'<button class="bt '+((DB.multiSlot.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.multiSlot.set(!DB.multiSlot.get());renderPage()">'+(DB.multiSlot.get()?'ON':'OFF')+'</button></div>'
       +'</div>';
+  }
 
   // Department management (admin only)
   if(showAdmin){
@@ -3353,18 +3414,37 @@ function delDept(i){
 function editDept(i){
   const depts=getDepts();
   const d=depts[i];if(!d)return;
+  const oldCn=d.cn;
   const cn=prompt(bi('中文名','CN name'),d.cn);
   if(!cn)return;
   const en=prompt(bi('英文名','EN name'),d.en||d.cn);
   d.cn=cn;d.en=en||cn;
   DB.depts.set(depts);
+  // Q4：级联更新该部门全部人员与需求记录，并同步云端
+  if(oldCn!==cn){
+    const us=(DB.users.get()||[]).map(u=>u.department===oldCn?Object.assign({},u,{department:cn}):u);
+    DB.users.set(us);
+    const rs=DB.requests.get();rs.forEach(r=>{if(r.department===oldCn)r.department=cn;});DB.requests.set(rs);
+    const sb=sbInit();
+    if(sb){sb.from('users').update({department:cn}).eq('department',oldCn).then(()=>{}).catch(()=>{});sb.from('requests').update({department:cn}).eq('department',oldCn).then(()=>{}).catch(()=>{});}
+    sbSyncOne('depts',depts);
+    // 当前登录用户部门被改时同步会话
+    if(S.user&&S.user.department===oldCn){S.user.department=cn;DB.user.set(S.user);}
+  }else{
+    sbSyncOne('depts',depts);
+  }
   toast('✅ '+bi('已更新','Updated'));renderPage();
 }
 
 function changeAdminPw(){
+  const oldPw=document.getElementById('old-pw')?document.getElementById('old-pw').value.trim():'';
   const pw=document.getElementById('new-pw').value.trim();
   if(!pw||pw.length<4)return toast('Password too short');
+  // Q2：修改管理员密码必须校验当前密码（未设置过的可直接设置）
+  const cur=localStorage.getItem('kmc2_admin_pw');
+  if(cur&&oldPw!==cur)return toast('Current password incorrect / 当前密码错误');
   localStorage.setItem('kmc2_admin_pw',pw);
+  if(document.getElementById('old-pw'))document.getElementById('old-pw').value='';
   document.getElementById('new-pw').value='';
   toast('Password updated');
 }
@@ -3378,14 +3458,14 @@ function editV(i){const v=DB.vehicles.get()[i];
     +'<div class="fld"><label>'+bi('车型 EN','Type EN')+'</label><input id="ev-te" value="'+esc(v.typeEn||'')+'"></div>'
     +'<div class="fld"><label>'+T('seats')+'</label><input id="ev-s" type="number" value="'+v.seats+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveV('+i+')">'+T('common_save')+'</button></div>',true);}
-function saveV(i){const vs=DB.vehicles.get();vs[i].plate=document.getElementById('ev-p').value.trim();vs[i].type=document.getElementById('ev-t').value.trim();vs[i].typeEn=document.getElementById('ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt(document.getElementById('ev-s').value)||5;DB.vehicles.set(vs);closeModal();toast('Updated');renderPage();}
+function saveV(i){const vs=DB.vehicles.get();vs[i].plate=document.getElementById('ev-p').value.trim();vs[i].type=document.getElementById('ev-t').value.trim();vs[i].typeEn=document.getElementById('ev-te').value.trim()||vs[i].type;vs[i].seats=parseInt(document.getElementById('ev-s').value)||5;DB.vehicles.set(vs);sbSyncOne('vehicles',vs);closeModal();toast('Updated');renderPage();}
 function delV(i){if(!confirm(T('common_cancel')+'?'))return;const vs=DB.vehicles.get();const plate=vs[i]&&vs[i].plate;vs.splice(i,1);DB.vehicles.set(vs);if(plate)sbDelOne('vehicles','plate',plate);toast('Deleted');renderPage();}
 function addDr(){const n=document.getElementById('nd-n').value.trim();if(!n)return;const ds=DB.drivers.get();ds.push({name:n});DB.drivers.set(ds);sbSyncOne('drivers',DB.drivers.get());toast('Added');renderPage();}
 function editDr(i){const d=DB.drivers.get()[i];
   showModal('<h3>'+T('edit')+' '+T('drivers')+'</h3>'
     +'<div class="fld"><label>'+bi('司机姓名','Driver Name')+'</label><input id="ed-n" value="'+esc(d.name)+'"></div>'
     +'<div style="text-align:right"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p bt-sm" onclick="saveDr('+i+')">'+T('common_save')+'</button></div>',true);}
-function saveDr(i){const ds=DB.drivers.get();ds[i].name=document.getElementById('ed-n').value.trim();DB.drivers.set(ds);closeModal();toast('Updated');renderPage();}
+function saveDr(i){const ds=DB.drivers.get();ds[i].name=document.getElementById('ed-n').value.trim();DB.drivers.set(ds);sbSyncOne('drivers',ds);closeModal();toast('Updated');renderPage();}
 function delDr(i){if(!confirm(T('common_cancel')+'?'))return;const ds=DB.drivers.get();const name=ds[i]&&ds[i].name;ds.splice(i,1);DB.drivers.set(ds);if(name)sbDelOne('drivers','name',name);toast('Deleted');renderPage();}
 
 // User management - distribute/delete accounts covering all departments
@@ -3422,19 +3502,39 @@ function saveUser(i){
   // Update related requests
   const rs=DB.requests.get();
   rs.forEach(r=>{if(r.submitter===oldName&&r.department===oldDept){r.submitter=us[i].name;r.department=us[i].department;}});
-  DB.requests.set(rs);closeModal();toast('Updated');renderPage();
+  DB.requests.set(rs);sbSyncOne('requests',rs); // Q4：需求改名同步云端
+  closeModal();toast('Updated');renderPage();
 }
 function expData(){localStorage.setItem('kmc_last_backup',today());const data={vehicles:DB.vehicles.get(),drivers:DB.drivers.get(),requests:DB.requests.get(),dispatches:DB.dispatches.get(),users:DB.users.get(),invite:DB.invite.get(),exportedAt:new Date().toISOString()};
   const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='KMC_Data_'+today()+'.json';a.click();URL.revokeObjectURL(u);toast('Exported');}
 function impData(inp){if(!isAdmin())return;const f=inp.files[0];if(!f||!confirm('Overwrite all data?')){inp.value='';return;}
   const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.vehicles)DB.vehicles.set(d.vehicles);if(d.drivers)DB.drivers.set(d.drivers);if(d.requests)DB.requests.set(d.requests);if(d.dispatches)DB.dispatches.set(d.dispatches);if(d.users)DB.users.set(d.users);if(d.invite)DB.invite.set(d.invite);toast('Imported');renderPage();}catch{toast('Invalid file');}};r.readAsText(f);inp.value='';}
 function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Delete everything?'))return;
+  // Q6：先清云端，防止 60s 自动同步把旧数据回灌本地
+  const sb=sbInit();
+  if(sb){
+    (async()=>{
+      const cols={vehicles:'plate',drivers:'name',depts:'cn',requests:'id',dispatches:'id'};
+      for(const t in cols){
+        try{
+          const{data}=await sb.from(t).select(cols[t]);
+          if(data&&data.length){
+            for(let i=0;i<data.length;i+=100){await sb.from(t).delete().in(cols[t],data.slice(i,i+100).map(x=>x[cols[t]]));}
+          }
+        }catch(e){console.warn('wipe-cloud',t,e.message);}
+      }
+      try{
+        const{data}=await sb.from('users').select('name,department');
+        if(data&&data.length){for(const u of data){await sb.from('users').delete().eq('name',u.name).eq('department',u.department).then(()=>{}).catch(()=>{});}}
+      }catch(e){console.warn('wipe-cloud users',e.message);}
+    })();
+  }
   ['vehicles','drivers','requests','dispatches','users','imported'].forEach(k=>LS(k).set([]));DB.init();toast('Cleared');renderPage();}
 
 // ==================== BOOT ====================
 (function(){
   const u=DB.user.get();
-  if(u){S.user=u;showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{try{await syncAll();syncStatus='ok';toast('✅ 已同步');}catch(e){syncStatus='error';}updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
+  if(u){S.user=u;showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{const ok=await syncAll().catch(()=>false);syncStatus=ok?'ok':'error';if(!ok)toast('⚠ 同步失败，数据仅存本机');updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
 })();
 
 
@@ -3459,8 +3559,8 @@ setInterval(async()=>{
   syncStatus='syncing';
   updateSyncIcon();
   try{
-    await Promise.race([syncAll(),new Promise((_,r)=>setTimeout(()=>r('timeout'),8000))]);
-    syncStatus='ok';
+    const ok=await Promise.race([syncAll(),new Promise((_,r)=>setTimeout(()=>r('timeout'),8000))]);
+    syncStatus=(ok===true)?'ok':'error';
     setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},2000);
   }catch(e){
     syncStatus='error';

@@ -2,3 +2,7 @@ pdf_pages/
 pdf_pages_rot/
 pdf_thumbs/
 .DS_Store
+# 备份/归档文件不入库
+*.backup-*.html
+*.archived.html
+终端保存的输出.txt
