@@ -513,7 +513,7 @@ const T=key=>{
       changePw:'修改管理员密码',newPw:'新密码',pwSaved:'密码已更新',
       backup:'数据备份',export_json:'导出 JSON',import_json:'导入 JSON',clear_data:'清空数据',
       vehicles:'车辆管理',drivers:'司机管理',users:'人员管理',
-      invite_code:'邀请码',plate:'车牌',vehicle_type:'车型',seats:'座位数',
+      plate:'车牌',vehicle_type:'车型',seats:'座位数',
       driver_name:'司机姓名',user_name:'姓名',user_dept:'所属部门',user_role:'角色',
       add_user:'新增人员',no_users:'暂无人员记录',
       all_vehicles:'全部车辆',all_depts:'全部部门',select_depts:'选择部门（多选）',
@@ -543,7 +543,7 @@ const T=key=>{
       changePw:'Change Admin Password',newPw:'New Password',pwSaved:'Password updated',
       backup:'Data Backup',export_json:'Export JSON',import_json:'Import JSON',clear_data:'Clear All Data',
       vehicles:'Vehicle Management',drivers:'Driver Management',users:'User Management',
-      invite_code:'Invite Code',plate:'Plate',vehicle_type:'Vehicle Type',seats:'Seats',
+      plate:'Plate',vehicle_type:'Vehicle Type',seats:'Seats',
       driver_name:'Driver Name',user_name:'Name',user_dept:'Department',user_role:'Role',
       add_user:'Add User',no_users:'No users recorded',
       all_vehicles:'All Vehicles',all_depts:'All Departments',select_depts:'Select Departments',
@@ -845,7 +845,6 @@ const DB={
     if(!this.drivers.get())this.drivers.set([
       {name:'Nkala'},{name:'Reginald'},{name:'Samuel'},{name:'Ishmael'},{name:'Kuda'},{name:'Opharn Chuma'}
     ]);
-    if(!this.invite.get())this.invite.set('KMC2024');
     if(!this.requests.get())this.requests.set([]);
     if(!this.dispatches.get())this.dispatches.set([]);
     if(!this.users.get())this.users.set([]);
@@ -1648,19 +1647,13 @@ function doLogin(){
   const name=document.getElementById('ln').value.trim();
   if(!dept)return toast('Select department / 请选择部门');
   if(!name)return toast('Enter your name / 请输入姓名');
-  const pwEl=document.getElementById('lp');
-  const pw=pwEl?pwEl.value.trim():'';
 
-  // 认证：已有账号且设置了密码 → 校验密码；未设置密码/新账号 → 校验邀请码
+  // 登录简化：选中部门 + 输入姓名即可，无需密码/邀请码
   const us=DB.users.get()||[];
   const existingUser=us.find(u=>u.name===name&&u.department===dept);
-  const invite=DB.invite.get()||'KMC2024';
   if(existingUser){
-    const ok=existingUser.password?(pw===existingUser.password):(pw===invite);
-    if(!ok)return toast(L==='zh'?'密码或邀请码错误':'Wrong password or invite code');
     existingUser.lastLogin=new Date().toISOString();
   }else{
-    if(pw!==invite)return toast(L==='zh'?'请输入正确邀请码（首次登录，见管理员）':'Enter valid invite code (first login)');
     us.push({name,department:dept,firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:'user',password:''});
   }
   DB.users.set(us);
@@ -1690,35 +1683,12 @@ function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
     '</select></div>'+
     '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
     '<input type="text" id="ln" value="'+((_lastLogin&&_lastLogin.name)||'')+'" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
-    '<div style="text-align:left;margin-bottom:18px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'密码 / 邀请码':'Password / Invite Code')+'</label>'+
-    '<input type="password" id="lp" placeholder="'+(L==='zh'?'密码或邀请码':'Password or invite code')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
     '<button class="bt bt-p bt-b" onclick="doLogin()">'+(L==='zh'?'进入系统 / ENTER':'ENTER / Enter')+'</button>'+
-    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'设置过密码的用密码登录；首次登录用邀请码（KMC2024 或管理员改后）':'Use your password if set; first login uses the invite code')+'</div>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'选择部门并输入姓名即可登录':'Select department & enter your name')+'</div>'+
     '</div>';
   document.getElementById('login-screen').classList.remove('hide');
   document.getElementById('app-mob').classList.add('hide');
   document.getElementById('app-pc').classList.add('hide');}}
-
-function changeMyPw(){
-  const old=document.getElementById('my-old-pw').value.trim();
-  const newPw=document.getElementById('my-new-pw').value.trim();
-  if(!old)return toast('Enter current password or invite code');
-  if(!newPw||newPw.length<4)return toast('New password must be at least 4 characters');
-  // Verify old
-  const us=DB.users.get();
-  const u=us.find(u=>u.name===S.user.name&&u.department===S.user.department);
-  const expectedOld=(u&&u.password)?u.password:DB.invite.get();
-  if(old!==expectedOld)return toast('Current password incorrect / 当前密码错误');
-  // Save new
-  if(!u){us.push({name:S.user.name,department:S.user.department,password:newPw,
-    firstLogin:new Date().toISOString(),lastLogin:new Date().toISOString(),role:S.user.role});}
-  else{u.password=newPw;}
-  DB.users.set(us);
-  sbSyncOne('users',us); // 同步账号信息（密码明文仅存本地，不上云）
-  document.getElementById('my-old-pw').value='';
-  document.getElementById('my-new-pw').value='';
-  toast('Password updated / 密码已更新 — next login use new password');
-}
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hide');
@@ -3309,12 +3279,6 @@ function renderSettings(){
   }else{
     html+='<div class="card" style="background:rgba(37,99,235,.05);border:1px dashed #94a3b8;text-align:center;color:#64748b;font-size:13px"><div style="padding:6px">🔒 '+T('common_locked')+'</div></div>';
   }
-  html+='<div class="card"><div class="card-h">🔐 '+bi('修改个人密码','Change My Password')+'</div>'
-    +'<div style="font-size:12px;color:#64748b;margin-bottom:10px">'+bi('设置后登录时使用个人密码代替系统邀请码','After setting, use personal password instead of system invite code to login')+'</div>'
-    +'<div class="fld"><label>'+bi('当前密码/邀请码','Current Password / Invite Code')+'</label><input type="password" id="my-old-pw" placeholder="Current password or invite code"></div>'
-    +'<div class="fld"><label>'+bi('新密码','New Password')+' <small style="color:#94a3b8;font-weight:400">('+bi('至少4位','min 4 chars')+')</small></label><input type="password" id="my-new-pw" placeholder="New password"></div>'
-    +'<button class="bt bt-p bt-sm" onclick="changeMyPw()">'+T('common_save')+'</button></div>';
-
   html+='<div class="card"><div class="card-h">💾 '+T('backup')+' / Data Backup</div><div style="display:flex;gap:6px;flex-wrap:wrap">'
     +'<button class="bt bt-o bt-sm" onclick="expData()">📥 '+T('export_json')+'</button>'
     +(showAdmin?'<button class="bt bt-o bt-sm" onclick="document.getElementById(\'ifile\').click()">📤 '+T('import_json')+'</button><input type="file" id="ifile" accept=".json" onchange="impData(this)" style="display:none"><button class="bt bt-d bt-sm" onclick="wipe()">⚠ '+T('clear_data')+'</button>':'')
