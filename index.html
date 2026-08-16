@@ -2747,6 +2747,145 @@ function regMileage(did){
     +'<div class="fld"><label>⛽ '+bi('油耗 (L)','Fuel Used (L)')+'</label><input class="pair-input" type="number" id="mg-f" value="'+(dd.fuelL||'')+'" placeholder="0" min="0" step="0.1"></div>'
     +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveMileage(\''+did+'\')">✓ '+T('common_save')+'</button></div>',true);
 }
+
+// 管理员变更需求状态（Pool 待处理列表里）
+function openChangeStatus(rid){
+  const r=DB.requests.get().find(x=>x.id===rid);if(!r)return;
+  const opts=[
+    {v:'pending',cn:'待处理',en:'Pending',color:'#f5a623'},
+    {v:'dispatched',cn:'已派车',en:'Dispatched',color:'#34c77b'},
+    {v:'cancelled',cn:'已取消',en:'Cancelled',color:'#94a3b8'},
+    {v:'longterm',cn:'长期任务',en:'Long-term',color:'#7c5bf5'},
+  ];
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">🔄 '+bi('变更需求状态','Change Request Status')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:var(--bg-soft);border-radius:8px">'
+      +'<strong>'+esc(r.purpose||r.purposeEn||'—')+'</strong><br>'
+      +esc(dShow(r.department))+' · '+esc(r.submitter)+' · '+fmtL(r.date)+' '+r.timeSlot
+    +'</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      +opts.map(o=>'<button class="bt '+(r.status===o.v?'bt-p':'bt-o')+' bt-sm" style="padding:14px 10px;font-size:14px;justify-content:flex-start;text-align:left" onclick="doChangeStatus(\''+rid+'\',\''+o.v+'\')">'
+        +'<span style="font-size:18px;margin-right:8px">'+((r.status===o.v)?'✓':'')+'</span>'
+        +'<span style="font-weight:600">'+bi(o.cn,o.en)+'</span>'
+        +'</button>').join('')
+    +'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button></div>',true);
+}
+
+function doChangeStatus(rid,newStatus){
+  const rs=DB.requests.get();
+  const r=rs.find(x=>x.id===rid);if(!r)return;
+  const oldStatus=r.status;
+  r.status=newStatus;
+  // 若改为 dispatched：必须有 mergedToDispatchId，否则回退提示
+  if(newStatus==='dispatched'&&!r.mergedToDispatchId){
+    r.status=oldStatus;
+    closeModal();
+    return toast(L==='zh'?'已派车需关联到派车单，请在派车单处临时新增或合并派车':'Dispatched requires linked dispatch');
+  }
+  // 若改为 cancelled/pending：清理 mergedToDispatchId（不再属于任何派车单）
+  if(newStatus==='cancelled'||newStatus==='pending'){
+    if(r.mergedToDispatchId){
+      const dp=DB.dispatches.get();
+      const d=dp.find(x=>x.id===r.mergedToDispatchId);
+      if(d&&d.requestIds){d.requestIds=d.requestIds.filter(x=>x!==rid);DB.dispatches.set(dp);}
+    }
+    r.mergedToDispatchId=null;
+  }
+  DB.requests.set(rs);
+  sbSyncOne('requests',rs);
+  closeModal();
+  toast((L==='zh'?'✅ 状态已变更：':'✅ Status: ')+newStatus);
+  renderPage();
+}
+
+// 管理员从 Pool 新增需求（独立需求，进入 pending 池，可后续合并派车）
+function quickNewReq(){
+  // 复用 quickAddReq 弹窗 UI（去除派车单关联）
+  const depts=getDepts();
+  const _t=today();
+  showModal(
+    '<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:18px">➕ '+bi('新增需求','New Request')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border:1px solid rgba(91,138,245,0.2);border-radius:8px">'
+      +bi('提交后进入待处理池，可后续与其它需求合并派车','Saved into pending pool; can be merged into a dispatch later')+'</p>'
+    +'<div class="fld fld-required" style="display:flex;gap:10px"><div style="flex:1"><label><span class="step-badge">0</span> 🏢 '+bi('部门','Dept')+' *</label>'
+      +'<select id="qa-dept" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
+      +depts.map(d=>'<option value="'+d.cn+'" '+(d.cn===S.user.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+'</select></div>'
+      +'<div style="flex:1"><label><span class="step-badge">0</span> 👤 '+bi('提交人','Submitter')+' *</label>'
+      +'<input id="qa-name" value="'+esc(S.user.name)+'" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div></div>'
+    +'<div class="fld fld-required"><label><span class="step-badge">1</span> 📅 '+bi('日期','Date')+' *</label><input type="date" id="qa-date" value="'+_t+'" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+    +'<div class="fld fld-required"><label><span class="step-badge">2</span> ⏰ '+bi('出发 / 返程','Departure / Return')+' *</label>'
+      +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发','Dep')+'</label><input type="time" id="qa-dep" value="08:00" style="font-size:15px;padding:10px"></div>'
+      +'<div class="bi-c"><label style="font-size:12px">'+bi('返程','Ret')+'</label><input type="time" id="qa-ret" value="12:00" style="font-size:15px;padding:10px"></div></div></div>'
+    +'<div class="fld fld-required"><label><span class="step-badge">3</span> 👥 '+bi('人数','PAX')+' *</label>'
+      +'<div style="display:flex;align-items:center;gap:10px"><button type="button" onclick="qaAdjustPax(-1)" style="width:38px;height:38px;border-radius:8px;border:2px solid var(--bd);background:var(--bg-elevated);color:var(--tx);font-size:20px;font-weight:700;cursor:pointer">−</button>'
+      +'<span id="qa-pax-display" style="font-size:26px;font-weight:700;min-width:36px;text-align:center;color:var(--ac)">1</span>'
+      +'<button type="button" onclick="qaAdjustPax(1)" style="width:38px;height:38px;border-radius:8px;border:2px solid var(--ac);background:rgba(91,138,245,0.1);color:var(--ac);font-size:20px;font-weight:700;cursor:pointer">+</button>'
+      +'<input type="hidden" id="qa-pax" value="1"><button type="button" class="bt bt-o bt-sm" onclick="qaGenPaxFields()" style="margin-left:6px">👥 '+bi('生成乘车人员名单','Generate List')+'</button></div>'
+      +'<div id="qa-pax-list"></div></div>'
+    +'<div class="fld fld-required"><label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">4</span> 📍 '+bi('目的地','Dest')+' *</label>'
+      +'<div class="pair-row"><div class="pair-cell"><div class="pair-head">🇨🇳 '+bi('中文','CN')+' <span class="pair-status miss" id="qa-pair-st-dest-cn">❌</span></div>'
+        +'<input type="text" id="qa-dest" class="pair-input" list="qa-dest-list" placeholder="'+bi('如：万寿餐厅','e.g., Kamativi')+'" oninput="qaRefreshPairStatus(\'dest\')"></div>'
+      +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'dest\')">🔄</button>'
+      +'<div class="pair-cell"><div class="pair-head">🇬🇧 '+bi('English','EN')+' <span class="pair-status miss" id="qa-pair-st-dest-en">❌</span></div>'
+        +'<input type="text" id="qa-destEn" class="pair-input" placeholder="e.g., Vic Falls" oninput="qaRefreshPairStatus(\'dest\')"></div></div>'
+      +'<datalist id="qa-dest-list">'+COMMON_DESTS.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</datalist></div>'
+    +'<div class="fld fld-required"><label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">5</span> 📌 '+bi('事由','Purpose')+' *</label>'
+      +'<div class="pair-row"><div class="pair-cell"><div class="pair-head">🇨🇳 '+bi('中文','CN')+' <span class="pair-status miss" id="qa-pair-st-purpose-cn">❌</span></div>'
+        +'<textarea id="qa-purpose" class="pair-input" placeholder="'+bi('中文事由','CN purpose')+'" oninput="qaRefreshPairStatus(\'purpose\')"></textarea></div>'
+      +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'purpose\')">🔄</button>'
+      +'<div class="pair-cell"><div class="pair-head">🇬🇧 '+bi('English','EN')+' <span class="pair-status miss" id="qa-pair-st-purpose-en">❌</span></div>'
+        +'<textarea id="qa-purposeEn" class="pair-input" placeholder="EN purpose" oninput="qaRefreshPairStatus(\'purpose\')"></textarea></div></div></div>'
+    +'<div class="fld"><label>📎 '+bi('备注','Notes')+' <small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small></label>'
+      +'<div class="pair-row"><div class="pair-cell"><div class="pair-head">🇨🇳 <span class="pair-status" id="qa-pair-st-notes-cn">❌</span></div>'
+        +'<input type="text" id="qa-notes" class="pair-input" placeholder="'+bi('中文备注','CN notes')+'" oninput="qaRefreshPairStatus(\'notes\')"></div>'
+      +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'notes\')">🔄</button>'
+      +'<div class="pair-cell"><div class="pair-head">🇬🇧 <span class="pair-status" id="qa-pair-st-notes-en">❌</span></div>'
+        +'<input type="text" id="qa-notesEn" class="pair-input" placeholder="EN notes" oninput="qaRefreshPairStatus(\'notes\')"></div></div></div></div>'
+    +'<div class="fld fld-required"><label><span class="step-badge">6</span> 🖋️ '+bi('签字','Signature')+' *</label>'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(52,199,123,0.08);border:1px solid rgba(52,199,123,0.3);border-radius:8px">'
+      +'<span style="color:var(--gn);font-size:18px">✓</span>'
+      +'<span style="font-weight:600;color:var(--gn)">'+bi('管理员自动签字','Auto-signed by admin')+': '+esc(S.user.name)+'</span></div></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">'
+      +'<button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
+      +'<button class="bt bt-p bt-sm" onclick="doNewReq()">'+bi('保存到待处理池','Save to Pending')+'</button>'
+      +'</div>',true);
+  setTimeout(()=>{const el=document.getElementById('qa-dept');if(el)el.focus();},200);
+}
+
+function doNewReq(){
+  const dept=document.getElementById('qa-dept').value;
+  const name=document.getElementById('qa-name').value.trim();
+  const date=document.getElementById('qa-date').value;
+  const dep=document.getElementById('qa-dep').value;
+  const ret=document.getElementById('qa-ret').value;
+  const time=(dep&&ret)?(dep+'-'+ret):(dep||ret||'');
+  const pax=parseInt(document.getElementById('qa-pax').value)||1;
+  const paxNames=[];
+  for(let i=0;i<pax;i++){const el=document.getElementById('qapax-name-'+i);const v=el?el.value.trim():'';if(v)paxNames.push(v);}
+  const dest=document.getElementById('qa-dest').value.trim();
+  const destEn=document.getElementById('qa-destEn').value.trim();
+  const purpose=document.getElementById('qa-purpose').value.trim();
+  const purposeEn=document.getElementById('qa-purposeEn').value.trim();
+  const notes=document.getElementById('qa-notes').value.trim();
+  const notesEn=document.getElementById('qa-notesEn').value.trim();
+
+  if(!dept||!name)return toast(L==='zh'?'请填写部门和提交人':'Fill dept & submitter');
+  if(!date||!dep||!ret)return toast(L==='zh'?'请填写日期与出发/返程时间':'Fill date & time');
+  if(!dest||!destEn)return toast(L==='zh'?'请填写中英目的地':'Fill CN+EN destination');
+  if(!purpose||!purposeEn)return toast(L==='zh'?'请填写中英事由':'Fill CN+EN purpose');
+
+  const rs=DB.requests.get();
+  rs.push({id:uid(),type:'normal',date,timeSlot:time,passengers:pax,paxNames,
+    purpose,purposeEn,destination:dest,destinationEn:destEn,
+    notes,notesEn,approved:'yes',signature:S.user.name,
+    department:dept,submitter:name,
+    status:'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
+  DB.requests.set(rs);
+  sbSyncOne('requests',rs);
+  closeModal();
+  toast(L==='zh'?'✅ 已新增到待处理池':'✅ Added to pending pool');
+  renderPage();
+}
 function saveMileage(did){
   const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
   dd.startKm=parseInt(document.getElementById('mg-s').value)||null;
@@ -3078,12 +3217,21 @@ function renderPool(){
   // Pending list (selectable, 可折叠)
   if(pending.length){
     html+='<div class="pool-section" id="pool-pending">';
-    html+='<div class="sec-title" id="pool-pending-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')</div>';
+    html+='<div class="sec-title" id="pool-pending-title">⏳ '+bi('待处理','Pending')+' ('+pending.length+')'
+      +(isAdmin()?'<div style="float:right;display:flex;gap:6px"><button class="bt bt-p bt-sm" onclick="quickNewReq()">➕ '+bi('新增需求','New Request')+'</button><button class="bt bt-o bt-sm" onclick="togglePoolSection(\'pending\')">'+bi('折叠','Collapse')+'</button></div>':'')
+      +'</div>';
     pending.forEach(r=>{
       const apv=r.approved?('<span class="tag '+(r.approved==='yes'?'tg-d':'tg-r')+'" style="margin-left:4px">'+(r.approved==='yes'?'✓':'✗')+'</span>'):'';
-      html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div><div class="rr-b"><div class="rr-t">'
-        +esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
-        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+esc(dShow(r.department))+'</span><span>👤 '+esc(r.submitter)+'</span></div></div></div>';
+      html+='<div class="rr" id="rr-'+r.id+'" onclick="togR(\''+r.id+'\')"><div class="rr-c"></div>'
+        +'<div class="rr-b"><div class="rr-t">'
+          +esc(L==='zh'?r.purpose:(r.purposeEn||r.purpose))+' '+apv+'</div>'
+        +(isAdmin()?'<div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px" onclick="event.stopPropagation()">'
+            +'<button class="bt bt-o bt-sm" onclick="openEditReq(\''+r.id+'\')" title="'+bi('编辑','Edit')+'">✏️</button>'
+            +'<button class="bt bt-o bt-sm" onclick="openChangeStatus(\''+r.id+'\')" title="'+bi('状态','Status')+'">🔄</button>'
+            +'<button class="bt bt-d bt-sm" onclick="delReq(\''+r.id+'\')" title="'+bi('删除','Delete')+'">🗑</button>'
+          +'</div>':'')
+        +'</div>'
+        +'<div class="rr-m"><span>📅 '+fmtL(r.date)+'</span><span>⏰ '+r.timeSlot+'</span><span>👥 '+r.passengers+'</span><span>'+esc(dShow(r.department))+'</span><span>👤 '+esc(r.submitter)+'</span></div></div>';
     });
     html+='<div style="margin:12px 0;display:flex;gap:6px"><button class="bt bt-p" id="bt-disp" onclick="showDisp()" disabled>🚗 '+T('pool_merge')+'</button><button class="bt bt-o bt-sm" onclick="selAll()">Select All</button></div>';
     html+='</div>';
