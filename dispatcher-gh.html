@@ -2546,41 +2546,183 @@ function quickAddReq(did){
   const dp=DB.dispatches.get().find(x=>x.id===did);
   if(!dp)return toast(L==='zh'?'派车单不存在':'Dispatch not found');
   const depts=getDepts();
+  const defaultTime=(dp.departureTime||'08:00').slice(0,5);
   showModal(
-    '<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">➕ '+bi('临时新增需求','Quick Add Request')+'</h3>'
-    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:12px">'+bi('关联到','Linked to')+': <strong>'+fmtL(dp.date)+'</strong> · '+esc(dp.vehicle)+' · '+esc(dp.driver)+'</p>'
-    +'<div class="fld"><label>'+bi('部门','Department')+' *</label>'
-      +'<select id="qa-dept" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px">'
+    '<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:18px">➕ '+bi('临时新增需求','Quick Add Request')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border:1px solid rgba(91,138,245,0.2);border-radius:8px">'
+      +bi('关联到','Linked to')+': <strong>'+fmtL(dp.date)+'</strong> · '+esc(dp.vehicle)+' · '+esc(dp.driver)+'</p>'
+
+    // Step 0: 部门 + 提交人
+    +'<div class="fld fld-required" style="display:flex;gap:10px"><div style="flex:1"><label><span class="step-badge">0</span> 🏢 '+bi('部门','Department')+' <span style="color:#dc2626">*</span></label>'
+      +'<select id="qa-dept" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)">'
       +depts.map(d=>'<option value="'+d.cn+'" '+(d.cn===S.user.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')
       +'</select></div>'
-    +'<div style="display:flex;gap:8px"><div class="fld" style="flex:2"><label>'+bi('提交人','Submitter')+' *</label><input id="qa-name" value="'+esc(S.user.name)+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px"></div>'
-    +'<div class="fld" style="flex:1"><label>'+bi('人数','PAX')+' *</label><input type="number" id="qa-pax" value="1" min="1" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px"></div></div>'
-    +'<div class="fld"><label>'+bi('目的地（中文）','Destination (CN)')+' *</label><input id="qa-dest" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="如：万寿餐厅"></div>'
-    +'<div class="fld"><label>'+bi('事由（中文）','Purpose (CN)')+' *</label><input id="qa-purpose" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="如：接待客户"></div>'
-    +'<div class="fld"><label>'+bi('事由（英文）','Purpose (EN)')+'</label><input id="qa-purposeEn" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="e.g. Client reception"></div>'
-    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'
+      +'<div style="flex:1"><label><span class="step-badge">0</span> 👤 '+bi('提交人','Submitter')+' <span style="color:#dc2626">*</span></label>'
+      +'<input id="qa-name" value="'+esc(S.user.name)+'" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div></div>'
+
+    // Step 1: 日期
+    +'<div class="fld fld-required"><label><span class="step-badge">1</span> 📅 '+bi('日期','Date')+' <span style="color:#dc2626">*</span> <small style="font-weight:400;color:var(--tx-dim);margin-left:4px">('+bi('默认派车单日期，可改','default = dispatch date, editable')+')</small></label>'
+      +'<input type="date" id="qa-date" value="'+esc(dp.date)+'" style="width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+
+    // Step 2: 出发 / 返程
+    +'<div class="fld fld-required"><label><span class="step-badge">2</span> ⏰ '+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></label>'
+      +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
+      +'<input type="time" id="qa-dep" value="'+esc(defaultTime)+'" style="font-size:15px;padding:10px"></div>'
+      +'<div class="bi-c"><label style="font-size:12px">'+bi('返程 Return','Return')+'</label>'
+      +'<input type="time" id="qa-ret" value="12:00" style="font-size:15px;padding:10px"></div></div></div>'
+
+    // Step 3: 人数 + 乘车人员
+    +'<div class="fld fld-required"><label><span class="step-badge">3</span> 👥 '+bi('乘车人数','Passengers')+' <span style="color:#dc2626">*</span></label>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<button type="button" onclick="qaAdjustPax(-1)" class="pax-btn" style="width:38px;height:38px;border-radius:8px;border:2px solid var(--bd);background:var(--bg-elevated);color:var(--tx);font-size:20px;font-weight:700;cursor:pointer;line-height:1;user-select:none">−</button>'
+      +'<span id="qa-pax-display" style="font-size:26px;font-weight:700;min-width:36px;text-align:center;color:var(--ac);line-height:1">1</span>'
+      +'<button type="button" onclick="qaAdjustPax(1)" class="pax-btn" style="width:38px;height:38px;border-radius:8px;border:2px solid var(--ac);background:rgba(91,138,245,0.1);color:var(--ac);font-size:20px;font-weight:700;cursor:pointer;line-height:1;user-select:none">+</button>'
+      +'<input type="hidden" id="qa-pax" value="1">'
+      +'<button type="button" class="bt bt-o bt-sm" onclick="qaGenPaxFields()" style="margin-left:6px">👥 '+bi('生成乘车人员名单','Generate Passenger List')+'</button>'
+      +'</div><div id="qa-pax-list"></div></div>'
+
+    // Step 4: 目的地 CN+EN
+    +'<div class="fld fld-required"><label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">4</span> 📍 '+bi('外出地点','Destination')+' <span style="color:#dc2626">*</span> <span style="font-size:11px;color:var(--tx-dim);font-weight:400">'+bi('中英双语必填','CN+EN required')+'</span></label>'
+      +'<div class="pair-row">'
+        +'<div class="pair-cell"><div class="pair-head">🇨🇳 '+bi('中文','CN')+' <span class="pair-status miss" id="qa-pair-st-dest-cn">❌</span></div>'
+          +'<input type="text" id="qa-dest" class="pair-input" list="qa-dest-list" placeholder="'+bi('如：万寿餐厅','e.g., Kamativi → Vic Falls')+'" oninput="qaRefreshPairStatus(\'dest\')"></div>'
+        +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'dest\')" title="'+bi('一键互译','Translate')+'">🔄</button>'
+        +'<div class="pair-cell"><div class="pair-head">🇬🇧 '+bi('English','EN')+' <span class="pair-status miss" id="qa-pair-st-dest-en">❌</span></div>'
+          +'<input type="text" id="qa-destEn" class="pair-input" placeholder="'+bi('e.g., Kamativi → Vic Falls','e.g., Kamativi → Vic Falls')+'" oninput="qaRefreshPairStatus(\'dest\')"></div>'
+      +'</div>'
+      +'<datalist id="qa-dest-list">'+COMMON_DESTS.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</datalist></div>'
+
+    // Step 5: 事由 CN+EN + 常用短语
+    +'<div class="fld fld-required"><label style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span class="step-badge">5</span> 📌 '+bi('外出事由','Purpose')+' <span style="color:#dc2626">*</span> <span style="font-size:11px;color:var(--tx-dim);font-weight:400">'+bi('中英双语必填','CN+EN required')+'</span></label>'
+      +'<div class="pair-row">'
+        +'<div class="pair-cell"><div class="pair-head">🇨🇳 '+bi('中文','CN')+' <span class="pair-status miss" id="qa-pair-st-purpose-cn">❌</span></div>'
+          +'<textarea id="qa-purpose" class="pair-input" placeholder="'+bi('中文事由','Describe in CN')+'" oninput="qaRefreshPairStatus(\'purpose\')"></textarea></div>'
+        +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'purpose\')" title="'+bi('一键互译','Translate')+'">🔄</button>'
+        +'<div class="pair-cell"><div class="pair-head">🇬🇧 '+bi('English','EN')+' <span class="pair-status miss" id="qa-pair-st-purpose-en">❌</span></div>'
+          +'<textarea id="qa-purposeEn" class="pair-input" placeholder="'+bi('Describe in EN','Describe in EN')+'" oninput="qaRefreshPairStatus(\'purpose\')"></textarea></div>'
+      +'</div>'
+      +'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap"><span style="font-size:11px;color:#64748b;align-self:center">📚 '+bi('常用短语','Phrases')+':</span>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'cn\',\'机场接送\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">机场接送</button>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'cn\',\'矿区巡视\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">矿区巡视</button>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'cn\',\'接待客户\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">接待客户</button>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'en\',\'Airport pickup\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Airport pickup</button>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'en\',\'Site inspection\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Site inspection</button>'
+      +'<button type="button" onclick="qaAddPhrase(\'purpose\',\'en\',\'Business meeting\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Business meeting</button>'
+      +'</div></div>'
+
+    // 备注 CN+EN
+    +'<div class="fld"><label>📎 '+bi('备注','Notes')+' <small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small><br><small style="font-weight:400;color:#dc2626">'
+      +bi('未在备注重明确标注外出人员及其职级的，默认费用由申请部门自行承担。','Passengers and ranks not noted here: costs default to requesting dept.')+'</small></label>'
+      +'<div class="pair-row">'
+        +'<div class="pair-cell"><div class="pair-head">🇨🇳 '+bi('中文','CN')+' <span class="pair-status" id="qa-pair-st-notes-cn">❌</span></div>'
+          +'<input type="text" id="qa-notes" class="pair-input" placeholder="'+bi('中文备注','Chinese notes')+'" oninput="qaRefreshPairStatus(\'notes\')"></div>'
+        +'<button type="button" class="pair-translate" onclick="qaDoTranslatePair(\'notes\')" title="'+bi('一键互译','Translate')+'">🔄</button>'
+        +'<div class="pair-cell"><div class="pair-head">🇬🇧 '+bi('English','EN')+' <span class="pair-status" id="qa-pair-st-notes-en">❌</span></div>'
+          +'<input type="text" id="qa-notesEn" class="pair-input" placeholder="'+bi('English notes','English notes')+'" oninput="qaRefreshPairStatus(\'notes\')"></div>'
+      +'</div></div>'
+
+    // Step 6: 签字（管理员特权自动签字）
+    +'<div class="fld fld-required"><label><span class="step-badge">6</span> 🖋️ '+bi('签字','Signature')+' <span style="color:#dc2626">*</span></label>'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(52,199,123,0.08);border:1px solid rgba(52,199,123,0.3);border-radius:8px">'
+      +'<span style="color:var(--gn);font-size:18px">✓</span>'
+      +'<span style="font-weight:600;color:var(--gn)">'+bi('管理员自动签字','Auto-signed by admin')+': '+esc(S.user.name)+'</span>'
+      +'</div></div>'
+
+    // 按钮
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">'
       +'<button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
-      +'<button class="bt bt-p bt-sm" onclick="doQuickAdd(\''+did+'\')">'+T('common_save')+'</button>'
+      +'<button class="bt bt-p bt-sm" onclick="doQuickAdd(\''+did+'\')">'+bi('保存并加入派车单','Save & Attach')+'</button>'
       +'</div>',true);
-  setTimeout(()=>{const el=document.getElementById('qa-dest');if(el)el.focus();},200);
+  setTimeout(()=>{const el=document.getElementById('qa-dept');if(el)el.focus();},200);
+}
+
+function qaAdjustPax(delta){
+  const el=document.getElementById('qa-pax');
+  const dis=document.getElementById('qa-pax-display');
+  let v=parseInt(el.value)||1;
+  v=Math.max(1,Math.min(50,v+delta));
+  el.value=v;dis.textContent=v;
+  qaGenPaxFields();
+}
+
+function qaGenPaxFields(){
+  const pax=parseInt(document.getElementById('qa-pax').value)||1;
+  let html='<div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">';
+  for(let i=0;i<pax;i++){
+    const prev=document.getElementById('qapax-name-'+i);
+    const val=prev?prev.value:'';
+    html+='<input type="text" id="qapax-name-'+i+'" value="'+esc(val)+'" placeholder="'+bi('乘客','Pax')+' '+(i+1)+'" style="padding:7px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bg-soft);color:var(--tx);font-size:13px">';
+  }
+  html+='</div>';
+  const list=document.getElementById('qa-pax-list');
+  if(list)list.innerHTML=html;
+}
+
+function qaRefreshPairStatus(field){
+  ['cn','en'].forEach(lang=>{
+    const el=document.getElementById('qa-pair-st-'+field+'-'+lang);
+    if(!el)return;
+    const target=document.getElementById('qa-'+field+(lang==='en'?'En':''));
+    const hasValue=target&&target.value.trim();
+    el.className='pair-status '+(hasValue?'ok':'miss');
+    el.textContent=hasValue?'\u2705':'\u274c';
+  });
+}
+
+function qaAddPhrase(field,lang,text){
+  const el=document.getElementById('qa-'+field+(lang==='en'?'En':''));
+  if(!el)return;
+  el.value=el.value?(el.value+(el.value.endsWith('，')||el.value.endsWith(',')?'':'；')+text):text;
+  qaRefreshPairStatus(field);
+}
+
+function qaDoTranslatePair(field){
+  const cn=document.getElementById('qa-'+field);
+  const en=document.getElementById('qa-'+field+'En');
+  if(!cn||!en)return;
+  if(cn.value.trim()&&!en.value.trim()){
+    en.value='['+bi('请手动翻译','please translate')+': '+cn.value.trim().slice(0,40)+']';
+    qaRefreshPairStatus(field);
+    toast(bi('⚠ 请手动补充英文（翻译 API 未配置）','⚠ Please add English manually (translate API not configured)'));
+  }else if(!cn.value.trim()&&en.value.trim()){
+    cn.value='['+bi('请手动翻译','please translate')+': '+en.value.trim().slice(0,40)+']';
+    qaRefreshPairStatus(field);
+    toast(bi('⚠ 请手动补充中文','⚠ Please add Chinese manually'));
+  }else{
+    toast(bi('请先填写其中一种语言','Fill one language first'));
+  }
 }
 
 function doQuickAdd(did){
   const dept=document.getElementById('qa-dept').value;
   const name=document.getElementById('qa-name').value.trim();
+  const date=document.getElementById('qa-date').value;
+  const dep=document.getElementById('qa-dep').value;
+  const ret=document.getElementById('qa-ret').value;
+  const time=(dep&&ret)?(dep+'-'+ret):(dep||ret||'');
   const pax=parseInt(document.getElementById('qa-pax').value)||1;
+  const paxNames=[];
+  for(let i=0;i<pax;i++){const el=document.getElementById('qapax-name-'+i);const v=el?el.value.trim():'';if(v)paxNames.push(v);}
   const dest=document.getElementById('qa-dest').value.trim();
+  const destEn=document.getElementById('qa-destEn').value.trim();
   const purpose=document.getElementById('qa-purpose').value.trim();
   const purposeEn=document.getElementById('qa-purposeEn').value.trim();
-  if(!dept||!name)return toast(L==='zh'?'请填写部门和提交人':'Please fill dept and submitter');
-  if(!dest||!purpose)return toast(L==='zh'?'请填写目的地和事由':'Please fill destination and purpose');
+  const notes=document.getElementById('qa-notes').value.trim();
+  const notesEn=document.getElementById('qa-notesEn').value.trim();
+
+  if(!dept||!name)return toast(L==='zh'?'请填写部门和提交人':'Fill dept & submitter');
+  if(!date||!dep||!ret)return toast(L==='zh'?'请填写日期与出发/返程时间':'Fill date & time');
+  if(!dest||!destEn)return toast(L==='zh'?'请填写中英目的地':'Fill CN+EN destination');
+  if(!purpose||!purposeEn)return toast(L==='zh'?'请填写中英事由':'Fill CN+EN purpose');
+
   const dp=DB.dispatches.get();
   const d=dp.find(x=>x.id===did);
   if(!d)return toast(L==='zh'?'派车单不存在':'Dispatch not found');
+
   const rs=DB.requests.get();
-  const req={id:uid(),type:'adhoc',date:d.date,timeSlot:d.departureTime||'',passengers:pax,paxNames:name?[name]:[],
-    purpose,purposeEn,destination:dest,destinationEn:'',
-    notes:'',notesEn:'',approved:'yes',signature:S.user.name,
+  const req={id:uid(),type:'adhoc',date,timeSlot:time,passengers:pax,paxNames,
+    purpose,purposeEn,destination:dest,destinationEn:destEn,
+    notes,notesEn,approved:'yes',signature:S.user.name,
     department:dept,submitter:name,
     status:'dispatched',mergedToDispatchId:did,createdAt:new Date().toISOString()};
   rs.push(req);
