@@ -61,7 +61,7 @@ create table if not exists requests (
   "createdAt" text default ''
 );
 
--- 6. 派车表（含 P0 里程 / P1 DVIR / 费用台账列）
+-- 6. 派车表（含 P0 里程 / P1 DVIR / 费用台账列 / 司机确认列）
 create table if not exists dispatches (
   id text primary key,
   date text default '',
@@ -81,7 +81,10 @@ create table if not exists dispatches (
   "dvirDate" text default '',
   "costFuel" numeric,
   "costRepair" numeric,
-  "costToll" numeric
+  "costToll" numeric,
+  "driverSig" text default '',
+  "driverConfirmed" boolean default false,
+  "driverSigDate" text default ''
 );
 
 -- ============================================================
@@ -99,6 +102,9 @@ alter table dispatches add column if not exists "dvirDate" text default '';
 alter table dispatches add column if not exists "costFuel" numeric;
 alter table dispatches add column if not exists "costRepair" numeric;
 alter table dispatches add column if not exists "costToll" numeric;
+alter table dispatches add column if not exists "driverSig" text default '';
+alter table dispatches add column if not exists "driverConfirmed" boolean default false;
+alter table dispatches add column if not exists "driverSigDate" text default '';
 
 -- ============================================================
 -- 启用 RLS 并授权 anon 角色读写（内部工具靠邀请码保护）

@@ -437,6 +437,7 @@ textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
     <input type="text" id="ln" placeholder="Your name"></div>
 
   <button class="bt bt-p bt-b" onclick="doLogin()">进入系统 / ENTER</button>
+  <button class="bt bt-o bt-b" onclick="closeLogin()" style="margin-top:8px">✕ 返回游客模式 / Back as Guest</button>
 
   <div style="text-align:center;margin-top:12px"><div class="ls" id="ls-login"></div></div>
 </div>
@@ -447,7 +448,7 @@ textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
   <div class="mob-top">
     <h2 id="sysname-mob"></h2>
     <div style="display:flex;align-items:center;gap:10px"><div id="sync-icon-mob" onclick="manualSync()" title="云同步" style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,rgba(91,138,245,0.22),rgba(124,91,245,0.22));border:1px solid rgba(91,138,245,0.35);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">☁️</div><span class="ti" id="mt-info"></span>
-      <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" onclick="logout()">✕</button></div>
+      <div class="ls ls-dark" id="ls-mt"></div><button class="bt-exit-mob" id="mob-login-btn" onclick="showLogin()" style="display:none" title="登录 / Login">🔑</button><button class="bt-exit-mob" onclick="logout()">✕</button></div>
   </div>
   <div class="main" id="main-mob"></div>
   <nav class="mob-nav" id="mn"></nav>
@@ -496,7 +497,7 @@ const loadL=()=>{const v=localStorage.getItem('kmc2_lang');if(v==='en'||v==='zh'
 
 const T=key=>{
   const m={
-    zh:{nav_dashboard:'仪表盘',nav_submit:'提交需求',nav_dispatch:'派车单',nav_pool:'需求池',nav_records:'台账',nav_daily:'每日汇总',nav_settings:'设置',
+    zh:{nav_dashboard:'仪表盘',nav_submit:'提交需求',nav_dispatch:'派车单',nav_driver:'司机工作台',nav_pool:'需求池',nav_records:'台账',nav_daily:'每日汇总',nav_settings:'设置',
       dept:'后勤部',admin:'石秋迅',
       submit_title:'提交用车需求',submit_date:'用车日期',submit_time:'时间段',submit_pax:'人数',
       submit_purposeCn:'中文外出事由',submit_purposeEn:'英文外出事由 (English)',
@@ -526,7 +527,7 @@ const T=key=>{
       purpose:'事由',dept:'部门',date:'日期',time:'时间',
       back:'返回',next:'下一步',add:'新增',save:'保存',delete:'删除',
       cn_en:'中英'},
-    en:{nav_dashboard:'Dashboard',nav_submit:'Submit Request',nav_dispatch:'Dispatch Plan',nav_pool:'Request Pool',nav_records:'Records',nav_daily:'Daily Summary',nav_settings:'Settings',
+    en:{nav_dashboard:'Dashboard',nav_submit:'Submit Request',nav_dispatch:'Dispatch Plan',nav_driver:'Driver',nav_pool:'Request Pool',nav_records:'Records',nav_daily:'Daily Summary',nav_settings:'Settings',
       dept:'Logistics',admin:'Shi Qiuxun',
       submit_title:'Submit Vehicle Request',submit_date:'Date',submit_time:'Time Slot',submit_pax:'Passengers',
       submit_purposeCn:'Purpose (Chinese)',submit_purposeEn:'Purpose (English)',
@@ -655,7 +656,8 @@ const _mapDp=x=>({id:x.id,date:x.date||'',vehicle:x.vehicle||'',driver:x.driver|
   signature:x.signature||'',requestIds:x.requestIds||[],createdAt:x.createdAt||'',
   startKm:x.startKm!=null?x.startKm:null,endKm:x.endKm!=null?x.endKm:null,fuelL:x.fuelL!=null?x.fuelL:null,
   dvir:x.dvir||[],dvirDate:x.dvirDate||'',costFuel:x.costFuel!=null?x.costFuel:null,
-  costRepair:x.costRepair!=null?x.costRepair:null,costToll:x.costToll!=null?x.costToll:null});
+  costRepair:x.costRepair!=null?x.costRepair:null,costToll:x.costToll!=null?x.costToll:null,
+  driverSig:x.driverSig||'',driverConfirmed:!!x.driverConfirmed,driverSigDate:x.driverSigDate||''});
 
 // 读全部数据（Supabase -> 本地结构）
 async function repoRead(){
@@ -833,6 +835,7 @@ const DB={
   vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),showDispatchActions:LS('showDispatchActions',{onGet:v=>v!==undefined?v:true}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
+  guest:LS('guest'),driverSel:LS('driverSel'),
   wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
   init(){
     if(!this.vehicles.get())this.vehicles.set([
@@ -849,7 +852,8 @@ const DB={
     if(!this.requests.get())this.requests.set([]);
     if(!this.dispatches.get())this.dispatches.set([]);
     if(!this.users.get())this.users.set([]);
-    if(!this.cutoff.get())this.cutoff.set('19:00');
+    if(this.cutoff.get()==='19:00')this.cutoff.set('17:00'); // 需求②：旧默认 19:00 迁移到 17:00
+    if(!this.cutoff.get())this.cutoff.set('17:00');
     if(!this.imported.get()){importHistData();this.imported.set(true);}
     // Always merge org users
     importOrgUsers();
@@ -935,8 +939,21 @@ const DEPTS_CN=getDepts().map(x=>x.cn);
 const DCN2EN=Object.fromEntries(getDepts().map(x=>[x.cn,x.en]));
 
 // Cutoff time helper
-function getCutoff(){return DB.cutoff.get()||'19:00';}
+function getCutoff(){return DB.cutoff.get()||'17:00';}
 function setCutoff(t){DB.cutoff.set(t);}
+// 截止时间解析为"当天分钟数"（容错 '17:00' 或 '17' 两种格式）
+function cutoffMinutes(){
+  const raw=(getCutoff()||'17:00').toString().trim();
+  const parts=raw.split(':');
+  const h=parseInt(parts[0],10);
+  const m=parts.length>1?parseInt(parts[1],10):0;
+  return (isNaN(h)?17:h)*60+(isNaN(m)?0:m);
+}
+// 当前时间是否已过今日截止（精确到分钟）
+function afterCutoff(){
+  const now=new Date();
+  return now.getHours()*60+now.getMinutes()>=cutoffMinutes();
+}
 
 function importHistData(){
   const H=[
@@ -1554,6 +1571,7 @@ function importOrgUsers(){
 }
 
 const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),dispatchSelIds:new Set(),sigData:'',tapCount:0,unlockUntil:0,
+  driver:null,drvDate:'',
   fFrom:'',fTo:'',fDepts:[],fVeh:'',fStatus:'all',fSubmitter:'',fPaxMin:0,fPaxMax:99,fKeywordPool:'',pLang:'cn',nLang:'cn',dLang:'cn',
   recKeyword:'',recDriver:'',recSort:'date-desc',recLimit:30,dispDate:'',dailyFrom:'',dailyTo:'',dailyDepts:[]};
 
@@ -1642,6 +1660,13 @@ function lockAdmin(){
 renderLT();
 
 // ==================== LOGIN ====================
+// 开放平台模式：未登录游客直接进入提交页；此处登录仅用于管理员/身份切换
+function showLogin(){const sc=document.getElementById('login-screen');if(sc)sc.classList.remove('hide');}
+function closeLogin(){const sc=document.getElementById('login-screen');if(sc)sc.classList.add('hide');}
+// 当前有效身份：已登录用 S.user，游客用本机记住的提交人（开放平台免登录）
+function curName(){const u=S.user;if(u&&u.name)return u.name;const g=DB.guest.get();return(g&&g.name)||'';}
+function curDept(){const u=S.user;if(u&&u.name)return u.department;const g=DB.guest.get();return(g&&g.dept)||'';}
+function rememberGuest(name,dept){if(name||dept)DB.guest.set({name:name||'',dept:dept||''});}
 function doLogin(){
   try{
   const dept=document.getElementById('ld').value;
@@ -1670,32 +1695,28 @@ function doLogin(){
   }
 }
 
-function logout(){if(confirm('Logout?')){DB.user.set(null);S.user=null;
-  let _lastLogin=null;try{_lastLogin=JSON.parse(localStorage.getItem('kmc2_last_login')||'null');}catch(e){}
-  // Build login screen content
-  document.getElementById('login-screen').innerHTML=
-    '<div class="login-box">'+
-    '<div style="font-size:42px;font-weight:900;letter-spacing:-1px;color:#0f172a;margin-bottom:4px;text-align:center">KMC</div>'+
-    '<div style="font-size:13px;color:#64748b;text-align:center;margin-bottom:24px;font-weight:500">'+(L==='zh'?'车辆调度系统':'Vehicle Dispatch System')+'</div>'+
-    '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'部门 / Department':'Department')+'</label>'+
-    '<select id="ld" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none">'+
-    '<option value="">'+(L==='zh'?'请选择 / Select':'Select')+'</option>'+
-    getDepts().map(d=>'<option value="'+d.cn+'" '+((_lastLogin&&_lastLogin.dept===d.cn)?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')+
-    '</select></div>'+
-    '<div style="text-align:left;margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.3px;display:block;margin-bottom:5px">'+(L==='zh'?'姓名 / Name':'Name')+'</label>'+
-    '<input type="text" id="ln" value="'+((_lastLogin&&_lastLogin.name)||'')+'" placeholder="'+(L==='zh'?'您的姓名':'Your name')+'" style="width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;background:#fff;color:#0f172a;outline:none"></div>'+
-    '<button class="bt bt-p bt-b" onclick="doLogin()">'+(L==='zh'?'进入系统 / ENTER':'ENTER / Enter')+'</button>'+
-    '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px">'+(L==='zh'?'选择部门并输入姓名即可登录':'Select department & enter your name')+'</div>'+
-    '</div>';
-  document.getElementById('login-screen').classList.remove('hide');
-  document.getElementById('app-mob').classList.add('hide');
-  document.getElementById('app-pc').classList.add('hide');}}
+function logout(){
+  if(!confirm('Logout?'))return;
+  DB.user.set(null);
+  S.user={name:'',department:'',role:'guest'};
+  closeLogin();
+  document.getElementById('app-mob').classList.remove('hide');
+  document.getElementById('app-pc').classList.remove('hide');
+  const ml=document.getElementById('mob-login-btn');if(ml)ml.style.display='inline-block';
+  document.getElementById('mt-info').textContent=bi('游客模式 · 开放提交','Guest · Open submit');
+  renderUserInfo();
+  renderNav();
+  S.tab='submit';switchTab('submit');
+  toast(bi('已退出登录，回到游客模式','Logged out as guest'));
+}
 
 function showApp(){
   document.getElementById('login-screen').classList.add('hide');
   document.getElementById('app-mob').classList.remove('hide');
   document.getElementById('app-pc').classList.remove('hide');
-  document.getElementById('mt-info').textContent=S.user.department+' · '+S.user.name;
+  const isGuest=!(S.user&&S.user.name);
+  document.getElementById('mt-info').textContent=isGuest?bi('游客模式 · 开放提交','Guest · Open submit'):S.user.department+' · '+S.user.name;
+  const ml=document.getElementById('mob-login-btn');if(ml)ml.style.display=isGuest?'inline-block':'none';
   renderUserInfo();
   renderNav();
   S.tab=(S.user&&S.user.role==='admin')?'dashboard':'submit';switchTab(S.tab);
@@ -1704,19 +1725,25 @@ function showApp(){
 function renderUserInfo(){
   const unlocked=S.unlockUntil>Date.now();
   const showAdmin=isAdmin()||unlocked;
+  const isGuest=!(S.user&&S.user.name);
   const isOwner=S.user&&S.user.name==='石秋迅';
-  const avatar=(S.user.name||'?').slice(0,1);
-  document.getElementById('pcuinfo').innerHTML=
-    '<div class="pcu-row">'
+  const avatar=(S.user&&S.user.name?S.user.name:'?').slice(0,1);
+  let html='<div class="pcu-row">'
     +'<div class="pcu-avatar">'+avatar+'</div>'
     +'<div class="pcu-meta">'
-      +'<div class="pcu-name">'+esc(S.user.name)+'</div>'
-      +'<div class="pcu-dept">'+esc(dShow(S.user.department))+'</div>'
-    +'</div></div>'
-    +(showAdmin
+      +'<div class="pcu-name">'+esc(isGuest?bi('游客','Guest'):S.user.name)+'</div>'
+      +'<div class="pcu-dept">'+esc(isGuest?bi('开放平台 · 无需登录','Open platform · no login'):dShow(S.user.department))+'</div>'
+    +'</div></div>';
+  if(isGuest){
+    html+='<div class="pcu-locked">👤 '+bi('游客模式','Guest mode')+'</div>'
+      +'<div style="margin-top:8px"><button class="bt bt-o bt-sm" onclick="showLogin()">🔑 '+bi('登录 / 切换身份','Login')+'</button></div>';
+  }else{
+    html+=(showAdmin
       ?'<div class="pcu-badge">'+(isAdmin()?'ADMIN':'UNLOCKED')+'</div>'
-      :'<div class="pcu-locked">🔒 '+T('common_locked')+'</div>')
-    +(isOwner?'<div style="font-size:10px;color:#64748b;margin-top:4px">💡 '+T('common_unlockHint')+'</div>':'');
+      :'<div class="pcu-locked">🔒 '+T('common_locked')+'</div>');
+  }
+  html+=(isOwner?'<div style="font-size:10px;color:#64748b;margin-top:4px">💡 '+T('common_unlockHint')+'</div>':'');
+  document.getElementById('pcuinfo').innerHTML=html;
 }
 
 function renderNav(){
@@ -1727,6 +1754,8 @@ function renderNav(){
       ni:'#2563eb',ni2:'#3b82f6',ng:'rgba(37,99,235,.25)'},
     {id:'dispatch',label:T('nav_dispatch'),ico:'<rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/><path d="M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
       ni:'#0ea5e9',ni2:'#06b6d4',ng:'rgba(14,165,233,.25)'},
+    {id:'driver',label:T('nav_driver'),ico:'<path d="M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11M5 11h14a2 2 0 012 2v4a1 1 0 01-1 1h-1a2 2 0 01-4 0H9a2 2 0 01-4 0H4a1 1 0 01-1-1v-4a2 2 0 012-2z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="7.5" cy="15" r="1.2" fill="currentColor"/><circle cx="16.5" cy="15" r="1.2" fill="currentColor"/>',
+      ni:'#14b8a6',ni2:'#2dd4bf',ng:'rgba(20,184,166,.25)'},
   ];
   if(isAdmin())navs.push({id:'pool',label:T('nav_pool'),
       ico:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 14l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -1773,6 +1802,7 @@ function renderPage(){
     switch(S.tab){
       case'dashboard':html=renderDashboard();break;
       case'submit':html=renderSubmit();break;
+      case'driver':html=renderDriver();break;
       case'dispatch':html=renderDispatch();break;
       case'pool':html=renderPool();break;
       case'daily':html=renderDaily();break;
@@ -2024,9 +2054,31 @@ function renderSubmit(){
 
   // Rules
   html+='<div class="card"><div class="card-h">📝 '+T('submit_title')+'</div>';
+  // 提交人信息（开放平台：游客直接选部门+姓名；已登录用户自动带出，锁定身份禁止编辑）
+  const _curName=curName(),_curDept=curDept();
+  const _loggedIn=!!(S.user&&S.user.name);
+  html+='<div class="fld fld-required'+( _loggedIn?' filled':'')+'" id="step-sub"><label><span class="step-badge">👤</span><span>'+bi('提交人信息（部门 + 姓名）','Your Info (Dept + Name)')+' <span style="color:#dc2626">*</span></span></label>';
+  if(_loggedIn){
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(52,199,123,0.08);border:1px solid rgba(52,199,123,0.3);border-radius:8px;font-size:14px;color:var(--tx)">'
+      +'<span style="font-size:18px">👤</span>'
+      +'<span>'+bi('将以当前登录身份提交','Will submit as')+': <strong>'+esc(dShow(S.user.department))+' · '+esc(S.user.name)+'</strong></span>'
+      +'</div>'
+      +'<div class="field-hint"><span class="ic tip">👤</span><span>'+bi('已登录用户无需填写提交人信息，需求自动记录为当前身份；如需更换请先退出登录','Logged-in users need not fill submitter info; the request is recorded under your current identity. Log out first to switch.')+'。</span></div>';
+  }else{
+    html+='<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('部门','Department')+'</label>'
+    +'<select id="sub-dept" onchange="checkFilled(\'step-sub\',this.value)" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
+    +'<option value="">'+bi('请选择部门','Select dept')+'</option>'
+    +getDepts().map(d=>'<option value="'+d.cn+'" '+(d.cn===_curDept?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')
+    +'</select></div>'
+    +'<div class="bi-c"><label style="font-size:12px">'+bi('姓名','Name')+'</label>'
+    +'<input type="text" id="sub-name" value="'+esc(_curName)+'" placeholder="'+bi('您的姓名','Your name')+'" oninput="rememberGuest(this.value,document.getElementById(\'sub-dept\').value);checkFilled(\'step-sub\',this.value)" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
+    +'</div></div>'
+    +'<div class="field-hint"><span class="ic tip">👤</span><span>'+bi('无需登录，选择所在部门并填写姓名即可提交，需求将自动记录提交人','No login needed — pick your dept and enter your name to submit; you are recorded as the submitter')+'。</span></div>';
+  }
+  html+='</div>';
   // Determine date min/max based on admin toggle
   const dateEnabled=DB.dateRange.get();
-  const dateMin=dateEnabled?_t:(new Date().getHours()>=parseInt(getCutoff().split(':')[0])?_tm:_t);
+  const dateMin=dateEnabled?_t:(afterCutoff()?_tm:_t);
   const dateMax=dateEnabled?(new Date(Date.now()+30*86400000)).toISOString().slice(0,10):_tm;
   // 任务类型
   html+='<div class="fld fld-required" id="step-0"><label><span class="step-badge">0</span><span>📌 '+bi('任务类型','Task Type')+' <span style="color:#dc2626">*</span></span></label>'
@@ -2037,7 +2089,7 @@ function renderSubmit(){
     +'<div class="field-hint"><span class="ic tip">📌</span><span>'+bi('选择类型后自动填充常用文案，可再修改','Selecting a type auto-fills common text, editable afterwards')+'</span></div></div>';
   html+='<div class="fld fld-required" id="step-1"><label><span class="step-badge">1</span><span>'+T('submit_date')+' <span style="color:#dc2626">*</span></span><small style="font-weight:400;color:var(--tx-dim);margin-left:4px">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
     +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'" oninput="checkFilled(\'step-1\')">'
-    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 19:00 截止后只能选明日/后天；长期保障任务可不填日期','Today is default; after 19:00 cutoff only tomorrow/day-after; long-term tasks may skip date')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 '+ct+' 截止后只能选明日/后天；长期保障任务可不填日期','Today is default; after '+ct+' cutoff only tomorrow/day-after; long-term tasks may skip date')+'。</span></div></div>';
   // Primary time slot
   html+='<div class="fld fld-required" id="step-2"><label><span class="step-badge">2</span><span>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></span></label>'
     +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
@@ -2153,7 +2205,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
   // My recent requests with recall option
-  const myReqs=DB.requests.get().filter(r=>r.submitter===S.user.name&&r.department===S.user.department&&r.status==='pending').sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
+  const myReqs=DB.requests.get().filter(r=>r.submitter===curName()&&r.department===curDept()&&r.status==='pending').sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,5);
   if(myReqs.length){
     html+='<div class="card" style="margin-top:12px"><div class="card-h">📋 '+bi('我的待处理需求','My Pending Requests')+' ('+myReqs.length+') <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('截止前可撤回','Recallable before cutoff')+'</span></div>';
     myReqs.forEach(r=>{
@@ -2165,7 +2217,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
   }
 
   html+='<div class="card"><div class="card-h">📋 '+bi('需求池','All Requests')+'</div><div id="my-reqs">';
-  let reqs=isAdmin()?DB.requests.get():DB.requests.get().filter(r=>r.department===S.user.department);
+  let reqs=isAdmin()?DB.requests.get():DB.requests.get().filter(r=>r.department===curDept());
   reqs=reqs.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,30);
   if(!reqs.length)html+='<div class="emp">'+T('common_no')+'</div>';
   else reqs.forEach(r=>{
@@ -2256,6 +2308,11 @@ function doSubmit(){
   }
   // 部门负责人签字必填（Q8：标必填就强制执行）
   if(!S.sigData)return toast(L==='zh'?'请先完成部门负责人签字':'Department head signature required');
+  // 开放平台提交人信息：已登录用 S.user，游客用表单里填写的部门+姓名
+  const submitName=(S.user&&S.user.name)?S.user.name:(document.getElementById('sub-name')?document.getElementById('sub-name').value.trim():'');
+  const submitDept=(S.user&&S.user.name)?S.user.department:(document.getElementById('sub-dept')?document.getElementById('sub-dept').value:'');
+  if(!submitName||!submitDept)return toast(L==='zh'?'请填写提交人部门和姓名':'Please enter dept & name');
+  rememberGuest(submitName,submitDept);
   
   // Build full notes including slot notes and extra slots
   let fullNotes=notes||'';
@@ -2267,7 +2324,7 @@ function doSubmit(){
   const reqs=DB.requests.get();
   reqs.push({id:uid(),type:type,date:date||'',timeSlot:time,passengers:pax,paxNames,purpose,purposeEn,
     destination:dest||'',destinationEn:destEn||'',notes:fullNotes,notesEn:notesEn||'',
-    approved:'yes',signature:S.sigData,department:S.user.department,submitter:S.user.name,
+    approved:'yes',signature:S.sigData,department:submitDept,submitter:submitName,
     status:isLongTerm?'longterm':'pending',mergedToDispatchId:null,createdAt:new Date().toISOString()});
   DB.requests.set(reqs);sbSyncOne('requests',DB.requests.get());
   toast(T('common_success'));
@@ -2300,8 +2357,7 @@ function recallReq(rid){
   const r=reqs[idx];
   // Q10：当日需求过截止时间后不可撤回（与页面文案"截止前可撤回"一致）
   if(r.date===today()){
-    const hh=parseInt(getCutoff().split(':')[0])||19;
-    if(new Date().getHours()>=hh)return toast(L==='zh'?'已过今日截止时间，无法撤回':'Past today\'s cutoff, cannot recall');
+    if(afterCutoff())return toast(L==='zh'?'已过今日截止时间，无法撤回':'Past today\'s cutoff, cannot recall');
   }
   reqs.splice(idx,1);
   DB.requests.set(reqs);
@@ -2487,10 +2543,11 @@ function renderDispatch(){
   }
 
   if(!ds.length){
+    const ct=getCutoff();
     html+='<div class="emp">'
       +'<div class="emp-icon">🚐</div>'
       +'<div class="emp-title">'+bi('今日暂无派车单','No dispatch plans for today')+'</div>'
-      +'<div class="emp-sub">'+bi('提交需求后将在截止时间 19:00 统一合并派车','After cutoff at 19:00, requests will be merged into dispatch plans')+'</div>'
+      +'<div class="emp-sub">'+bi('提交需求后将在截止时间 '+ct+' 统一合并派车','After cutoff at '+ct+', requests will be merged into dispatch plans')+'</div>'
       +'</div>';
   }
   else html+=ds.map(d=>buildDC(d)).join('');
@@ -2568,6 +2625,7 @@ function buildDC(d){
       +(d.startKm||d.endKm?'<span>📏 '+bi('里程','Km')+': '+esc(d.startKm||'—')+' → '+esc(d.endKm||'—')+(d.fuelL?' · ⛽ '+esc(d.fuelL)+'L':'')+'</span>':'')
       +((d.costFuel||d.costRepair||d.costToll)?'<span>💰 '+bi('费用','Cost')+': '+bi('油','F')+'$'+esc(d.costFuel||0)+(d.costRepair?' · '+bi('修','R')+'$'+esc(d.costRepair):'')+(d.costToll?' · '+bi('过','T')+'$'+esc(d.costToll):'')+'</span>':'')
       +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
+      +(d.driverConfirmed?'<span class="tag tg-d">✅ '+bi('司机已确认','Driver confirmed')+'</span>':'')
       +'</div>':'')
 
     // 管理员专属操作行：始终可见，不受 showDispatchActions 开关控制
@@ -2586,6 +2644,164 @@ function buildDC(d){
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="regCost(this.dataset.did)">💰 '+bi('费用','Cost')+'</button>':'')
     +'</div>'
     +'</div></div>';
+}
+
+// ==================== DRIVER WORKBENCH（司机工作台） ====================
+function renderDriver(){
+  if(!S.driver||!S.driver.name)return renderDriverSelect();
+  const _t=S.drvDate||today();
+  const tasks=DB.dispatches.get().filter(d=>d.date===_t&&d.driver===S.driver.name);
+  let html='<div class="act">'
+    +'<div class="act-title"><span class="ic">🚚</span><span>'+bi('司机工作台','Driver Workbench')+' · '+esc(S.driver.name)+'</span></div>'
+    +'<div class="act-spacer"></div>'
+    +'<div class="act-group">'
+      +'<input type="date" id="drv-date" value="'+_t+'" onchange="S.drvDate=this.value;renderPage()" style="padding:7px 10px;border:1.5px solid rgba(0,0,0,.08);border-radius:8px;font-size:.92em;background:rgba(255,255,255,.85);">'
+      +'<button class="bt bt-o bt-sm" onclick="S.drvDate=\'\';renderPage()">📅 '+bi('今天','Today')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="clearDriver()">🔁 '+bi('切换司机','Switch Driver')+'</button>'
+      +'</div></div>';
+  if(!tasks.length){
+    html+='<div class="emp"><div class="emp-icon">🚚</div><div class="emp-title">'+bi('今日暂无出车任务','No tasks today')+'</div>'
+      +'<div class="emp-sub">'+bi('今日没有分配给你的派车单','No dispatches assigned to you today')+'</div></div>';
+    return html;
+  }
+  tasks.forEach(d=>{
+    const rl=DB.requests.get().filter(r=>d.requestIds&&d.requestIds.includes(r.id));
+    const pax=rl.reduce((s,r)=>s+r.passengers,0);
+    const dest=[...new Set(rl.map(r=>r.destination).filter(Boolean))].join('、')||'—';
+    const prps=rl.map(r=>r.purpose).filter(Boolean).join('； ')||'—';
+    html+='<div class="dc2" data-did="'+d.id+'">'
+      +'<div class="dc2-h"><div class="dc2-h-inner">'
+      +'<div style="flex:1"><div class="dc2-title">🚚 '+bi('出车任务','Dispatch Task')+'</div>'
+      +'<div class="dc2-date">'+fmtL(d.date)+' <span style="font-size:13px;color:var(--tx-dim);font-weight:500">'+d.date+'</span></div></div>'
+      +'<div class="dc2-plate"><span class="dc2-plate-icon">🚗</span><span class="dc2-plate-num">'+esc(d.vehicle)+'</span></div>'
+      +'</div></div>'
+      +'<div class="dc2-b">'
+      +'<div class="dc2-grid">'
+      +'<div class="dc2-stat"><div class="dc2-stat-label">⏰ '+bi('出发','Depart')+'</div><div class="dc2-stat-val">'+esc(d.departureTime||'—')+'</div></div>'
+      +'<div class="dc2-stat"><div class="dc2-stat-label">📍 '+bi('目的地','Dest')+'</div><div class="dc2-stat-val">'+esc(dest)+'</div></div>'
+      +'<div class="dc2-stat"><div class="dc2-stat-label">👥 '+bi('人数','Pax')+'</div><div class="dc2-stat-val">'+pax+' '+bi('人','ppl')+'</div></div>'
+      +'</div>'
+      +(d.meetingPoint?'<div class="dc2-notes" style="margin-bottom:8px"><div class="dc2-notes-label">📍 '+bi('集合点','Meeting Point')+'</div>'+esc(d.meetingPoint)+'</div>':'')
+      +(prps!=='—'?'<div class="dc2-purpose"><div class="dc2-purpose-label">📋 '+bi('事由','Purpose')+'</div>'+esc(prps)+'</div>':'')
+      +'<div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0 8px;font-size:12px;color:var(--tx-dim)">'
+      +(d.startKm||d.endKm?'<span>📏 '+bi('里程','Km')+': '+esc(d.startKm||'—')+' → '+esc(d.endKm||'—')+'</span>':'')
+      +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
+      +(d.driverConfirmed?'<span class="tag tg-d">✅ '+bi('司机已确认','Driver confirmed')+'</span>':'')
+      +'</div>'
+      +'<div class="dc2-actions">'
+      +'<button class="bt bt-p bt-sm" data-did="'+d.id+'" onclick="regDriverTask(this.dataset.did)">'
+      +(d.driverConfirmed?'✏️ '+bi('更新确认','Update'):'✅ '+bi('出车检查 + 签字','Inspect & Sign'))+'</button>'
+      +'</div>'
+      +'</div></div>';
+  });
+  return html;
+}
+function renderDriverSelect(){
+  const ds=DB.drivers.get();
+  if(!ds.length)return '<div class="emp">'+bi('暂无司机数据','No drivers')+'</div>';
+  return '<div class="card" style="max-width:480px;margin:40px auto;text-align:center">'
+    +'<div class="card-h">🚚 '+bi('司机入口','Driver Entry')+'</div>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:14px">'+bi('选择你的姓名进入司机工作台，查看今日出车任务并完成出车检查与签字','Select your name to enter the driver workbench, view today\'s tasks, complete inspection & sign')+'</p>'
+    +'<div class="fld"><label>👤 '+bi('司机姓名','Driver Name')+'</label>'
+    +'<select id="drv-sel" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
+    +ds.map(d=>'<option>'+esc(d.name)+'</option>').join('')
+    +'</select></div>'
+    +'<button class="bt bt-p bt-b" onclick="setDriver()">🚚 '+bi('进入工作台','Enter Workbench')+'</button>'
+    +'</div>';
+}
+function setDriver(){
+  const sel=document.getElementById('drv-sel');
+  if(!sel||!sel.value)return toast(bi('请选择姓名','Select name'));
+  S.driver={name:sel.value};
+  DB.driverSel.set(S.driver);
+  S.drvDate='';
+  renderPage();
+  toast('✅ '+bi('已进入：'+sel.value,'Driver: '+sel.value));
+}
+function clearDriver(){S.driver=null;DB.driverSel.set(null);S.drvDate='';renderPage();}
+
+// 司机任务卡：出车检查（8 项）+ 里程 + 责任说明 + 司机签字
+let dSigData='',dSigDone=false,dSigCtx=null,dSigDrawing=false,dSigLX=0,dSigLY=0;
+function regDriverTask(did){
+  const dd=DB.dispatches.get().find(x=>x.id===did);if(!dd)return;
+  const saved=dd.dvir||[];
+  const items=DVIR_ITEMS.map(it=>{
+    const checked=saved.includes(it.k)?'checked':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd);font-size:13px;cursor:pointer"><input type="checkbox" class="dvir-item" value="'+it.k+'" '+checked+' style="width:18px;height:18px;accent-color:var(--gn)"><span>'+bi(it.cn,it.en)+'</span></label>';
+  }).join('');
+  dSigData=dd.driverSig||'';dSigDone=!!dSigData;
+  const drvName=(S.driver&&S.driver.name)?S.driver.name:(dd.driver||'');
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">✅ '+bi('出车检查 + 司机确认','Inspection & Driver Confirmation')+'</h3>'
+    +'<p style="font-size:13px;color:var(--tx-dim);margin-bottom:10px">🚗 '+esc(dd.vehicle)+' · '+esc(dd.driver)+' · '+fmtL(dd.date)+'</p>'
+    +'<div style="padding:10px 12px;background:rgba(52,199,123,0.1);border:1px solid rgba(52,199,123,0.35);border-radius:8px;font-size:13px;color:var(--tx);margin-bottom:12px;display:flex;align-items:center;gap:8px">'
+      +'<span style="font-size:16px">🧑‍✈️</span>'
+      +'<span>'+bi('确认身份 / Confirm as','Confirm as')+': <strong style="color:var(--gn)">'+esc(drvName)+'</strong></span>'
+      +'</div>'
+    +'<div style="font-weight:700;font-size:12px;color:var(--tx);margin-bottom:4px">📋 '+bi('出车检查清单（全部勾选）','Inspection Checklist (check all)')+'</div>'
+    +items
+    +'<div class="fld" style="margin-top:12px"><label>📏 '+bi('出发里程 (km)','Start Odometer (km)')+' <span style="color:#dc2626">*</span></label>'
+    +'<input class="pair-input" type="number" id="dt-s" value="'+(dd.startKm||'')+'" placeholder="0" min="0" style="width:100%"></div>'
+    +'<div class="fld"><label>🏁 '+bi('返程里程 (km)','End Odometer (km)')+' <small style="color:var(--tx-muted)">('+bi('选填','optional')+')</small></label>'
+    +'<input class="pair-input" type="number" id="dt-e" value="'+(dd.endKm||'')+'" placeholder="0" min="0" style="width:100%"></div>'
+    +'<div style="padding:10px 12px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.3);border-radius:8px;font-size:12px;color:var(--tx);line-height:1.6;margin-bottom:12px">'
+      +'<b>⚠ '+bi('责任说明 / Responsibility','Responsibility')+':</b><br>'
+      +bi('本人【'+drvName+'】确认已完成出车检查，车辆状况良好，愿对行车安全承担相应责任。','I, '+drvName+', confirm the vehicle has been inspected and is in good condition; I accept responsibility for safe driving.')+'</div>'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:8px">🖋️ '+bi('司机签字（必填）','Driver Signature (required)')+' · '+esc(drvName)+'</div>'
+    +'<canvas id="dsig-cvs" class="sig-cvs" style="display:block;width:100%;height:200px;border-radius:10px;border:2px dashed var(--bd-hi);cursor:crosshair;touch-action:none"></canvas>'
+    +'<div class="sig-hint"><span>💡</span><span>'+bi('手写签名后点"保存签字"，签字即视为接受上述责任说明。','Sign by hand then tap "Save signature"; signing means you accept the responsibility above.')+'</span></div>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button type="button" class="bt bt-o bt-sm" onclick="dSigClear()">🗑 '+bi('清除','Clear')+'</button>'
+      +'<div style="flex:1"></div>'
+      +'<button type="button" class="bt bt-p bt-sm" onclick="dSigSave()">✓ '+bi('保存签字','Save Signature')+'</button>'
+    +'</div>'
+    +'<div id="dsig-st" style="display:'+(dSigData?'block':'none')+';color:var(--gn);font-weight:600;margin-top:8px;font-size:13px">✅ '+bi('已签字','Signed')+'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o" onclick="closeModal()">'+T('common_cancel')+'</button> <button class="bt bt-p" onclick="saveDriverTask(\''+did+'\')">✓ '+bi('确认提交','Confirm & Submit')+'</button></div>',true);
+  setTimeout(()=>{initDSig();},250);
+}
+function initDSig(){
+  const c=document.getElementById('dsig-cvs');if(!c)return;
+  const w=c.offsetWidth,h=c.offsetHeight;
+  const dpr=window.devicePixelRatio||1;
+  c.width=w*dpr;c.height=h*dpr;
+  c.style.width=w+'px';c.style.height=h+'px';
+  dSigCtx=c.getContext('2d');dSigCtx.scale(dpr,dpr);
+  dSigCtx.strokeStyle='#0f172a';dSigCtx.lineWidth=2.5;dSigCtx.lineCap='round';dSigCtx.lineJoin='round';
+  if(dSigData){const img=new Image();img.onload=()=>{dSigCtx.drawImage(img,0,0,w,h);dSigDone=true;};img.src=dSigData;}
+  c.onmousedown=e=>{dSigDrawing=true;dSigDone=true;const p=pos(e,c);dSigLX=p.x;dSigLY=p.y;};
+  c.onmousemove=e=>{if(!dSigDrawing)return;const p=pos(e,c);dSigCtx.beginPath();dSigCtx.moveTo(dSigLX,dSigLY);dSigCtx.lineTo(p.x,p.y);dSigCtx.stroke();dSigLX=p.x;dSigLY=p.y;};
+  c.onmouseup=c.onmouseleave=()=>{dSigDrawing=false;};
+  c.addEventListener('touchstart',e=>{e.preventDefault();dSigDrawing=true;dSigDone=true;const t=e.touches[0];const p=pos(t,c);dSigLX=p.x;dSigLY=p.y;},{passive:false});
+  c.addEventListener('touchmove',e=>{e.preventDefault();if(!dSigDrawing)return;const t=e.touches[0];const p=pos(t,c);dSigCtx.beginPath();dSigCtx.moveTo(dSigLX,dSigLY);dSigCtx.lineTo(p.x,p.y);dSigCtx.stroke();dSigLX=p.x;dSigLY=p.y;},{passive:false});
+  c.addEventListener('touchend',()=>{dSigDrawing=false;});
+}
+function dSigClear(){const c=document.getElementById('dsig-cvs');if(!c)return;dSigCtx.clearRect(0,0,c.width,c.height);dSigDone=false;dSigData='';const st=document.getElementById('dsig-st');if(st)st.style.display='none';}
+function dSigSave(){
+  if(!dSigDone)return toast(L==='zh'?'请先签字':'Please sign first');
+  dSigData=document.getElementById('dsig-cvs').toDataURL('image/png');
+  const st=document.getElementById('dsig-st');if(st)st.style.display='block';
+  toast(L==='zh'?'✓ 签字已保存':'Signature saved');
+}
+function saveDriverTask(did){
+  const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
+  // 身份锚定：确认身份必须等于当前选中的司机，且与派车单司机一致（防篡改）
+  const drvName=(S.driver&&S.driver.name)?S.driver.name:'';
+  if(!drvName)return toast(L==='zh'?'请先在司机工作台选择司机身份':'Select driver identity first');
+  if(dd.driver!==drvName)return toast(L==='zh'?'派车单司机与当前身份不符，无法确认':'Driver mismatch, cannot confirm');
+  const checked=Array.from(document.querySelectorAll('#modal-root .dvir-item:checked')).map(x=>x.value);
+  if(checked.length<DVIR_ITEMS.length)return toast(L==='zh'?'请勾选全部检查项':'Please check all inspection items');
+  const start=parseInt(document.getElementById('dt-s').value);
+  if(!(start>=0))return toast(L==='zh'?'请填写出发里程':'Start odometer required');
+  if(!dSigData)return toast(L==='zh'?'请司机签字确认':'Driver signature required');
+  dd.dvir=checked;
+  dd.dvirDate=today();
+  dd.startKm=start;
+  const end=parseInt(document.getElementById('dt-e').value);
+  dd.endKm=(end>=0)?end:(dd.endKm||null);
+  dd.driverSig=dSigData;
+  dd.driverConfirmed=true;
+  dd.driverSigDate=today();
+  DB.dispatches.set(ds);sbSyncOne('dispatches',DB.dispatches.get());
+  closeModal();toast('✅ '+bi('司机确认已保存','Driver confirmation saved'));renderPage();
 }
 
 // 批量编辑派车单（车辆/司机/时间/集合点/备注）
@@ -3846,6 +4062,15 @@ function renderSettings(){
       +'<button class="bt bt-p bt-sm" onclick="DB.sysName.set(document.getElementById(\'st-syscn\').value.trim()||\'KMC 派车调度\');DB.sysNameEn.set(document.getElementById(\'st-sysen\').value.trim()||\'KMC Dispatcher\');toast(\'✅ Saved\');renderPage()">'+T('common_save')+'</button></div>';
   }
 
+  // Daily cutoff setting (admin only) - 每日截止时间可调
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">⏰ '+bi('每日截止时间','Daily Cutoff')+'</div>'
+      +'<div class="fld"><label>'+bi('当前截止时间','Current cutoff')+': <strong style="color:var(--ac)">'+getCutoff()+'</strong></label>'
+      +'<input type="time" id="st-cutoff" value="'+getCutoff()+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font-size:14px;background:var(--bg-soft);color:var(--tx)"></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:8px">'+bi('提交页与派车提示将按此时间动态显示；截止后当日需求次日统一调度','Submit page & dispatch hints use this time; after cutoff, requests are scheduled next day')+'</div>'
+      +'<button class="bt bt-p bt-sm" onclick="saveCutoffSetting()">'+T('common_save')+'</button></div>';
+  }
+
   // Cloud sync settings (admin only) - Supabase 实时云同步
   if(showAdmin){
     html+='<div class="card"><div class="card-h">☁️ '+bi('云同步设置','Cloud Sync')+' <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('Supabase 实时数据库','Supabase Realtime')+'</span></div>'
@@ -3956,6 +4181,14 @@ function editDept(i){
   toast('✅ '+bi('已更新','Updated'));renderPage();
 }
 
+function saveCutoffSetting(){
+  const v=document.getElementById('st-cutoff').value;
+  if(!v)return toast(bi('请选择时间','Pick a time'));
+  setCutoff(v);
+  toast('✅ '+bi('截止时间已更新：'+v,'Cutoff updated: '+v));
+  renderPage();
+}
+
 function changeAdminPw(){
   const oldPw=document.getElementById('old-pw')?document.getElementById('old-pw').value.trim():'';
   const pw=document.getElementById('new-pw').value.trim();
@@ -4054,7 +4287,11 @@ function wipe(){if(!isAdmin()||!confirm('Clear ALL data?')||!confirm('FINAL: Del
 // ==================== BOOT ====================
 (function(){
   const u=DB.user.get();
-  if(u){S.user=u;showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{const ok=await syncAll().catch(()=>false);syncStatus=ok?'ok':'error';if(!ok)toast('⚠ 同步失败，数据仅存本机');updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);}
+  if(u){S.user=u;}
+  else{S.user={name:'',department:'',role:'guest'};} // 开放平台：未登录默认游客，直接进入提交页
+  const dsel=DB.driverSel.get();
+  if(dsel&&dsel.name)S.driver=dsel;
+  showApp();checkBackupReminder();syncStatus='syncing';updateSyncIcon();setTimeout(async()=>{const ok=await syncAll().catch(()=>false);syncStatus=ok?'ok':'error';if(!ok)toast('⚠ 同步失败，数据仅存本机');updateSyncIcon();setTimeout(()=>{if(syncStatus==='ok'){syncStatus='idle';updateSyncIcon();}},3000);},500);
 })();
 
 
