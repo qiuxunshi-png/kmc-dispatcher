@@ -829,7 +829,7 @@ function setupRealtime(){
   }catch(e){console.error('realtime',e);}
 }
 const DB={
-  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),showDispatchActions:LS('showDispatchActions',{onGet:v=>v!==undefined?v:true}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
   wxhook:LS('wxhook',{onGet:v=>v||''}),waphone:LS('waphone',{onGet:v=>v||''}),lastpush:LS('lastpush',{onGet:v=>v||''}),
@@ -2525,11 +2525,11 @@ function buildDC(d){
       +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
       +'</div>':'')
     +'<div class="dc2-actions">'
-    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
-    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
-    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="regCost(\''+d.id+'\')">💰 '+bi('费用','Cost')+'</button>':'')
-    +(isAdmin()||S.unlockUntil>Date.now()?'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+T('edit')+'</button>':'')
-    +(isAdmin()?'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+T('delete')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regCost(\''+d.id+'\')">💰 '+bi('费用','Cost')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+T('edit')+'</button>':'')
+    +(DB.showDispatchActions.get()&&isAdmin()?'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+T('delete')+'</button>':'')
     +'</div>'
     +'</div></div>';
 }
@@ -3316,6 +3316,10 @@ function renderSettings(){
       +'<div style="flex:1"><div style="font-weight:600;font-size:13px">⏰ '+bi('多时段开关','Multi-slot')+'</div>'
       +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.multiSlot.get()?bi('开启：允许同一路线多组出发/返程','ON: multiple time slots per request'):bi('关闭：每组单时段','OFF: single slot only'))+'</div></div>'
       +'<button class="bt '+((DB.multiSlot.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.multiSlot.set(!DB.multiSlot.get());renderPage()">'+(DB.multiSlot.get()?'ON':'OFF')+'</button></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--bd)">'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">🚗 '+bi('派车卡操作按钮','Dispatch Actions')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx-dim)">'+(DB.showDispatchActions.get()?bi('开启：管理员可见里程/检查/费用/编辑/删除按钮','ON: admin sees Mileage/DVIR/Cost/Edit/Delete'):bi('关闭：派车卡不显示任何操作按钮','OFF: hide all dispatch card buttons'))+'</div></div>'
+      +'<button class="bt '+((DB.showDispatchActions.get())?'bt-p':'bt-o')+' bt-sm" onclick="DB.showDispatchActions.set(!DB.showDispatchActions.get());renderPage()">'+(DB.showDispatchActions.get()?'ON':'OFF')+'</button></div>'
       +'</div>';
   }
 
