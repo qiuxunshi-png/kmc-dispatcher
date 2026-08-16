@@ -2524,6 +2524,7 @@ function buildDC(d){
       +((d.costFuel||d.costRepair||d.costToll)?'<span>💰 '+bi('费用','Cost')+': '+bi('油','F')+'$'+esc(d.costFuel||0)+(d.costRepair?' · '+bi('修','R')+'$'+esc(d.costRepair):'')+(d.costToll?' · '+bi('过','T')+'$'+esc(d.costToll):'')+'</span>':'')
       +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
       +'</div>':'')
+    +(isAdmin()?'<div style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end"><button class="bt bt-p bt-sm" onclick="quickAddReq(\''+d.id+'\')">➕ '+bi('临时新增需求','Quick Add Request')+'</button></div>':'')
     +'<div class="dc2-actions">'
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
@@ -2539,6 +2540,60 @@ function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get(
   const rs=DB.requests.get();rs.forEach(r=>{if(r.mergedToDispatchId===id){r.status='pending';r.mergedToDispatchId=null;}});DB.requests.set(rs);
   sbDelOne('dispatches','id',id);sbSyncOne('requests',rs);
   toast(L==='zh'?'已删除':'Deleted');renderPage();}
+
+// 管理员在派车单处临时新增需求（自动关联到该派车单）
+function quickAddReq(did){
+  const dp=DB.dispatches.get().find(x=>x.id===did);
+  if(!dp)return toast(L==='zh'?'派车单不存在':'Dispatch not found');
+  const depts=getDepts();
+  showModal(
+    '<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">➕ '+bi('临时新增需求','Quick Add Request')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:12px">'+bi('关联到','Linked to')+': <strong>'+fmtL(dp.date)+'</strong> · '+esc(dp.vehicle)+' · '+esc(dp.driver)+'</p>'
+    +'<div class="fld"><label>'+bi('部门','Department')+' *</label>'
+      +'<select id="qa-dept" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px">'
+      +depts.map(d=>'<option value="'+d.cn+'" '+(d.cn===S.user.department?'selected':'')+'>'+d.cn+' / '+(d.en||'')+'</option>').join('')
+      +'</select></div>'
+    +'<div style="display:flex;gap:8px"><div class="fld" style="flex:2"><label>'+bi('提交人','Submitter')+' *</label><input id="qa-name" value="'+esc(S.user.name)+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px"></div>'
+    +'<div class="fld" style="flex:1"><label>'+bi('人数','PAX')+' *</label><input type="number" id="qa-pax" value="1" min="1" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px"></div></div>'
+    +'<div class="fld"><label>'+bi('目的地（中文）','Destination (CN)')+' *</label><input id="qa-dest" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="如：万寿餐厅"></div>'
+    +'<div class="fld"><label>'+bi('事由（中文）','Purpose (CN)')+' *</label><input id="qa-purpose" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="如：接待客户"></div>'
+    +'<div class="fld"><label>'+bi('事由（英文）','Purpose (EN)')+'</label><input id="qa-purposeEn" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx);font-size:14px" placeholder="e.g. Client reception"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">'
+      +'<button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button>'
+      +'<button class="bt bt-p bt-sm" onclick="doQuickAdd(\''+did+'\')">'+T('common_save')+'</button>'
+      +'</div>',true);
+  setTimeout(()=>{const el=document.getElementById('qa-dest');if(el)el.focus();},200);
+}
+
+function doQuickAdd(did){
+  const dept=document.getElementById('qa-dept').value;
+  const name=document.getElementById('qa-name').value.trim();
+  const pax=parseInt(document.getElementById('qa-pax').value)||1;
+  const dest=document.getElementById('qa-dest').value.trim();
+  const purpose=document.getElementById('qa-purpose').value.trim();
+  const purposeEn=document.getElementById('qa-purposeEn').value.trim();
+  if(!dept||!name)return toast(L==='zh'?'请填写部门和提交人':'Please fill dept and submitter');
+  if(!dest||!purpose)return toast(L==='zh'?'请填写目的地和事由':'Please fill destination and purpose');
+  const dp=DB.dispatches.get();
+  const d=dp.find(x=>x.id===did);
+  if(!d)return toast(L==='zh'?'派车单不存在':'Dispatch not found');
+  const rs=DB.requests.get();
+  const req={id:uid(),type:'adhoc',date:d.date,timeSlot:d.departureTime||'',passengers:pax,paxNames:name?[name]:[],
+    purpose,purposeEn,destination:dest,destinationEn:'',
+    notes:'',notesEn:'',approved:'yes',signature:S.user.name,
+    department:dept,submitter:name,
+    status:'dispatched',mergedToDispatchId:did,createdAt:new Date().toISOString()};
+  rs.push(req);
+  if(!d.requestIds)d.requestIds=[];
+  d.requestIds.push(req.id);
+  DB.requests.set(rs);
+  DB.dispatches.set(dp);
+  sbSyncOne('requests',rs);
+  sbSyncOne('dispatches',dp);
+  closeModal();
+  toast(L==='zh'?'✅ 已临时新增需求':'✅ Quick request added');
+  renderPage();
+}
 
 // 登记里程油耗（P0）
 function regMileage(did){
