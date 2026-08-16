@@ -245,6 +245,7 @@ textarea.pair-input{min-height:120px;resize:vertical;line-height:1.5}
   border-radius:var(--rx-lg);margin-bottom:16px;box-shadow:var(--sh);
   transition:var(--tr)}
 .dc2:hover{border-color:var(--bd-hi);transform:translateY(-2px);box-shadow:var(--sh-lg)}
+.dc2-selected{border-color:#7c5bf5!important;border-width:2px!important;box-shadow:0 0 0 1px rgba(124,92,245,0.3),var(--sh-lg)!important;background:rgba(124,92,245,0.04)}
 .dc2-h{position:relative;padding:18px 20px 14px;background:linear-gradient(135deg,rgba(91,138,245,0.12),rgba(124,91,245,0.08));
   border-bottom:1px solid var(--bd);overflow:hidden}
 .dc2-h::before{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;
@@ -1552,7 +1553,7 @@ function importOrgUsers(){
   DB.users.set(us);
 }
 
-const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),sigData:'',tapCount:0,unlockUntil:0,
+const S={user:null,tab:'submit',selDate:'',selReqs:new Set(),dispatchSelIds:new Set(),sigData:'',tapCount:0,unlockUntil:0,
   fFrom:'',fTo:'',fDepts:[],fVeh:'',fStatus:'all',fSubmitter:'',fPaxMin:0,fPaxMax:99,fKeywordPool:'',pLang:'cn',nLang:'cn',dLang:'cn',
   recKeyword:'',recDriver:'',recSort:'date-desc',recLimit:30,dispDate:'',dailyFrom:'',dailyTo:'',dailyDepts:[]};
 
@@ -2466,6 +2467,25 @@ function renderDispatch(){
       +'</div>';
   }
   html+='</div>';
+
+  // 派车单批量管理工具栏（管理员、有选中时显示）
+  if(isAdmin()&&S.dispatchSelIds.size>0){
+    const ds=DB.dispatches.get();
+    const selDs=ds.filter(x=>S.dispatchSelIds.has(x.id));
+    const dates=[...new Set(selDs.map(x=>x.date))];
+    html+='<div style="margin-bottom:14px;padding:12px 16px;background:rgba(124,92,245,0.08);border:2px solid rgba(124,92,245,0.3);border-radius:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<div style="font-weight:800;color:#7c5bf5;font-size:14px">📦 '+bi('已选 '+S.dispatchSelIds.size+' 条派车单','Selected '+S.dispatchSelIds.size+' dispatches')+'</div>'
+      +(dates.length>1?'<div style="background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600">⚠ '+bi('跨日期：'+dates.length+' 个','Cross-date: '+dates.length)+'</div>':'')
+      +'<div style="flex:1"></div>'
+      +'<button class="bt bt-o bt-sm" onclick="batchSetVehicle()">🚗 '+bi('批量改车辆','Batch Vehicle')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="batchSetDriver()">👤 '+bi('批量改司机','Batch Driver')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="batchSetTime()">⏰ '+bi('批量改时间','Batch Time')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="batchSetMeeting()">📍 '+bi('批量改集合点','Batch Meeting')+'</button>'
+      +'<button class="bt bt-d bt-sm" onclick="batchDeleteDispatches()">🗑 '+bi('批量删除','Batch Delete')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="clearDispatchSel()">✕ '+bi('清除选择','Clear')+'</button>'
+      +'</div>';
+  }
+
   if(!ds.length){
     html+='<div class="emp">'
       +'<div class="emp-icon">🚐</div>'
@@ -2491,10 +2511,12 @@ function buildDC(d){
   const veh=DB.vehicles.get().find(v=>v.plate===d.vehicle);
   const avatars=paxNames.slice(0,5).map((n,i)=>'<span style="background:'+['#5b8af5','#7c5bf5','#34c77b','#f5a623','#f5555d'][i%5]+';z-index:'+(5-i)+'">'+((n||'?').slice(0,1))+'</span>').join('');
   const more=paxNames.length>5?'<span style="background:var(--tx-dim);z-index:0">+'+(paxNames.length-5)+'</span>':'';
-  return '<div class="dc2">'
+  return '<div class="dc2'+(isAdmin()&&S.dispatchSelIds.has(d.id)?' dc2-selected':'')+'" data-did="'+d.id+'">'
     +'<div class="dc2-h"><div class="dc2-h-inner">'
-    +'<div><div class="dc2-title">'+T('dispatch_title')+'</div>'
-    +'<div class="dc2-date">'+fmtL(d.date)+' <span style="font-size:13px;color:var(--tx-dim);font-weight:500">'+d.date+'</span></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;flex:1">'
+      +(isAdmin()?'<input type="checkbox" data-did="'+d.id+'" '+(S.dispatchSelIds.has(d.id)?'checked':'')+' onchange="toggleDispatchSel(this.dataset.did,this.checked)" style="width:20px;height:20px;cursor:pointer;accent-color:#7c5bf5;flex-shrink:0" title="'+bi('选中此派车单','Select this dispatch')+'">':'')
+      +'<div><div class="dc2-title">'+T('dispatch_title')+'</div>'
+      +'<div class="dc2-date">'+fmtL(d.date)+' <span style="font-size:13px;color:var(--tx-dim);font-weight:500">'+d.date+'</span></div></div>'
     +'</div>'
     +'<div class="dc2-plate"><span class="dc2-plate-icon">🚗</span><span class="dc2-plate-num">'+esc(d.vehicle)+'</span>'+(veh?vehStatusTag(veh):'')+'</div>'
     +'</div></div>'
@@ -2551,17 +2573,17 @@ function buildDC(d){
     // 管理员专属操作行：始终可见，不受 showDispatchActions 开关控制
     +(isAdmin()?'<div style="display:flex;gap:6px;margin-top:12px;padding:10px 12px;background:rgba(124,92,245,0.05);border:1px solid rgba(124,92,245,0.15);border-radius:10px;flex-wrap:wrap;align-items:center">'
       +'<div style="font-weight:700;font-size:11px;color:#7c5bf5;margin-right:4px">🔧 '+bi('管理员操作','Admin')+':</div>'
-      +'<button class="bt bt-p bt-sm" onclick="quickAddReq(\''+d.id+'\')">➕ '+bi('临时新增需求','Quick Add')+'</button>'
-      +'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+bi('编辑派车单','Edit Dispatch')+'</button>'
-      +'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+bi('删除派车单','Delete Dispatch')+'</button>'
-      +'<button class="bt bt-o bt-sm" onclick="openBatchEditDispatch(\''+d.id+'\')">📝 '+bi('批量编辑','Batch Edit')+'</button>'
+      +'<button class="bt bt-p bt-sm" data-did="'+d.id+'" onclick="quickAddReq(this.dataset.did)">➕ '+bi('临时新增需求','Quick Add')+'</button>'
+      +'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="editDispatch(this.dataset.did)">✏️ '+bi('编辑派车单','Edit Dispatch')+'</button>'
+      +'<button class="bt bt-d bt-sm" data-did="'+d.id+'" onclick="delDispatch(this.dataset.did)">🗑 '+bi('删除派车单','Delete Dispatch')+'</button>'
+      +'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="openBatchEditDispatch(this.dataset.did)">📝 '+bi('批量编辑','Batch Edit')+'</button>'
       +'</div>':'')
 
     // 业务按钮（受 showDispatchActions 开关控制）：里程/检查/费用
     +'<div class="dc2-actions">'
-    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
-    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
-    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regCost(\''+d.id+'\')">💰 '+bi('费用','Cost')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="regMileage(this.dataset.did)">📏 '+bi('里程','Mileage')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="regDvir(this.dataset.did)">✅ '+bi('检查','DVIR')+'</button>':'')
+    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" data-did="'+d.id+'" onclick="regCost(this.dataset.did)">💰 '+bi('费用','Cost')+'</button>':'')
     +'</div>'
     +'</div></div>';
 }
@@ -2593,6 +2615,130 @@ function saveBatchEditDispatch(did){
   sbSyncOne('dispatches',ds);
   closeModal();
   toast('✅ '+bi('已保存','Saved'));
+  renderPage();
+}
+
+// ============ 派车单批量选择与编辑 ============
+function toggleDispatchSel(did,checked){
+  if(checked)S.dispatchSelIds.add(did);
+  else S.dispatchSelIds.delete(did);
+  // 仅重渲染工具栏和卡片样式（避免整页刷新闪烁）
+  const bar=document.getElementById('dc-batch-bar');
+  if(bar){renderPage();return;}
+  const card=document.querySelector('[data-did="'+did+'"]');
+  if(card)card.classList.toggle('dc2-selected',checked);
+}
+
+function clearDispatchSel(){
+  S.dispatchSelIds.clear();
+  renderPage();
+}
+
+function getSelDispatches(){
+  const ds=DB.dispatches.get();
+  return ds.filter(x=>S.dispatchSelIds.has(x.id));
+}
+
+function batchSetVehicle(){
+  const sel=getSelDispatches();if(!sel.length)return;
+  const vs=DB.vehicles.get();
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">🚗 '+bi('批量改车辆','Batch Vehicle')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border-radius:8px">将把 '+sel.length+' 条派车单的车辆统一改为：</p>'
+    +'<div class="fld"><label>🚗 '+bi('车辆','Vehicle')+'</label><select class="pair-input" id="bs-v" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)">'+vs.map(v=>'<option>'+esc(v.plate)+' — '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button><button class="bt bt-p bt-sm" onclick="doBatchSetVehicle()">✓ '+bi('应用到 '+sel.length+' 条','Apply to '+sel.length)+'</button></div>',true);
+}
+
+function doBatchSetVehicle(){
+  const sel=getSelDispatches();
+  const newV=document.getElementById('bs-v').value.split(' - ')[0];
+  const ds=DB.dispatches.get();
+  sel.forEach(d=>d.vehicle=newV);
+  DB.dispatches.set(ds);
+  sbSyncOne('dispatches',ds);
+  closeModal();
+  toast('✅ '+bi('已批量改车辆：'+sel.length+' 条','Vehicle updated for '+sel.length));
+  renderPage();
+}
+
+function batchSetDriver(){
+  const sel=getSelDispatches();if(!sel.length)return;
+  const ds=DB.drivers.get();
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">👤 '+bi('批量改司机','Batch Driver')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border-radius:8px">将把 '+sel.length+' 条派车单的司机统一改为：</p>'
+    +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select class="pair-input" id="bs-d" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)">'+ds.map(d=>'<option>'+esc(d.name)+'</option>').join('')+'</select></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button><button class="bt bt-p bt-sm" onclick="doBatchSetDriver()">✓ '+bi('应用到 '+sel.length+' 条','Apply to '+sel.length)+'</button></div>',true);
+}
+
+function doBatchSetDriver(){
+  const sel=getSelDispatches();
+  const newD=document.getElementById('bs-d').value;
+  const ds=DB.dispatches.get();
+  sel.forEach(d=>d.driver=newD);
+  DB.dispatches.set(ds);
+  sbSyncOne('dispatches',ds);
+  closeModal();
+  toast('✅ '+bi('已批量改司机：'+sel.length+' 条','Driver updated for '+sel.length));
+  renderPage();
+}
+
+function batchSetTime(){
+  const sel=getSelDispatches();if(!sel.length)return;
+  const cur=sel[0].departureTime||'';
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">⏰ '+bi('批量改出发时间','Batch Time')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border-radius:8px">将把 '+sel.length+' 条派车单的出发时间统一改为：</p>'
+    +'<div class="fld"><label>⏰ '+bi('出发时间','Departure')+'</label><input class="pair-input" id="bs-t" type="text" value="'+esc(cur)+'" placeholder="07:00" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button><button class="bt bt-p bt-sm" onclick="doBatchSetTime()">✓ '+bi('应用到 '+sel.length+' 条','Apply to '+sel.length)+'</button></div>',true);
+}
+
+function doBatchSetTime(){
+  const sel=getSelDispatches();
+  const newT=document.getElementById('bs-t').value.trim();
+  const ds=DB.dispatches.get();
+  sel.forEach(d=>d.departureTime=newT);
+  DB.dispatches.set(ds);
+  sbSyncOne('dispatches',ds);
+  closeModal();
+  toast('✅ '+bi('已批量改时间：'+sel.length+' 条','Time updated for '+sel.length));
+  renderPage();
+}
+
+function batchSetMeeting(){
+  const sel=getSelDispatches();if(!sel.length)return;
+  const cur=sel[0].meetingPoint||'';
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">📍 '+bi('批量改集合点','Batch Meeting Point')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px;padding:10px 12px;background:rgba(91,138,245,0.08);border-radius:8px">将把 '+sel.length+' 条派车单的集合点统一改为：</p>'
+    +'<div class="fld"><label>📍 '+bi('集合点','Meeting Point')+'</label><input class="pair-input" id="bs-mp" type="text" value="'+esc(cur)+'" placeholder="'+bi('如：Kamativi 矿区门口','e.g., Kamativi Mine gate')+'" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button><button class="bt bt-p bt-sm" onclick="doBatchSetMeeting()">✓ '+bi('应用到 '+sel.length+' 条','Apply to '+sel.length)+'</button></div>',true);
+}
+
+function doBatchSetMeeting(){
+  const sel=getSelDispatches();
+  const newP=document.getElementById('bs-mp').value.trim();
+  const ds=DB.dispatches.get();
+  sel.forEach(d=>d.meetingPoint=newP);
+  DB.dispatches.set(ds);
+  sbSyncOne('dispatches',ds);
+  closeModal();
+  toast('✅ '+bi('已批量改集合点：'+sel.length+' 条','Meeting updated for '+sel.length));
+  renderPage();
+}
+
+function batchDeleteDispatches(){
+  const sel=getSelDispatches();if(!sel.length)return;
+  if(!confirm(bi('确认删除 '+sel.length+' 条派车单？关联需求将自动恢复为待处理。','Delete '+sel.length+' dispatches? Linked requests will revert to pending.')))return;
+  const ds=DB.dispatches.get();
+  const ids=new Set(sel.map(x=>x.id));
+  // 恢复关联需求
+  const rs=DB.requests.get();
+  rs.forEach(r=>{if(r.mergedToDispatchId&&ids.has(r.mergedToDispatchId)){r.status='pending';r.mergedToDispatchId=null;}});
+  // 删除派车单
+  const remain=ds.filter(x=>!ids.has(x.id));
+  DB.dispatches.set(remain);
+  DB.requests.set(rs);
+  S.dispatchSelIds.clear();
+  sbSyncOne('dispatches',remain);
+  sbSyncOne('requests',rs);
+  toast('✅ '+bi('已批量删除','Batch deleted'));
   renderPage();
 }
 function editDispatch(id){editD(id);}
