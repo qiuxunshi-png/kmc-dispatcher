@@ -2512,9 +2512,32 @@ function buildDC(d){
     +'<span class="dc2-pax-count">'+pax+' '+bi('人','ppl')+'</span>'
     +'<span class="dc2-pax-names">'+esc(paxNames.join('、'))+'</span>'
     +'</div>'
-    +(prps?'<div class="dc2-purpose"><div class="dc2-purpose-label" style="display:flex;align-items:center;gap:6px">📋 '+T('purpose')+(isAdmin()||S.unlockUntil>Date.now()?' <button type="button" onclick="translateDispatch(\''+d.id+'\')" title="'+bi('翻译关联需求','Translate linked requests')+'" style="margin-left:auto;width:22px;height:22px;border-radius:50%;background:rgba(5,150,105,0.15);color:#059669;border:none;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;justify-content:center;transition:all .2s" onmouseover="this.style.background=\'rgba(5,150,105,0.28)\'" onmouseout="this.style.background=\'rgba(5,150,105,0.15)\'">🔄</button>':'')+'</div>'
-      +prps+(prpsE?'<div class="dc2-purpose-en">'+prpsE+'</div>':'')
+    +(prps?'<div class="dc2-purpose" style="margin-top:8px;padding:8px 12px;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:8px">'
+      +'<div style="font-weight:700;font-size:12px;color:#b45309;margin-bottom:4px">📋 '+T('purpose')+'</div>'
+      +prps+(prpsE?'<div style="color:var(--tx-muted);font-style:italic;margin-top:3px;font-size:12px">'+prpsE+'</div>':'')
       +'</div>':'')
+    // 关联需求明细：每条需求单独一行（清晰体现多个外出状态）
+    +'<div class="dc2-reqlist" style="margin:10px 14px 0;padding:10px 12px;background:rgba(91,138,245,0.05);border:1px solid rgba(91,138,245,0.15);border-radius:10px">'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:700;font-size:12px;color:var(--ac)">'
+      +'📋 '+bi('关联需求明细','Linked Requests')+' ('+rl.length+' '+bi('条','reqs')+')'
+      +(isAdmin()||S.unlockUntil>Date.now()?' <button type="button" onclick="translateDispatch(\''+d.id+'\')" title="'+bi('一键翻译缺失语言','Translate missing language')+'" style="margin-left:auto;width:24px;height:24px;border-radius:50%;background:rgba(5,150,105,0.15);color:#059669;border:none;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;justify-content:center;transition:all .2s" onmouseover="this.style.background=\'rgba(5,150,105,0.28)\'" onmouseout="this.style.background=\'rgba(5,150,105,0.15)\'">🔄</button>':'')
+    +'</div>'
+    +rl.map(r=>{
+      const purp=(L==='zh'?r.purpose:(r.purposeEn||r.purpose))||'—';
+      const dest=r.destination||'—';
+      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px dashed rgba(91,138,245,0.2);font-size:13px">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:600;color:var(--tx)">🚗 '+esc(dest)+(r.destinationEn&&r.destinationEn!==dest?' <span style="color:var(--tx-dim);font-weight:400;font-size:12px">/ '+esc(r.destinationEn)+'</span>':'')+'</div>'
+          +'<div style="color:var(--tx-dim);margin-top:2px;font-size:12px">📌 '+esc(purp)+(r.purposeEn&&r.purposeEn!==purp?' <span style="color:var(--tx-muted);font-style:italic;font-size:11px">/ '+esc(r.purposeEn)+'</span>':'')+'</div>'
+          +'<div style="color:var(--tx-muted);margin-top:2px;font-size:11px">👥 '+r.passengers+' '+bi('人','pax')+' · '+esc(dShow(r.department))+' · '+esc(r.submitter)+(r.timeSlot?' · ⏰ '+r.timeSlot:'')+'</div>'
+        +'</div>'
+        +(isAdmin()||S.unlockUntil>Date.now()?'<div style="display:flex;gap:4px;flex-shrink:0">'
+            +'<button class="bt bt-o bt-sm" onclick="openEditReq(\''+r.id+'\')" title="'+bi('编辑该需求','Edit this request')+'">✏️</button>'
+            +'<button class="bt bt-d bt-sm" onclick="delReq(\''+r.id+'\')" title="'+bi('删除该需求','Delete this request')+'">🗑</button>'
+          +'</div>':'')
+      +'</div>';
+    }).join('')
+    +'</div>'
     +(dnotesCn||dnotesEn?'<div class="dc2-notes">'
       +(dnotesCn?'<div class="dc2-notes-label">📝 '+T('notes')+'</div>'+dnotesCn:'')
       +(dnotesEn&&dnotesEn!==dnotesCn?'<div style="color:var(--tx-muted);font-style:italic;margin-top:3px">'+dnotesEn+'</div>':'')
@@ -2524,15 +2547,53 @@ function buildDC(d){
       +((d.costFuel||d.costRepair||d.costToll)?'<span>💰 '+bi('费用','Cost')+': '+bi('油','F')+'$'+esc(d.costFuel||0)+(d.costRepair?' · '+bi('修','R')+'$'+esc(d.costRepair):'')+(d.costToll?' · '+bi('过','T')+'$'+esc(d.costToll):'')+'</span>':'')
       +(d.dvirDate?'<span class="tag tg-d">✅ '+bi('已检查','Checked')+' '+fmtL(d.dvirDate)+'</span>':'')
       +'</div>':'')
-    +(isAdmin()?'<div style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end"><button class="bt bt-p bt-sm" onclick="quickAddReq(\''+d.id+'\')">➕ '+bi('临时新增需求','Quick Add Request')+'</button></div>':'')
+
+    // 管理员专属操作行：始终可见，不受 showDispatchActions 开关控制
+    +(isAdmin()?'<div style="display:flex;gap:6px;margin-top:12px;padding:10px 12px;background:rgba(124,92,245,0.05);border:1px solid rgba(124,92,245,0.15);border-radius:10px;flex-wrap:wrap;align-items:center">'
+      +'<div style="font-weight:700;font-size:11px;color:#7c5bf5;margin-right:4px">🔧 '+bi('管理员操作','Admin')+':</div>'
+      +'<button class="bt bt-p bt-sm" onclick="quickAddReq(\''+d.id+'\')">➕ '+bi('临时新增需求','Quick Add')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+bi('编辑派车单','Edit Dispatch')+'</button>'
+      +'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+bi('删除派车单','Delete Dispatch')+'</button>'
+      +'<button class="bt bt-o bt-sm" onclick="openBatchEditDispatch(\''+d.id+'\')">📝 '+bi('批量编辑','Batch Edit')+'</button>'
+      +'</div>':'')
+
+    // 业务按钮（受 showDispatchActions 开关控制）：里程/检查/费用
     +'<div class="dc2-actions">'
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regMileage(\''+d.id+'\')">📏 '+bi('里程','Mileage')+'</button>':'')
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regDvir(\''+d.id+'\')">✅ '+bi('检查','DVIR')+'</button>':'')
     +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="regCost(\''+d.id+'\')">💰 '+bi('费用','Cost')+'</button>':'')
-    +(DB.showDispatchActions.get()&&(isAdmin()||S.unlockUntil>Date.now())?'<button class="bt bt-o bt-sm" onclick="editDispatch(\''+d.id+'\')">✏️ '+T('edit')+'</button>':'')
-    +(DB.showDispatchActions.get()&&isAdmin()?'<button class="bt bt-d bt-sm" onclick="delDispatch(\''+d.id+'\')">🗑 '+T('delete')+'</button>':'')
     +'</div>'
     +'</div></div>';
+}
+
+// 批量编辑派车单（车辆/司机/时间/集合点/备注）
+function openBatchEditDispatch(did){
+  const dd=DB.dispatches.get().find(x=>x.id===did);if(!dd)return;
+  const vs=DB.vehicles.get(),ds=DB.drivers.get();
+  showModal('<h3 style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:18px">📝 '+bi('批量编辑派车单','Batch Edit Dispatch')+'</h3>'
+    +'<p style="font-size:12px;color:var(--tx-dim);margin-bottom:14px">🚗 '+esc(dd.vehicle)+' · '+esc(dd.driver)+' · '+fmtL(dd.date)+'</p>'
+    +'<div class="fld"><label>🚗 '+bi('车辆','Vehicle')+'</label><select class="pair-input" id="bed-v" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)">'+vs.map(v=>'<option '+(v.plate===dd.vehicle?'selected':'')+'>'+esc(v.plate)+' — '+esc(L==='zh'?v.type:v.typeEn)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>👤 '+bi('司机','Driver')+'</label><select class="pair-input" id="bed-d" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-soft);color:var(--tx)">'+ds.map(d=>'<option '+(d.name===dd.driver?'selected':'')+'>'+esc(d.name)+'</option>').join('')+'</select></div>'
+    +'<div class="fld"><label>⏰ '+bi('出发时间','Departure Time')+'</label><input class="pair-input" id="bed-t" type="text" value="'+(esc(dd.departureTime||''))+'" placeholder="07:00"></div>'
+    +'<div class="fld"><label>📍 '+bi('集合点','Meeting Point')+'</label><input class="pair-input" id="bed-p" type="text" value="'+(esc(dd.meetingPoint||''))+'" placeholder="'+bi('如：Kamativi 矿区门口','e.g., Kamativi Mine gate')+'"></div>'
+    +'<div class="fld"><label>📝 '+bi('备注 CN','Notes (CN)')+'</label><input class="pair-input" id="bed-n" type="text" value="'+(esc(dd.notes||''))+'"></div>'
+    +'<div class="fld"><label>📝 '+bi('备注 EN','Notes (EN)')+'</label><input class="pair-input" id="bed-ne" type="text" value="'+(esc(dd.notesEn||''))+'"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><button class="bt bt-o bt-sm" onclick="closeModal()">'+T('common_cancel')+'</button><button class="bt bt-p bt-sm" onclick="saveBatchEditDispatch(\''+did+'\')">✓ '+T('common_save')+'</button></div>',true);
+}
+
+function saveBatchEditDispatch(did){
+  const ds=DB.dispatches.get();const dd=ds.find(x=>x.id===did);if(!dd)return;
+  dd.vehicle=document.getElementById('bed-v').value.split(' - ')[0];
+  dd.driver=document.getElementById('bed-d').value;
+  dd.departureTime=document.getElementById('bed-t').value.trim();
+  dd.meetingPoint=document.getElementById('bed-p').value.trim();
+  dd.notes=document.getElementById('bed-n').value.trim();
+  dd.notesEn=document.getElementById('bed-ne').value.trim();
+  DB.dispatches.set(ds);
+  sbSyncOne('dispatches',ds);
+  closeModal();
+  toast('✅ '+bi('已保存','Saved'));
+  renderPage();
 }
 function editDispatch(id){editD(id);}
 function delDispatch(id){if(!confirm('Delete?'))return;let ds=DB.dispatches.get();ds=ds.filter(x=>x.id!==id);DB.dispatches.set(ds);
