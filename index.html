@@ -564,6 +564,50 @@ const T=key=>{
 // Helper for bilingual display in current language
 function bi(cn,en){return L==='zh'?(cn||en):(en||cn);}
 
+// ==================== 规则文案可编辑（管理员在设置页修改，全端实时生效） ====================
+// 规则文案元数据：key -> 设置页展示名（12 条：3 条截止提示 + 9 条字段提示）
+const RULE_META=[
+  {key:'rule_cutoff_1',label:'⏰ 截止提示 1 · 未提交视为无需求'},
+  {key:'rule_cutoff_2',label:'⏰ 截止提示 2 · 截止后次日调度'},
+  {key:'rule_cutoff_3',label:'⏰ 截止提示 3 · 延误责任与成本'},
+  {key:'hint_submitter_loggedin',label:'👤 提交人提示 · 已登录用户'},
+  {key:'hint_submitter_guest',label:'👤 提交人提示 · 游客'},
+  {key:'hint_task_type',label:'📌 任务类型提示'},
+  {key:'hint_date',label:'📅 日期选择提示（{ct} = 当前截止时间）'},
+  {key:'hint_time',label:'⏰ 时间填写提示'},
+  {key:'hint_pax',label:'👥 乘车人数提示'},
+  {key:'hint_dest',label:'📍 目的地提示'},
+  {key:'hint_bilingual',label:'🌐 中英双语提示'},
+  {key:'hint_signature',label:'🖋️ 签字提示'}
+];
+// 规则默认文案（硬编码 fallback，管理员未编辑时使用；{ct} 占位符渲染时替换为当前截止时间）
+function ruleDefault(key){
+  const M={
+    rule_cutoff_1:{cn:'• 截止时间前未提交的需求视为无需求',en:'• No submission before cutoff = no request'},
+    rule_cutoff_2:{cn:'• 截止后提交的，次日统一调度，紧急用车由申请部门自行解决',en:'• After cutoff, processed next day; emergencies must be self-resolved'},
+    rule_cutoff_3:{cn:'• 因未按时提交造成延误的，相关责任与成本由申请部门承担',en:'• Late-submission delays: responsibility & cost belong to requesting dept'},
+    hint_submitter_loggedin:{cn:'已登录用户无需填写提交人信息，需求自动记录为当前身份；如需更换请先退出登录',en:'Logged-in users need not fill submitter info; the request is recorded under your current identity. Log out first to switch.'},
+    hint_submitter_guest:{cn:'无需登录，选择所在部门并填写姓名即可提交，需求将自动记录提交人',en:'No login needed — pick your dept and enter your name to submit; you are recorded as the submitter'},
+    hint_task_type:{cn:'选择类型后自动填充常用文案，可再修改',en:'Selecting a type auto-fills common text, editable afterwards'},
+    hint_date:{cn:'<b>选择需要用车的日期</b>。默认显示今日；超过 {ct} 截止后只能选明日/后天；长期保障任务可不填日期',en:'<b>Pick the date you need the vehicle</b>. Today is default; after {ct} cutoff only tomorrow/day-after; long-term tasks may skip date'},
+    hint_time:{cn:'<b>填写预计出发与返程时间</b>。将用于 GPS 轨迹比对；返程可临时调整',en:'<b>Enter estimated departure & return</b>. Used for GPS cross-check; return time can be adjusted later'},
+    hint_pax:{cn:'<b>点 ± 调整乘车人数</b>。填好人数后点"生成乘车人员名单"按人填写姓名',en:'<b>Click ± to adjust count</b>. After setting count, click "Generate Passenger List" to fill in names'},
+    hint_dest:{cn:'<b>明确标注出发地 → 目的地</b>。例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回',en:'<b>Specify origin → destination</b>. e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected'},
+    hint_bilingual:{cn:'<b>必填中英双语</b>。填写当前语言后点 🔄 自动翻译并切换到另一种语言；或直接双语手填',en:'<b>Both CN & EN required</b>. Fill active language, click 🔄 to auto-translate and switch; or fill manually'},
+    hint_signature:{cn:'<b>点"点击展开签字面板"按钮</b>，用手指/鼠标在白色区域签字后点"保存"',en:'<b>Click "Open Signature Panel" button</b>, use finger/mouse to sign in the white area, then click "Save"'}
+  };
+  return M[key]||{cn:'',en:''};
+}
+// 规则文案读取：优先取管理员编辑的数据库值（DB.rules），否则用默认文案；{ct} 替换为当前截止时间
+function R(key,fallbackCn,fallbackEn){
+  const r=(DB.rules.get()||{})[key];
+  const def=ruleDefault(key);
+  const cn=(r&&r.cn)?r.cn:(fallbackCn!==undefined?fallbackCn:def.cn);
+  const en=(r&&r.en)?r.en:(fallbackEn!==undefined?fallbackEn:def.en);
+  const ct=getCutoff();
+  return bi(String(cn).split('{ct}').join(ct),String(en).split('{ct}').join(ct));
+}
+
 // HTML 转义：所有用户输入在拼入 innerHTML 前必须经过 esc()，防止 XSS
 function esc(s){
   if(s===null||s===undefined)return '';
@@ -648,6 +692,8 @@ const _mapV=v=>({plate:v.plate,type:v.type||'',typeEn:v.typeEn||'',seats:v.seats
   status:v.status||'idle',insuranceExpire:v.insuranceExpire||'',inspectionExpire:v.inspectionExpire||'',lastServiceKm:v.lastServiceKm||''});
 const _mapD=d=>({name:d.name});
 const _mapDt=d=>({cn:d.cn,en:d.en||''});
+// rules 白名单映射：key 主键，cn/en 文案，updatedAt 更新时间
+const _mapRules=r=>({key:r.key,cn:r.cn||'',en:r.en||'',updatedAt:r.updatedAt||new Date().toISOString()});
 // users 不推送 password 到云端（明文密码仅存本地，避免泄露）
 const _mapU=u=>({name:u.name,department:u.department,role:u.role||'user',firstLogin:u.firstLogin||null,lastLogin:u.lastLogin||null});
 // dispatches 白名单：含 P0/P1 新列（startKm/endKm/fuelL/dvir/dvirDate/costFuel/costRepair/costToll）
@@ -671,6 +717,9 @@ async function repoRead(){
       sb.from('dispatches').select('*'),
       sb.from('depts').select('*'),
     ]);
+    // rules 表可能尚未建（老库未跑新 SQL）：单独容错读取，不阻塞核心表同步
+    let rl={data:[]};
+    try{rl=await sb.from('rules').select('*');}catch(e){console.warn('repoRead rules skipped (table missing?)',e.message);}
     return {
       vehicles:(v.data||[]).map(x=>({plate:x.plate,type:x.type||'',typeEn:x.typeEn||'',seats:x.seats||0,
         status:x.status||'idle',insuranceExpire:x.insuranceExpire||'',inspectionExpire:x.inspectionExpire||'',lastServiceKm:x.lastServiceKm||''})),
@@ -679,6 +728,7 @@ async function repoRead(){
       requests:r.data||[],
       dispatches:dp.data||[],
       depts:(dt.data||[]).map(x=>({cn:x.cn,en:x.en})),
+      rules:(rl.data||[]).map(x=>({key:x.key,cn:x.cn||'',en:x.en||'',updatedAt:x.updatedAt||''})),
     };
   }catch(e){console.error('repoRead',e);return null;}
 }
@@ -695,6 +745,8 @@ async function repoWrite(data){
     if(data.requests&&data.requests.length){const{error}=await sb.from('requests').upsert(data.requests);if(error)errs.push('requests:'+error.message);}
     if(data.dispatches&&data.dispatches.length){const{error}=await sb.from('dispatches').upsert(data.dispatches.map(_mapDp));if(error)errs.push('dispatches:'+error.message);}
     if(data.depts&&data.depts.length){const{error}=await sb.from('depts').upsert(data.depts.map(_mapDt));if(error)errs.push('depts:'+error.message);}
+    // rules 为可选项：老库未建 rules 表时写入失败仅警告，不影响核心数据同步
+    if(data.rules&&data.rules.length){const{error}=await sb.from('rules').upsert(data.rules.map(_mapRules));if(error)console.warn('rules:'+error.message);}
     if(errs.length){console.warn('repoWrite errors:',errs);return false;}
     return true;
   }catch(e){console.error('repoWrite',e);return false;}
@@ -711,6 +763,7 @@ async function sbSyncOne(table,data){
     else if(table==='depts')rows=items.map(_mapDt);
     else if(table==='users')rows=items.map(_mapU);
     else if(table==='dispatches')rows=items.map(_mapDp);
+    else if(table==='rules')rows=items.map(_mapRules);
     const{error}=await sb.from(table).upsert(rows);
     if(error)console.warn('sbSyncOne',table,error.message);
     return !error;
@@ -773,6 +826,16 @@ function mergeVehicles(remoteV){
   localV.forEach(lv=>{if(!merged.find(x=>x.plate===lv.plate))merged.push(lv);});
   return merged;
 }
+// 规则文案按 key 合并：云端已编辑的行覆盖本地，其余保留本地（DB.rules 为 {key:{key,cn,en,updatedAt}} 对象）
+function mergeRules(remoteR){
+  const localR=DB.rules.get()||{};
+  const merged=Object.assign({},localR);
+  (remoteR||[]).forEach(r=>{
+    if(!r||!r.key)return;
+    merged[r.key]={key:r.key,cn:r.cn||'',en:r.en||'',updatedAt:r.updatedAt||''};
+  });
+  return merged;
+}
 async function syncAll(){
   const sb=sbInit();
   if(!sb){syncAvailable=false;return;}
@@ -786,6 +849,7 @@ async function syncAll(){
       if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
       if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches);
       if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
+      if(remote.rules&&remote.rules.length)DB.rules.set(mergeRules(remote.rules));
     }
     const data={
       vehicles:DB.vehicles.get()||[],
@@ -794,6 +858,7 @@ async function syncAll(){
       requests:DB.requests.get()||[],
       dispatches:DB.dispatches.get()||[],
       depts:DB.depts.get()||DEFAULT_DEPTS,
+      rules:Object.values(DB.rules.get()||{}).filter(x=>x&&x.key),
     };
     const ok=await repoWrite(data);
     syncAvailable=ok;
@@ -812,6 +877,7 @@ async function pullFromCloud(){
   if(remote.requests&&remote.requests.length)DB.requests.set(remote.requests);
   if(remote.dispatches&&remote.dispatches.length)DB.dispatches.set(remote.dispatches);
   if(remote.depts&&remote.depts.length)DB.depts.set(remote.depts);
+  if(remote.rules&&remote.rules.length)DB.rules.set(mergeRules(remote.rules));
   if(S.user)renderPage();
 }
 
@@ -823,7 +889,7 @@ function setupRealtime(){
   try{
     _rtSetup=true;
     const ch=sb.channel('kmc-live');
-    ['requests','dispatches','vehicles','drivers','users','depts'].forEach(t=>{
+    ['requests','dispatches','vehicles','drivers','users','depts','rules'].forEach(t=>{
       ch.on('postgres_changes',{event:'*',schema:'public',table:t},()=>{
         setTimeout(()=>{pullFromCloud().catch(()=>{});},400);
       });
@@ -832,7 +898,7 @@ function setupRealtime(){
   }catch(e){console.error('realtime',e);}
 }
 const DB={
-  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),showDispatchActions:LS('showDispatchActions',{onGet:v=>v!==undefined?v:true}),
+  vehicles:LS('vehicles'),drivers:LS('drivers'),requests:LS('requests'),dispatches:LS('dispatches'),depts:LS('depts'),rules:LS('rules',{onGet:v=>v||{}}),sysName:LS('sysName',{onGet:v=>v||'KMC 派车调度'}),sysNameEn:LS('sysNameEn',{onGet:v=>v||'KMC Dispatcher'}),dateRange:LS('dateRange',{onGet:v=>v!==undefined?v:true}),multiSlot:LS('multiSlot',{onGet:v=>v!==undefined?v:false}),showDispatchActions:LS('showDispatchActions',{onGet:v=>v!==undefined?v:true}),
   invite:LS('invite'),user:LS('user'),users:LS('users'),imported:LS('imported'),
   cutoff:LS('cutoff'),
   guest:LS('guest'),driverSel:LS('driverSel'),
@@ -2051,9 +2117,9 @@ function renderSubmit(){
   let html='<div style="background:linear-gradient(135deg,#fef3c7,#fed7aa);border:2px solid #f59e0b;border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:#78350f">'
     +'<div style="font-weight:800;margin-bottom:6px">⏰ '+bi('今日需求截止 / Daily Cutoff','Daily Cutoff')+': <strong style="font-size:18px;color:#dc2626">'+ct+'</strong></div>'
     +'<div style="line-height:1.7">'
-    +bi('• 截止时间前未提交的需求视为无需求','• No submission before cutoff = no request')+'<br>'
-    +bi('• 截止后提交的，次日统一调度，紧急用车由申请部门自行解决','• After cutoff, processed next day; emergencies must be self-resolved')+'<br>'
-    +bi('• 因未按时提交造成延误的，相关责任与成本由申请部门承担','• Late-submission delays: responsibility & cost belong to requesting dept')+'<br>'
+    +R('rule_cutoff_1','• 截止时间前未提交的需求视为无需求','• No submission before cutoff = no request')+'<br>'
+    +R('rule_cutoff_2','• 截止后提交的，次日统一调度，紧急用车由申请部门自行解决','• After cutoff, processed next day; emergencies must be self-resolved')+'<br>'
+    +R('rule_cutoff_3','• 因未按时提交造成延误的，相关责任与成本由申请部门承担','• Late-submission delays: responsibility & cost belong to requesting dept')+'<br>'
     
     +'</div></div>';
 
@@ -2068,7 +2134,7 @@ function renderSubmit(){
       +'<span style="font-size:18px">👤</span>'
       +'<span>'+bi('将以当前登录身份提交','Will submit as')+': <strong>'+esc(dShow(S.user.department))+' · '+esc(S.user.name)+'</strong></span>'
       +'</div>'
-      +'<div class="field-hint"><span class="ic tip">👤</span><span>'+bi('已登录用户无需填写提交人信息，需求自动记录为当前身份；如需更换请先退出登录','Logged-in users need not fill submitter info; the request is recorded under your current identity. Log out first to switch.')+'。</span></div>';
+      +'<div class="field-hint"><span class="ic tip">👤</span><span>'+R('hint_submitter_loggedin','已登录用户无需填写提交人信息，需求自动记录为当前身份；如需更换请先退出登录','Logged-in users need not fill submitter info; the request is recorded under your current identity. Log out first to switch.')+'。</span></div>';
   }else{
     html+='<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('部门','Department')+'</label>'
     +'<select id="sub-dept" onchange="checkFilled(\'step-sub\',this.value)" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
@@ -2078,7 +2144,7 @@ function renderSubmit(){
     +'<div class="bi-c"><label style="font-size:12px">'+bi('姓名','Name')+'</label>'
     +'<input type="text" id="sub-name" value="'+esc(_curName)+'" placeholder="'+bi('您的姓名','Your name')+'" oninput="rememberGuest(this.value,document.getElementById(\'sub-dept\').value);checkFilled(\'step-sub\',this.value)" style="width:100%;padding:12px;border:1px solid var(--bd);border-radius:8px;font-size:15px;background:var(--bg-soft);color:var(--tx)">'
     +'</div></div>'
-    +'<div class="field-hint"><span class="ic tip">👤</span><span>'+bi('无需登录，选择所在部门并填写姓名即可提交，需求将自动记录提交人','No login needed — pick your dept and enter your name to submit; you are recorded as the submitter')+'。</span></div>';
+    +'<div class="field-hint"><span class="ic tip">👤</span><span>'+R('hint_submitter_guest','无需登录，选择所在部门并填写姓名即可提交，需求将自动记录提交人','No login needed — pick your dept and enter your name to submit; you are recorded as the submitter')+'。</span></div>';
   }
   html+='</div>';
   // Determine date min/max based on admin toggle
@@ -2091,10 +2157,10 @@ function renderSubmit(){
     +'<option value="">'+bi('请选择任务类型','Select task type')+'</option>'
     +TASK_TYPES.map(t=>'<option value="'+t.key+'">'+t.cn+' / '+t.en+'</option>').join('')
     +'</select>'
-    +'<div class="field-hint"><span class="ic tip">📌</span><span>'+bi('选择类型后自动填充常用文案，可再修改','Selecting a type auto-fills common text, editable afterwards')+'</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">📌</span><span>'+R('hint_task_type','选择类型后自动填充常用文案，可再修改','Selecting a type auto-fills common text, editable afterwards')+'</span></div></div>';
   html+='<div class="fld fld-required" id="step-1"><label><span class="step-badge">1</span><span>'+T('submit_date')+' <span style="color:#dc2626">*</span></span><small style="font-weight:400;color:var(--tx-dim);margin-left:4px">('+(dateEnabled?bi('30天内','within 30 days'):bi('明日/后天','tomorrow/after-tomorrow'))+')</small></label>'
     +'<input type="date" id="rq-date" min="'+dateMin+'" max="'+dateMax+'" value="'+dateMin+'" oninput="checkFilled(\'step-1\')">'
-    +'<div class="field-hint"><span class="ic tip">📅</span><span><b>'+bi('选择需要用车的日期','Pick the date you need the vehicle')+'</b>。'+bi('默认显示今日；超过 '+ct+' 截止后只能选明日/后天；长期保障任务可不填日期','Today is default; after '+ct+' cutoff only tomorrow/day-after; long-term tasks may skip date')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">📅</span><span>'+R('hint_date','<b>选择需要用车的日期</b>。默认显示今日；超过 '+ct+' 截止后只能选明日/后天；长期保障任务可不填日期','<b>Pick the date you need the vehicle</b>. Today is default; after '+ct+' cutoff only tomorrow/day-after; long-term tasks may skip date')+'。</span></div></div>';
   // Primary time slot
   html+='<div class="fld fld-required" id="step-2"><label><span class="step-badge">2</span><span>'+bi('计划出发 / 返程时间','Planned Departure / Return')+' <span style="color:#dc2626">*</span></span></label>'
     +'<div class="bi"><div class="bi-c"><label style="font-size:12px">'+bi('出发 Departure','Departure')+'</label>'
@@ -2104,7 +2170,7 @@ function renderSubmit(){
     +'<input type="time" id="rq-ret" value="12:00" style="font-size:16px;padding:10px" oninput="checkFilled(\'step-2\')">'
     +'<div style="font-size:11px;color:var(--tx-dim);margin-top:4px">'+bi('示例：12:00 / 18:00 / 22:00','Example: 12:00 / 18:00 / 22:00')+'</div></div></div>'
     +'<input type="text" id="rq-slot-notes" placeholder="'+bi('备注（选填）例如：同一路线不同时间段','Notes (optional) e.g., same route different time')+'" style="width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg-soft);color:var(--tx)">'
-    +'<div class="field-hint"><span class="ic tip">⏰</span><span><b>'+bi('填写预计出发与返程时间','Enter estimated departure & return')+'</b>。'+bi('将用于 GPS 轨迹比对；返程可临时调整','Used for GPS cross-check; return time can be adjusted later')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">⏰</span><span>'+R('hint_time','<b>填写预计出发与返程时间</b>。将用于 GPS 轨迹比对；返程可临时调整','<b>Enter estimated departure & return</b>. Used for GPS cross-check; return time can be adjusted later')+'。</span></div></div>';
   // Extra slot groups (when multiSlot enabled)
   if(DB.multiSlot.get()){
     [2,3].forEach(n=>{
@@ -2128,7 +2194,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<input type="hidden" id="rq-pax" value="1" oninput="checkFilled(\'step-3\')">'
     +'<button type="button" class="bt bt-o bt-sm" onclick="genPassengerFields()" style="margin-left:6px">👥 '+bi('生成乘车人员名单','Generate Passenger List')+'</button>'
     +'</div>'
-    +'<div class="field-hint"><span class="ic tip">👥</span><span><b>'+bi('点 ± 调整乘车人数','Click ± to adjust count')+'</b>。'+bi('填好人数后点"生成乘车人员名单"按人填写姓名','After setting count, click "Generate Passenger List" to fill in names')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">👥</span><span>'+R('hint_pax','<b>点 ± 调整乘车人数</b>。填好人数后点"生成乘车人员名单"按人填写姓名','<b>Click ± to adjust count</b>. After setting count, click "Generate Passenger List" to fill in names')+'。</span></div></div>';
 
   // Destination field
   html+='<div class="fld fld-required" id="step-4">'
@@ -2145,7 +2211,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
       +'</div>'
     +'</div>'
     +'<datalist id="dest-list">'+COMMON_DESTS.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</datalist>'
-    +'<div class="field-hint"><span class="ic tip">📍</span><span><b>'+bi('明确标注出发地 → 目的地','Specify origin → destination')+'</b>。'+bi('例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回','e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">📍</span><span>'+R('hint_dest','<b>明确标注出发地 → 目的地</b>。例如：Kamativi → 瀑布城机场；模糊词（外出/办事）会被驳回','<b>Specify origin → destination</b>. e.g., Kamativi → Vic Falls Airport; vague terms (outing/errand) will be rejected')+'。</span></div></div>';
 
   html+='<div class="card" style="padding:14px;background:#fefce8;border:1px solid #fbbf24;margin-bottom:14px">'
     +'<div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#92400e">⚠ '+bi('GPS 管控说明','GPS Compliance Notice')+'</div>'
@@ -2177,7 +2243,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Site inspection\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Site inspection</button>'
     +'<button type="button" onclick="addPhrase(\'purpose\',\'en\',\'Business meeting\')" style="padding:2px 8px;font-size:11px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer">Business meeting</button>'
     +'</div>'
-    +'<div class="field-hint"><span class="ic danger">⚠️</span><span><b>'+bi('必填中英双语','Both CN & EN required')+'</b>。'+bi('填写当前语言后点 🔄 自动翻译并切换到另一种语言；或直接双语手填','Fill active language, click 🔄 to auto-translate and switch; or fill manually')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic danger">⚠️</span><span>'+R('hint_bilingual','<b>必填中英双语</b>。填写当前语言后点 🔄 自动翻译并切换到另一种语言；或直接双语手填','<b>Both CN & EN required</b>. Fill active language, click 🔄 to auto-translate and switch; or fill manually')+'。</span></div></div>';
 
   html+='<div class="fld"><label>'+bi('备注','Notes')+'<small style="font-weight:400;color:#6b7280;margin-left:4px">('+bi('选填','Optional')+')</small><br><small style="font-weight:400;color:#dc2626">'
     +bi('【责任须知】选填项。未在备注重明确标注外出人员及其职级的，默认费用由申请部门自行承担。职级差异报销标准参照财务制度执行。','[Liability Notice] Optional. If passengers and their ranks are NOT noted here, costs default to requesting department. Rank-based reimbursement per finance policy.')+'</small></label>'
@@ -2206,7 +2272,7 @@ html+='<div class="fld fld-required" id="step-3"><label><span class="step-badge"
     +'<button type="button" class="bt bt-p bt-sm" onclick="sigSave()">✓ '+bi('保存','Save')+'</button>'
     +'</div></div>'
     +'<div id="sig-st" style="display:none;color:var(--gn);font-weight:600;margin-top:6px;font-size:14px">✓ '+T('sig_done')+'</div>'
-    +'<div class="field-hint"><span class="ic tip">🖋️</span><span><b>'+bi('点"点击展开签字面板"按钮','Click "Open Signature Panel" button')+'</b>，'+bi('用手指/鼠标在白色区域签字后点"保存"','Use finger/mouse to sign in the white area, then click "Save"')+'。</span></div></div>';
+    +'<div class="field-hint"><span class="ic tip">🖋️</span><span>'+R('hint_signature','<b>点"点击展开签字面板"按钮</b>，用手指/鼠标在白色区域签字后点"保存"','<b>Click "Open Signature Panel" button</b>, use finger/mouse to sign in the white area, then click "Save"')+'。</span></div></div>';
   html+='<button class="bt bt-p bt-b" onclick="doSubmit()">'+T('submit_btn')+'</button></div>';
 
   // 游客模式：仅展示提交表单；「我的待处理需求」与「需求池」对游客隐藏（避免泄露本部门需求数据）
@@ -4138,6 +4204,28 @@ function renderSettings(){
       +'</div></div></div>';
   }
 
+  // 规则文案编辑（管理员可见）：提交页 12 处规则/提示文案，中英文均可编辑，保存后全端实时生效
+  if(showAdmin){
+    html+='<div class="card"><div class="card-h">📜 '+bi('规则文案编辑','Rule Text Editor')+' <span style="font-weight:400;font-size:10px;color:var(--tx-dim)">'+bi('12 条 · 保存后游客/员工实时生效','12 rules · live for all users')+'</span></div>'
+      +'<div style="font-size:11px;color:var(--tx-dim);margin-bottom:10px">'+bi('修改提交页的规则与提示文案；{ct} 会自动替换为当前截止时间','Edit submit-page rules & hints; {ct} is replaced by the current cutoff time')+'</div>'
+      +RULE_META.map(m=>{
+        const cur=(DB.rules.get()||{})[m.key];
+        const def=ruleDefault(m.key);
+        const cnVal=(cur&&cur.cn)?cur.cn:def.cn;
+        const enVal=(cur&&cur.en)?cur.en:def.en;
+        return '<div style="padding:14px 0;border-top:1px solid var(--bd)">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+          +'<div style="font-weight:600;font-size:13px">'+m.label+'</div>'
+          +'<button class="bt bt-o bt-sm" onclick="resetRule(\''+m.key+'\')" style="flex-shrink:0">↩ '+bi('恢复默认','Reset')+'</button>'
+          +'</div>'
+          +'<textarea id="rule-cn-'+m.key+'" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;font-size:13px;background:var(--bg-soft);color:var(--tx);resize:vertical;margin-bottom:6px" placeholder="'+bi('中文文案','CN text')+'">'+esc(cnVal)+'</textarea>'
+          +'<textarea id="rule-en-'+m.key+'" rows="2" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;font-size:13px;background:var(--bg-soft);color:var(--tx);resize:vertical;margin-bottom:8px" placeholder="English text">'+esc(enVal)+'</textarea>'
+          +'<div style="display:flex;justify-content:flex-end"><button class="bt bt-p bt-sm" onclick="saveRule(\''+m.key+'\')">✓ '+T('common_save')+'</button></div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+
   html+='<div style="text-align:center;margin-top:16px"><button class="bt bt-o bt-sm" onclick="logout()">Logout</button></div>';
   return html;
 }
@@ -4194,6 +4282,35 @@ function saveCutoffSetting(){
   if(!v)return toast(bi('请选择时间','Pick a time'));
   setCutoff(v);
   toast('✅ '+bi('截止时间已更新：'+v,'Cutoff updated: '+v));
+  renderPage();
+}
+
+// 规则文案保存：写入本地 + 单表同步云端，保存后立即全端生效
+function saveRule(key){
+  const cn=document.getElementById('rule-cn-'+key).value.trim();
+  const en=document.getElementById('rule-en-'+key).value.trim();
+  const rules=DB.rules.get()||{};
+  if(cn===''&&en===''){
+    // 全部清空 = 恢复默认：删除本地记录，云端写入空行让其他设备同样回退默认
+    delete rules[key];
+    DB.rules.set(rules);
+    sbSyncOne('rules',{key:key,cn:'',en:'',updatedAt:new Date().toISOString()});
+  }else{
+    rules[key]={key:key,cn:cn,en:en,updatedAt:new Date().toISOString()};
+    DB.rules.set(rules);
+    sbSyncOne('rules',rules[key]);
+  }
+  toast('✅ '+bi('已保存，全端生效','Saved, live for all users'));
+  renderPage();
+}
+// 恢复默认：将硬编码默认文案写入该规则并同步云端
+function resetRule(key){
+  const def=ruleDefault(key);
+  const rules=DB.rules.get()||{};
+  rules[key]={key:key,cn:def.cn,en:def.en,updatedAt:new Date().toISOString()};
+  DB.rules.set(rules);
+  sbSyncOne('rules',rules[key]);
+  toast('✅ '+bi('已恢复默认','Reset to default'));
   renderPage();
 }
 
